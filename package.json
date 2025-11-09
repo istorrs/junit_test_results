@@ -1,0 +1,37 @@
+{
+  "name": "junit-test-results-dashboard",
+  "version": "2.0.0",
+  "description": "JUnit Test Results Dashboard - Frontend",
+  "type": "module",
+  "scripts": {
+    "lint": "eslint *.js --max-warnings 0",
+    "lint:fix": "eslint *.js --fix",
+    "format": "prettier --write '*.{js,html,css,md}'",
+    "format:check": "prettier --check '*.{js,html,css,md}'",
+    "validate:html": "node scripts/validate-html.cjs",
+    "quality:check": "npm run lint && npm run format:check && npm run validate:html",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.1",
+    "eslint": "^9.39.1",
+    "eslint-config-prettier": "^9.1.2",
+    "html-validate": "^8.29.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^15.5.2",
+    "prettier": "^3.6.2"
+  },
+  "lint-staged": {
+    "*.js": [
+      "bash -c 'if [[ \"$0\" != *\"eslint.config.js\" ]]; then eslint --fix --max-warnings 0 \"$0\"; fi'",
+      "prettier --write"
+    ],
+    "*.html": [
+      "prettier --write",
+      "node scripts/validate-html.cjs"
+    ],
+    "*.{css,md}": [
+      "prettier --write"
+    ]
+  }
+}

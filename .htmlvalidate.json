@@ -1,0 +1,14 @@
+{
+  "extends": ["html-validate:recommended"],
+  "rules": {
+    "close-order": "error",
+    "void-style": ["error", "omit"],
+    "no-trailing-whitespace": "off",
+    "require-sri": "off",
+    "no-inline-style": "off",
+    "script-element": "off"
+  },
+  "elements": [
+    "html5"
+  ]
+}

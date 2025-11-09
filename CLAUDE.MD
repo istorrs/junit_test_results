@@ -1,5 +1,50 @@
 # JUnit Test Results Dashboard
 
+## 🚨 FUNDAMENTAL RULE: CODE QUALITY IS NON-NEGOTIABLE
+
+**ALL CODE MUST PASS QUALITY CHECKS BEFORE BEING COMMITTED.**
+
+### Enforced Quality Standards
+
+1. **ESLint** - All JavaScript must pass ESLint with zero warnings
+2. **Prettier** - All code must be properly formatted
+3. **HTML Validation** - All HTML must pass basic structural validation
+
+### Pre-Commit Hook
+
+A pre-commit hook is installed that:
+- Automatically runs ESLint on all JavaScript files
+- Runs Prettier to format code
+- Validates HTML files
+- **CANNOT BE BYPASSED OR IGNORED**
+
+### Commands
+
+```bash
+# Run all quality checks
+npm run quality:check
+
+# Fix auto-fixable issues
+npm run lint:fix
+npm run format
+
+# Run checks individually
+npm run lint
+npm run format:check
+npm run validate:html
+```
+
+### Consequences of Bad Code
+
+- ❌ Commits with linting errors will be **REJECTED**
+- ❌ Commits with formatting issues will be **REJECTED**
+- ❌ Commits with HTML validation errors will be **REJECTED**
+- ❌ **NO EXCEPTIONS** - Fix the code, don't bypass the hooks
+
+**If you attempt to bypass the pre-commit hook (e.g., with `--no-verify`), you are violating project standards.**
+
+---
+
 ## Project Overview
 
 A comprehensive, client-side web application for viewing, analyzing, and managing JUnit test results. This self-contained dashboard requires **no backend server** and operates entirely within the browser using IndexedDB for local data storage.
