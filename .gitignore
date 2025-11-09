@@ -44,3 +44,4 @@ update-run-names.js
 
 # MongoDB data
 data/
+node_modules/

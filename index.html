@@ -181,6 +181,7 @@
                 <div class="flex items-center space-x-8">
                     <a href="index.html" class="nav-link active text-gray-900 font-medium">Dashboard</a>
                     <a href="details.html" class="nav-link text-gray-600 hover:text-gray-900 font-medium">Details</a>
+                    <a href="flaky-tests.html" class="nav-link text-gray-600 hover:text-gray-900 font-medium">Flaky Tests</a>
                     <a href="reports.html" class="nav-link text-gray-600 hover:text-gray-900 font-medium">Reports</a>
                 </div>
             </div>
@@ -334,6 +335,11 @@
                     </div>
                 </div>
 
+                <!-- Insights Panel -->
+                <div id="insights-panel" class="mb-8">
+                    <!-- Insights will be populated here -->
+                </div>
+
                 <!-- Test Runs Grid -->
                 <div class="mb-8">
                     <div class="flex items-center justify-between mb-6">
@@ -380,6 +386,7 @@
     <!-- Load Scripts -->
     <script src="api-client.js"></script>
     <script src="test-details-modal.js"></script>
+    <script src="insights.js"></script>
     <script src="debug.js"></script>
     <script src="main.js"></script>
 </body>

@@ -1,0 +1,21 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+echo "🔍 Running code quality checks..."
+echo ""
+
+# Run lint-staged for staged files
+npx lint-staged
+
+# If lint-staged passed, show success message
+if [ $? -eq 0 ]; then
+  echo ""
+  echo "✅ All code quality checks passed!"
+  echo ""
+else
+  echo ""
+  echo "❌ Code quality checks failed. Please fix the errors above."
+  echo "💡 Tip: Run 'npm run lint:fix' to automatically fix some issues."
+  echo ""
+  exit 1
+fi
