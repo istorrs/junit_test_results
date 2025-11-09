@@ -28,17 +28,20 @@ export default [
                 Typed: 'readonly',
                 Splitting: 'readonly',
                 Prism: 'readonly',
+                JUNIT_API_URL: 'readonly',
                 // Our globals
                 JUnitDatabase: 'writable',
                 JUnitAPIClient: 'writable',
-                JUnitDashboard: 'writable',
+                InsightsPanel: 'writable',
                 dashboard: 'writable',
                 detailsPage: 'writable',
                 historyPage: 'writable',
                 flakyTestsPage: 'writable',
                 reportsPage: 'writable',
                 testDetailsModal: 'writable',
-                dashboardDebugger: 'writable'
+                dashboardDebugger: 'writable',
+                navigator: 'readonly',
+                screen: 'readonly'
             }
         },
         rules: {

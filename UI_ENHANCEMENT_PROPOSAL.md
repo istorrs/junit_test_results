@@ -7,6 +7,7 @@ After comprehensive review of the test results web interface, I've identified si
 ## Current State Analysis
 
 ### Strengths
+
 ✅ Modern, responsive UI with good visual design
 ✅ MongoDB backend with comprehensive API
 ✅ CI/CD integration ready
@@ -15,6 +16,7 @@ After comprehensive review of the test results web interface, I've identified si
 ✅ API endpoint for test case history already exists (`/cases/:id/history`)
 
 ### Critical Gaps
+
 ❌ **No individual test case history view** - Can't see how a specific test performs over time
 ❌ **No trend analysis** - Charts use mock data, not historical trends
 ❌ **No actionable insights** - Dashboard shows totals but not what needs attention
@@ -29,11 +31,13 @@ After comprehensive review of the test results web interface, I've identified si
 ## 🔥 TIER 1: Critical Features (Immediate Impact)
 
 ### 1. **Individual Test Case History & Trends Page** ⭐ HIGH PRIORITY
+
 **Problem:** When a test fails, developers need to know: Is this a new issue? Has this test been flaky? How has its performance changed?
 
 **Solution:** Create dedicated test case analysis page
 
 **Features:**
+
 ```
 /test-case-analysis.html?name=testFoo&class=com.example.FooTest
 
@@ -71,6 +75,7 @@ Components:
 ```
 
 **API Endpoints Needed:**
+
 - ✅ `GET /api/v1/cases/:id/history` (ALREADY EXISTS!)
 - ➕ `GET /api/v1/cases/by-name?name=X&classname=Y` (get test by name/class)
 - ➕ `GET /api/v1/cases/:id/performance-trend` (optimized for chart data)
@@ -81,6 +86,7 @@ Components:
 ---
 
 ### 2. **Real Historical Trend Charts** ⭐ HIGH PRIORITY
+
 **Problem:** Dashboard trend chart uses mock data. Teams need real historical data.
 
 **Solution:** Replace mock trend chart with real data from `/api/v1/stats/trends`
@@ -88,6 +94,7 @@ Components:
 **Enhanced Trend Visualizations:**
 
 #### A. Success Rate Trend (30-day)
+
 ```
 Chart Components:
 ├── Line chart of success rate % over time
@@ -98,6 +105,7 @@ Chart Components:
 ```
 
 #### B. Test Count Trend
+
 ```
 Stacked area chart showing:
 ├── Passed (green)
@@ -107,6 +115,7 @@ Stacked area chart showing:
 ```
 
 #### C. Performance Trend
+
 ```
 Chart showing:
 ├── Average test execution time
@@ -120,11 +129,13 @@ Chart showing:
 ---
 
 ### 3. **Actionable Insights Dashboard** ⭐ HIGH PRIORITY
+
 **Problem:** Dashboard shows numbers but doesn't guide users to what needs attention
 
 **Solution:** Add "Insights" section to dashboard with actionable items
 
 **Insights Panel:**
+
 ```
 ┌─────────────────────────────────────────┐
 │ 🚨 Requires Attention                   │
@@ -144,6 +155,7 @@ Chart showing:
 ```
 
 **Insight Types:**
+
 1. **New Failures:** Tests that passed in previous run but failed now
 2. **Consistent Failures:** Tests failing X consecutive times
 3. **Flaky Tests:** Tests with inconsistent results
@@ -152,6 +164,7 @@ Chart showing:
 6. **Trends:** Overall success rate declining
 
 **API Endpoints:**
+
 - ➕ `GET /api/v1/insights/dashboard` (aggregates all insights)
 - ➕ `GET /api/v1/stats/new-failures` (compare latest vs previous)
 - ➕ `GET /api/v1/stats/performance-regressions`
@@ -159,11 +172,13 @@ Chart showing:
 ---
 
 ### 4. **Enhanced Flaky Test Management** ⭐ MEDIUM-HIGH PRIORITY
+
 **Problem:** Flaky test detection exists but is buried in filters
 
 **Solution:** Dedicated flaky tests section with management features
 
 **Flaky Tests Page:**
+
 ```
 /flaky-tests.html
 
@@ -196,6 +211,7 @@ Components:
 ```
 
 **API Endpoints:**
+
 - ✅ `GET /api/v1/stats/flaky-tests` (EXISTS)
 - ➕ `POST /api/v1/cases/:id/mark-resolved` (mark flaky test as resolved)
 - ➕ `GET /api/v1/stats/flaky-trends` (flaky test count over time)
@@ -205,9 +221,11 @@ Components:
 ## 🔄 TIER 2: High-Value Features
 
 ### 5. **Test Run Comparison**
+
 **Use Case:** "What broke between yesterday's run and today's?"
 
 **Features:**
+
 ```
 /compare-runs.html?run1=ID1&run2=ID2
 
@@ -234,15 +252,18 @@ Side-by-side comparison showing:
 ```
 
 **Add to UI:**
+
 - Button on test run cards: "Compare with previous"
 - Compare dropdown on details page
 
 ---
 
 ### 6. **Performance Analysis Dashboard**
+
 **Use Case:** "Which tests are slowing down our CI pipeline?"
 
 **Features:**
+
 ```
 /performance-analysis.html
 
@@ -273,9 +294,11 @@ Sections:
 ---
 
 ### 7. **Suite-Level Analysis**
+
 **Use Case:** "How is our integration test suite performing?"
 
 **Features:**
+
 ```
 /suite-analysis.html?suite=IntegrationTests
 
@@ -301,9 +324,11 @@ Per-Suite Dashboard:
 ---
 
 ### 8. **Advanced Filtering & Search**
+
 **Current:** Basic filters exist but limited functionality
 
 **Enhancements:**
+
 ```
 Filter Panel:
 ├── Saved Filter Presets
@@ -333,9 +358,11 @@ Filter Panel:
 ---
 
 ### 9. **Test Case Detail Modal Enhancement**
+
 **Current:** Basic modal exists in `test-details-modal.js`
 
 **Enhancements:**
+
 ```
 Enhanced Modal:
 ├── Header
@@ -368,7 +395,9 @@ Enhanced Modal:
 ---
 
 ### 10. **Better Navigation & Deep Linking**
+
 **Enhancements:**
+
 ```
 Navigation Improvements:
 ├── Breadcrumbs
@@ -393,22 +422,26 @@ Navigation Improvements:
 ## 📊 TIER 3: Advanced Analytics
 
 ### 11. **Correlation Analysis**
+
 - Correlate failures with CI environment variables
 - Time-of-day failure patterns
 - Weekend vs weekday success rates
 - Branch/environment correlation
 
 ### 12. **Predictive Analytics**
+
 - Predict which tests likely to fail based on patterns
 - Estimate suite completion time
 - Flaky test likelihood score
 
 ### 13. **Team Dashboard**
+
 - Test ownership/responsibility
 - Team-specific views
 - Notifications for test failures
 
 ### 14. **Integration Enhancements**
+
 - Jira issue creation for failures
 - Slack/email notifications
 - GitHub PR status checks
@@ -419,6 +452,7 @@ Navigation Improvements:
 ## Implementation Roadmap
 
 ### Phase 1: Foundation (Week 1-2)
+
 **Goal:** Core historical analysis
 
 1. ✅ Test Case History Page (new page)
@@ -427,11 +461,13 @@ Navigation Improvements:
 4. ✅ Basic performance trend visualization
 
 **Deliverables:**
+
 - `/test-case-history.html` with full test timeline
 - Real data in dashboard trend charts
 - Clickable tests that show history
 
 ### Phase 2: Insights (Week 3-4)
+
 **Goal:** Actionable intelligence
 
 1. ✅ Actionable insights dashboard section
@@ -440,11 +476,13 @@ Navigation Improvements:
 4. ✅ Performance regression detection
 
 **Deliverables:**
+
 - "Requires Attention" panel on dashboard
 - `/flaky-tests.html` page
 - Smart alerts for problems
 
 ### Phase 3: Comparison & Analysis (Week 5-6)
+
 **Goal:** Deep analysis capabilities
 
 1. ✅ Test run comparison
@@ -453,11 +491,13 @@ Navigation Improvements:
 4. ✅ Enhanced test detail modal
 
 **Deliverables:**
+
 - Side-by-side run comparison
 - Performance bottleneck identification
 - Per-suite health tracking
 
 ### Phase 4: Polish & Advanced (Week 7-8)
+
 **Goal:** User experience excellence
 
 1. ✅ Advanced filtering
@@ -466,6 +506,7 @@ Navigation Improvements:
 4. ✅ Export/reporting enhancements
 
 **Deliverables:**
+
 - Saved filters
 - Deep linking
 - Global search
@@ -478,34 +519,35 @@ Navigation Improvements:
 ### Immediate Improvements (< 1 day each)
 
 1. **Fix Trend Chart to Use Real Data**
-   - File: `main.js:407-510`
-   - Change: Call `await this.db.getTrends()` instead of mock data
-   - Impact: Immediately useful historical trends
+    - File: `main.js:407-510`
+    - Change: Call `await this.db.getTrends()` instead of mock data
+    - Impact: Immediately useful historical trends
 
 2. **Add "View History" Button to Test Cards**
-   - Files: `index.html`, `details.html`
-   - Add button that links to test history
-   - Impact: Direct access to most-wanted feature
+    - Files: `index.html`, `details.html`
+    - Add button that links to test history
+    - Impact: Direct access to most-wanted feature
 
 3. **Show Flaky Badge on Test Cards**
-   - Already in data (`is_flaky` field)
-   - Just need to display it prominently
-   - Impact: Immediate visibility into flaky tests
+    - Already in data (`is_flaky` field)
+    - Just need to display it prominently
+    - Impact: Immediate visibility into flaky tests
 
 4. **Add Test Count to Charts**
-   - Show number of tests on trend charts
-   - Impact: Context for success rate
+    - Show number of tests on trend charts
+    - Impact: Context for success rate
 
 5. **Link Tests to GitHub (if metadata available)**
-   - Use `file` and `line` fields
-   - Generate GitHub links
-   - Impact: One-click to source code
+    - Use `file` and `line` fields
+    - Generate GitHub links
+    - Impact: One-click to source code
 
 ---
 
 ## Technical Implementation Notes
 
 ### New Files Needed
+
 ```
 /test-case-history.html          # Individual test history
 /test-case-history.js            # History page logic
@@ -520,6 +562,7 @@ Navigation Improvements:
 ```
 
 ### Backend API Extensions
+
 ```javascript
 // New routes to add to backend/src/routes/
 
@@ -549,6 +592,7 @@ POST /api/v1/cases/:id/flaky-status
 ```
 
 ### Database Indexes Needed
+
 ```javascript
 // backend/src/models/TestCase.js
 testCaseSchema.index({ name: 1, classname: 1, created_at: -1 });
@@ -558,6 +602,7 @@ testCaseSchema.index({ run_id: 1, status: 1 });
 ```
 
 ### Reusable Components
+
 ```javascript
 // Create shared components
 /components/test-history-chart.js    // Reusable history chart
@@ -572,6 +617,7 @@ testCaseSchema.index({ run_id: 1, status: 1 });
 ## Success Metrics
 
 ### Before Enhancement
+
 - ⚠️ Can't track individual test history
 - ⚠️ No insight into what needs attention
 - ⚠️ Flaky tests difficult to identify
@@ -579,6 +625,7 @@ testCaseSchema.index({ run_id: 1, status: 1 });
 - ⚠️ No test comparison capability
 
 ### After Enhancement
+
 - ✅ Click any test → see complete history
 - ✅ Dashboard highlights problems needing attention
 - ✅ Dedicated flaky test management

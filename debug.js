@@ -8,7 +8,7 @@ class JUnitDashboardDebugger {
 
     setupErrorHandling() {
         // Global error handler
-        window.addEventListener('error', (event) => {
+        window.addEventListener('error', event => {
             this.logError('JavaScript Error', {
                 message: event.message,
                 filename: event.filename,
@@ -19,7 +19,7 @@ class JUnitDashboardDebugger {
         });
 
         // Unhandled promise rejections
-        window.addEventListener('unhandledrejection', (event) => {
+        window.addEventListener('unhandledrejection', event => {
             this.logError('Unhandled Promise Rejection', {
                 reason: event.reason
             });
@@ -41,10 +41,10 @@ class JUnitDashboardDebugger {
             userAgent: navigator.userAgent,
             url: window.location.href
         };
-        
+
         this.errors.push(error);
         console.log('Dashboard Error Logged:', error);
-        
+
         // Show error to user if in development
         if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
             this.showErrorToUser(error);
@@ -66,7 +66,7 @@ class JUnitDashboardDebugger {
             font-family: monospace;
             font-size: 12px;
         `;
-        
+
         errorDiv.innerHTML = `
             <div style="font-weight: bold; color: #dc2626; margin-bottom: 8px;">
                 🚨 Dashboard Error
@@ -88,9 +88,9 @@ class JUnitDashboardDebugger {
                 font-size: 10px;
             ">×</button>
         `;
-        
+
         document.body.appendChild(errorDiv);
-        
+
         // Auto-remove after 10 seconds
         setTimeout(() => {
             if (errorDiv.parentElement) {
@@ -101,7 +101,7 @@ class JUnitDashboardDebugger {
 
     async runDiagnostics() {
         console.log('🏥 Running Dashboard Diagnostics...');
-        
+
         const results = {
             timestamp: new Date().toISOString(),
             browser: this.getBrowserInfo(),
@@ -110,12 +110,12 @@ class JUnitDashboardDebugger {
             libraries: this.checkLibraries(),
             errors: this.errors
         };
-        
+
         console.log('Diagnostics Results:', results);
-        
+
         // Store results globally for access
         window.dashboardDiagnostics = results;
-        
+
         return results;
     }
 
@@ -142,7 +142,7 @@ class JUnitDashboardDebugger {
             destructuring: this.testDestructuring(),
             asyncAwait: this.testAsyncAwait()
         };
-        
+
         return {
             checks,
             overall: Object.values(checks).every(check => check === true)
@@ -195,11 +195,11 @@ class JUnitDashboardDebugger {
             }
 
             const db = window.dashboard.db;
-            
+
             // Test basic operations
             const testRuns = await db.getTestRuns(1);
             const stats = await db.getTestStatistics();
-            
+
             return {
                 available: true,
                 initialized: true,
@@ -224,7 +224,7 @@ class JUnitDashboardDebugger {
             splitting: 'Splitting' in window,
             tailwind: 'tailwind' in window || document.querySelector('[data-tailwind]') !== null
         };
-        
+
         return {
             libraries,
             loaded: Object.values(libraries).filter(lib => lib).length,
@@ -240,7 +240,7 @@ class JUnitDashboardDebugger {
             timestamp: new Date().toISOString(),
             url: window.location.href
         };
-        
+
         console.log('📊 Dashboard Debug Report:', report);
         return report;
     }
@@ -249,12 +249,12 @@ class JUnitDashboardDebugger {
         const report = this.generateReport();
         const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
-        
+
         const a = document.createElement('a');
         a.href = url;
         a.download = `dashboard-debug-${Date.now()}.json`;
         a.click();
-        
+
         URL.revokeObjectURL(url);
     }
 }
@@ -281,10 +281,10 @@ document.addEventListener('DOMContentLoaded', () => {
         font-size: 16px;
         box-shadow: 0 4px 12px rgba(0,0,0,0.3);
     `;
-    
+
     debugButton.addEventListener('click', () => {
         window.dashboardDebugger.downloadReport();
     });
-    
+
     document.body.appendChild(debugButton);
 });

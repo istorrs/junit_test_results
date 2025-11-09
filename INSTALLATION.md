@@ -5,6 +5,7 @@
 This guide will help you set up the JUnit Test Results Dashboard with MongoDB backend on Ubuntu 24.04.
 
 **What you'll install:**
+
 - MongoDB 7.0 (database)
 - Node.js 20 LTS (backend runtime)
 - PM2 (process manager)
@@ -105,11 +106,11 @@ Find the `security` section and uncomment/add:
 
 ```yaml
 security:
-  authorization: enabled
+    authorization: enabled
 
 net:
-  bindIp: 127.0.0.1
-  port: 27017
+    bindIp: 127.0.0.1
+    port: 27017
 ```
 
 Press `Ctrl+X`, then `Y`, then `Enter` to save.
@@ -227,6 +228,7 @@ LOG_DIR=./logs
 ```
 
 Replace:
+
 - `YOUR_APP_PASSWORD_HERE` with the password you set for `junit_app` user
 - `YOUR_SERVER_IP` with your Ubuntu server's IP address
 - `YOUR_DOMAIN` with your domain name (if you have one)
@@ -241,6 +243,7 @@ npm run dev
 ```
 
 You should see:
+
 ```
 MongoDB Connected: localhost
 Database indexes created successfully
@@ -274,8 +277,9 @@ curl http://localhost:5000/health
 ```
 
 You should get a JSON response:
+
 ```json
-{"success":true,"message":"JUnit Test Results API is running","timestamp":"..."}
+{ "success": true, "message": "JUnit Test Results API is running", "timestamp": "..." }
 ```
 
 ---
@@ -413,8 +417,8 @@ cd /path/to/downloaded/files
 
 1. Copy `ci-cd-examples/github-actions.yml` to `.github/workflows/` in your repository
 2. Add `JUNIT_API_URL` as a secret in GitHub:
-   - Go to repository Settings → Secrets and variables → Actions
-   - Add new secret: `JUNIT_API_URL` = `http://YOUR_SERVER_IP:5000`
+    - Go to repository Settings → Secrets and variables → Actions
+    - Add new secret: `JUNIT_API_URL` = `http://YOUR_SERVER_IP:5000`
 3. Push your changes
 
 ### Manual Upload Script
@@ -640,11 +644,12 @@ sudo nano /etc/mongod.conf
 ```
 
 Add:
+
 ```yaml
 storage:
-  wiredTiger:
-    engineConfig:
-      cacheSizeGB: 2  # Adjust based on available RAM
+    wiredTiger:
+        engineConfig:
+            cacheSizeGB: 2 # Adjust based on available RAM
 ```
 
 ### PM2 Optimization
@@ -655,6 +660,7 @@ nano /opt/junit-dashboard/ecosystem.config.js
 ```
 
 Adjust instances based on CPU cores:
+
 ```javascript
 instances: 'max',  // Use all CPU cores
 ```

@@ -28,6 +28,7 @@ docker compose up -d
 ```
 
 **Pros:**
+
 - ✅ Fastest setup (5 minutes)
 - ✅ Works on any OS (Linux, macOS, Windows)
 - ✅ Isolated environment, no conflicts
@@ -38,6 +39,7 @@ docker compose up -d
 - ✅ Portable across clouds
 
 **Cons:**
+
 - ❌ Requires Docker installed
 - ❌ Slight overhead (~100MB RAM)
 
@@ -57,12 +59,14 @@ sudo ./install-ubuntu.sh
 ```
 
 **Pros:**
+
 - ✅ Fully automated
 - ✅ Native performance (no container overhead)
 - ✅ Everything integrated with system
 - ✅ Familiar tools (systemctl, pm2, etc.)
 
 **Cons:**
+
 - ❌ Ubuntu only
 - ❌ Modifies system directly
 - ❌ Harder to remove cleanly
@@ -81,12 +85,14 @@ sudo ./install-ubuntu.sh
 Follow step-by-step instructions in [INSTALLATION.md](INSTALLATION.md)
 
 **Pros:**
+
 - ✅ Full understanding of each component
 - ✅ Maximum control
 - ✅ Custom configuration possible
 - ✅ Good for learning
 
 **Cons:**
+
 - ❌ Time-consuming
 - ❌ Easy to make mistakes
 - ❌ Requires system administration knowledge
@@ -95,19 +101,19 @@ Follow step-by-step instructions in [INSTALLATION.md](INSTALLATION.md)
 
 ## Quick Comparison Table
 
-| Feature | Docker | Auto Script | Manual |
-|---------|--------|-------------|--------|
-| **Setup Time** | 5 min | 15-30 min | 30-60 min |
-| **Difficulty** | Easy | Medium | Hard |
-| **OS Support** | All | Ubuntu only | Ubuntu only |
-| **Updates** | `docker compose up -d --build` | Manual | Manual |
-| **Portability** | Excellent | Poor | Poor |
-| **Cleanup** | `docker compose down -v` | Complex | Very complex |
-| **Production Ready** | ✅ Yes | ✅ Yes | ✅ Yes |
-| **Learning Value** | Low | Medium | High |
-| **Isolation** | ✅ Complete | ❌ None | ❌ None |
-| **Backup** | Easy | Medium | Medium |
-| **Scaling** | Easy | Manual | Manual |
+| Feature              | Docker                         | Auto Script | Manual       |
+| -------------------- | ------------------------------ | ----------- | ------------ |
+| **Setup Time**       | 5 min                          | 15-30 min   | 30-60 min    |
+| **Difficulty**       | Easy                           | Medium      | Hard         |
+| **OS Support**       | All                            | Ubuntu only | Ubuntu only  |
+| **Updates**          | `docker compose up -d --build` | Manual      | Manual       |
+| **Portability**      | Excellent                      | Poor        | Poor         |
+| **Cleanup**          | `docker compose down -v`       | Complex     | Very complex |
+| **Production Ready** | ✅ Yes                         | ✅ Yes      | ✅ Yes       |
+| **Learning Value**   | Low                            | Medium      | High         |
+| **Isolation**        | ✅ Complete                    | ❌ None     | ❌ None      |
+| **Backup**           | Easy                           | Medium      | Medium       |
+| **Scaling**          | Easy                           | Manual      | Manual       |
 
 ---
 
@@ -132,6 +138,7 @@ Do you want the easiest setup?
 ## What Each Method Installs
 
 ### Docker (All isolated in containers)
+
 - MongoDB 7.0 (container)
 - Node.js 20 backend (container)
 - Nginx (container)
@@ -139,6 +146,7 @@ Do you want the easiest setup?
 - Easy to remove
 
 ### Native (All installed on system)
+
 - MongoDB 7.0 (system service)
 - Node.js 20 (system package)
 - PM2 (global npm package)
@@ -151,6 +159,7 @@ Do you want the easiest setup?
 ## Resource Requirements
 
 All methods need:
+
 - 2GB RAM minimum
 - 10GB disk space
 - Internet connection
@@ -216,12 +225,14 @@ sudo systemctl status mongod nginx
 ## Migration Between Methods
 
 ### Docker → Native
+
 1. Backup: `docker compose exec mongodb mongodump`
 2. Stop Docker: `docker compose down`
 3. Run: `sudo ./install-ubuntu.sh`
 4. Restore backup
 
 ### Native → Docker
+
 1. Backup: `mongodump`
 2. Stop services: `pm2 stop all && sudo systemctl stop mongod nginx`
 3. Run: `docker compose up -d`
@@ -232,11 +243,13 @@ sudo systemctl status mongod nginx
 ## Cloud Deployment
 
 ### Docker on Cloud ✅
+
 - Works everywhere: AWS, GCP, Azure, DigitalOcean
 - Easy to containerize: `docker-compose.yml` → Kubernetes
 - Consistent across environments
 
 ### Native on Cloud
+
 - VPS/VM required
 - Manual setup on each instance
 - Environment differences possible
@@ -275,21 +288,21 @@ sudo systemctl status mongod nginx
 
 ### Self-Hosted (Either Method)
 
-| Provider | Specs | Cost/Month |
-|----------|-------|------------|
-| DigitalOcean | 2GB RAM | $12 |
-| Hetzner | 2GB RAM | $5 |
-| AWS EC2 | t3.small | $15 |
+| Provider     | Specs    | Cost/Month |
+| ------------ | -------- | ---------- |
+| DigitalOcean | 2GB RAM  | $12        |
+| Hetzner      | 2GB RAM  | $5         |
+| AWS EC2      | t3.small | $15        |
 
 **Average: $10-15/month**
 
 ### Managed Services
 
-| Service | Cost/Month |
-|---------|------------|
-| MongoDB Atlas | $57 |
-| Heroku | $14-25 |
-| AWS Fargate | $20-30 |
+| Service       | Cost/Month |
+| ------------- | ---------- |
+| MongoDB Atlas | $57        |
+| Heroku        | $14-25     |
+| AWS Fargate   | $20-30     |
 
 **Average: $30-100/month**
 
@@ -300,6 +313,7 @@ sudo systemctl status mongod nginx
 ## Security Comparison
 
 ### Docker
+
 - ✅ Process isolation
 - ✅ Network isolation
 - ✅ Easy to apply security policies
@@ -307,6 +321,7 @@ sudo systemctl status mongod nginx
 - ✅ Immutable infrastructure
 
 ### Native
+
 - ✅ Standard Linux security
 - ✅ SELinux/AppArmor available
 - ✅ Direct system logs
@@ -320,6 +335,7 @@ sudo systemctl status mongod nginx
 ## Backup/Recovery
 
 ### Docker
+
 ```bash
 # Backup (1 command)
 docker compose exec mongodb mongodump \
@@ -333,6 +349,7 @@ docker compose exec mongodb mongorestore \
 ```
 
 ### Native
+
 ```bash
 # Backup
 mongodump --uri="..." --out=./backup
@@ -348,6 +365,7 @@ mongorestore --uri="..." ./backup
 ## Monitoring
 
 ### Docker
+
 ```bash
 docker stats  # Resource usage
 docker compose logs -f  # Logs
@@ -356,6 +374,7 @@ docker compose ps  # Status
 ```
 
 ### Native
+
 ```bash
 htop  # Resource usage
 pm2 monit  # Process monitoring
@@ -369,24 +388,25 @@ systemctl status  # Service status
 
 ## Final Recommendation by Use Case
 
-| Use Case | Recommended Method |
-|----------|-------------------|
-| **Just want it to work** | 🐳 Docker |
-| **Production deployment** | 🐳 Docker |
-| **Development/Testing** | 🐳 Docker |
-| **Multiple environments** | 🐳 Docker |
-| **Team collaboration** | 🐳 Docker |
-| **Cloud deployment** | 🐳 Docker |
-| **Maximum performance** | 📜 Native Script |
-| **Learning sysadmin** | 📖 Manual |
-| **Custom configuration** | 📖 Manual |
-| **Ubuntu only, no Docker** | 📜 Native Script |
+| Use Case                   | Recommended Method |
+| -------------------------- | ------------------ |
+| **Just want it to work**   | 🐳 Docker          |
+| **Production deployment**  | 🐳 Docker          |
+| **Development/Testing**    | 🐳 Docker          |
+| **Multiple environments**  | 🐳 Docker          |
+| **Team collaboration**     | 🐳 Docker          |
+| **Cloud deployment**       | 🐳 Docker          |
+| **Maximum performance**    | 📜 Native Script   |
+| **Learning sysadmin**      | 📖 Manual          |
+| **Custom configuration**   | 📖 Manual          |
+| **Ubuntu only, no Docker** | 📜 Native Script   |
 
 ---
 
 ## Getting Started (Right Now!)
 
 ### If you have Docker:
+
 ```bash
 cp .env.docker .env
 nano .env  # Set passwords
@@ -395,6 +415,7 @@ docker compose up -d
 ```
 
 ### If you don't have Docker:
+
 ```bash
 # Install Docker (2 minutes)
 curl -fsSL https://get.docker.com -o get-docker.sh
@@ -407,6 +428,7 @@ docker compose up -d
 ```
 
 ### If you really don't want Docker:
+
 ```bash
 sudo ./install-ubuntu.sh
 ```
@@ -415,30 +437,33 @@ sudo ./install-ubuntu.sh
 
 ## Support & Documentation
 
-| Question | See |
-|----------|-----|
-| How to use Docker? | [DOCKER_QUICKSTART.md](DOCKER_QUICKSTART.md) |
-| Compare all methods? | [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) |
-| Manual installation? | [INSTALLATION.md](INSTALLATION.md) |
-| API documentation? | [backend/README.md](backend/README.md) |
-| CI/CD integration? | [ci-cd-examples/](ci-cd-examples/) |
-| Troubleshooting? | [INSTALLATION.md#troubleshooting](INSTALLATION.md#troubleshooting) |
+| Question             | See                                                                |
+| -------------------- | ------------------------------------------------------------------ |
+| How to use Docker?   | [DOCKER_QUICKSTART.md](DOCKER_QUICKSTART.md)                       |
+| Compare all methods? | [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)                         |
+| Manual installation? | [INSTALLATION.md](INSTALLATION.md)                                 |
+| API documentation?   | [backend/README.md](backend/README.md)                             |
+| CI/CD integration?   | [ci-cd-examples/](ci-cd-examples/)                                 |
+| Troubleshooting?     | [INSTALLATION.md#troubleshooting](INSTALLATION.md#troubleshooting) |
 
 ---
 
 ## TL;DR
 
 **Want it working in 5 minutes?**
+
 ```bash
 docker compose up -d
 ```
 
 **Don't have Docker and on Ubuntu?**
+
 ```bash
 sudo ./install-ubuntu.sh
 ```
 
 **Want to learn everything?**
+
 - Read [INSTALLATION.md](INSTALLATION.md)
 
 ---

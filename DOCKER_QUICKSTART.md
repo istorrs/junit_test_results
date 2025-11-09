@@ -11,6 +11,7 @@
 ### Install Docker (if needed)
 
 **Ubuntu/Debian:**
+
 ```bash
 curl -fsSL https://get.docker.com -o get-docker.sh
 sudo sh get-docker.sh
@@ -19,6 +20,7 @@ newgrp docker
 ```
 
 **macOS/Windows:**
+
 - Download and install [Docker Desktop](https://www.docker.com/products/docker-desktop)
 
 ### Quick Start
@@ -143,6 +145,7 @@ docker compose exec mongodb mongorestore \
 ### Troubleshooting
 
 **Port already in use:**
+
 ```bash
 # Check what's using port 80
 sudo lsof -i :80
@@ -153,12 +156,14 @@ ports:
 ```
 
 **Permission denied:**
+
 ```bash
 # Fix permissions
 sudo chown -R $USER:$USER ./backend/uploads ./backend/logs
 ```
 
 **Can't connect to MongoDB:**
+
 ```bash
 # Check MongoDB logs
 docker compose logs mongodb
@@ -168,6 +173,7 @@ docker compose restart mongodb
 ```
 
 **Container keeps restarting:**
+
 ```bash
 # View logs
 docker compose logs backend
@@ -182,37 +188,39 @@ For production, update `docker-compose.yml`:
 
 ```yaml
 services:
-  backend:
-    deploy:
-      replicas: 2
-      resources:
-        limits:
-          cpus: '2'
-          memory: 2G
-    restart: always
+    backend:
+        deploy:
+            replicas: 2
+            resources:
+                limits:
+                    cpus: '2'
+                    memory: 2G
+        restart: always
 ```
 
 ### Enable HTTPS
 
 1. Get SSL certificate:
-   ```bash
-   sudo certbot certonly --standalone -d your-domain.com
-   ```
+
+    ```bash
+    sudo certbot certonly --standalone -d your-domain.com
+    ```
 
 2. Mount certificates in `docker-compose.yml`:
-   ```yaml
-   nginx:
-     volumes:
-       - /etc/letsencrypt/live/your-domain.com/fullchain.pem:/etc/nginx/ssl/cert.pem:ro
-       - /etc/letsencrypt/live/your-domain.com/privkey.pem:/etc/nginx/ssl/key.pem:ro
-   ```
+
+    ```yaml
+    nginx:
+        volumes:
+            - /etc/letsencrypt/live/your-domain.com/fullchain.pem:/etc/nginx/ssl/cert.pem:ro
+            - /etc/letsencrypt/live/your-domain.com/privkey.pem:/etc/nginx/ssl/key.pem:ro
+    ```
 
 3. Uncomment HTTPS section in `nginx.conf`
 
 4. Restart:
-   ```bash
-   docker compose restart nginx
-   ```
+    ```bash
+    docker compose restart nginx
+    ```
 
 ### Environment Variables
 
@@ -257,11 +265,13 @@ docker system prune -a
 ### CI/CD Integration
 
 From Jenkins/GitHub Actions, upload to:
+
 ```
 http://YOUR_SERVER_IP/api/v1/upload
 ```
 
 Example:
+
 ```bash
 curl -X POST http://localhost/api/v1/upload \
   -F "file=@test-results.xml" \
@@ -328,6 +338,7 @@ docker stats
 **Need help?** See DEPLOYMENT_GUIDE.md for detailed documentation.
 
 **Ready to deploy?** Just run:
+
 ```bash
 cp .env.docker .env && nano .env && docker compose up -d
 ```

@@ -34,7 +34,7 @@ class JUnitDashboard {
         // File upload handlers
         const uploadZone = document.getElementById('upload-zone');
         const fileInput = document.getElementById('file-input');
-        
+
         if (uploadZone && fileInput) {
             uploadZone.addEventListener('dragover', this.handleDragOver.bind(this));
             uploadZone.addEventListener('drop', this.handleDrop.bind(this));
@@ -48,7 +48,7 @@ class JUnitDashboard {
         const searchInput = document.getElementById('search-input');
         const dateFilter = document.getElementById('date-filter');
         const clearFilters = document.getElementById('clear-filters');
-        
+
         if (runFilter) {
             runFilter.addEventListener('change', this.handleRunFilter.bind(this));
         }
@@ -103,7 +103,7 @@ class JUnitDashboard {
 
     async processFiles(files) {
         const xmlFiles = files.filter(file => file.name.endsWith('.xml'));
-        
+
         if (xmlFiles.length === 0) {
             this.showError('Please select JUnit XML files (.xml)');
             return;
@@ -115,15 +115,14 @@ class JUnitDashboard {
             for (const file of xmlFiles) {
                 const content = await this.readFileContent(file);
                 const result = await this.db.parseAndStoreJUnitXML(content, file.name);
-                
+
                 if (result.success) {
                     this.showSuccess(`Successfully processed ${file.name}`);
                 }
             }
-            
+
             this.hideUploadProgress();
             await this.loadDashboard();
-            
         } catch (error) {
             console.error('Error processing files:', error);
             this.showError('Error processing files: ' + error.message);
@@ -134,7 +133,7 @@ class JUnitDashboard {
     readFileContent(file) {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
-            reader.onload = (event) => resolve(event.target.result);
+            reader.onload = event => resolve(event.target.result);
             reader.onerror = () => reject(new Error('Failed to read file'));
             reader.readAsText(file);
         });
@@ -211,7 +210,9 @@ class JUnitDashboard {
 
     populateRunFilter(testRuns) {
         const runFilter = document.getElementById('run-filter');
-        if (!runFilter) return;
+        if (!runFilter) {
+            return;
+        }
 
         // Clear existing options except "All"
         runFilter.innerHTML = '<option value="all">All Test Runs</option>';
@@ -234,12 +235,24 @@ class JUnitDashboard {
             totalTime: document.getElementById('total-time')
         };
 
-        if (elements.total) elements.total.textContent = stats.total;
-        if (elements.passed) elements.passed.textContent = stats.passed;
-        if (elements.failed) elements.failed.textContent = stats.failed;
-        if (elements.error) elements.error.textContent = stats.error;
-        if (elements.skipped) elements.skipped.textContent = stats.skipped;
-        if (elements.totalTime) elements.totalTime.textContent = `${stats.total_time.toFixed(2)}s`;
+        if (elements.total) {
+            elements.total.textContent = stats.total;
+        }
+        if (elements.passed) {
+            elements.passed.textContent = stats.passed;
+        }
+        if (elements.failed) {
+            elements.failed.textContent = stats.failed;
+        }
+        if (elements.error) {
+            elements.error.textContent = stats.error;
+        }
+        if (elements.skipped) {
+            elements.skipped.textContent = stats.skipped;
+        }
+        if (elements.totalTime) {
+            elements.totalTime.textContent = `${stats.total_time.toFixed(2)}s`;
+        }
 
         // Animate counters
         this.animateCounters();
@@ -264,7 +277,9 @@ class JUnitDashboard {
 
     renderTestRuns(testRuns) {
         const container = document.getElementById('test-runs-container');
-        if (!container) return;
+        if (!container) {
+            return;
+        }
 
         if (testRuns.length === 0) {
             container.innerHTML = `
@@ -281,7 +296,9 @@ class JUnitDashboard {
             return;
         }
 
-        container.innerHTML = testRuns.map(run => `
+        container.innerHTML = testRuns
+            .map(
+                run => `
             <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow duration-200" data-run-id="${run.id}">
                 <div class="flex items-start justify-between mb-4">
                     <div class="flex-1">
@@ -310,21 +327,27 @@ class JUnitDashboard {
                 
                 <div class="flex items-center justify-between">
                     <div class="text-sm text-gray-600">
-                        Success Rate: ${run.total_tests > 0 ? Math.round((run.total_tests - run.total_failures - run.total_errors) / run.total_tests * 100) : 0}%
+                        Success Rate: ${run.total_tests > 0 ? Math.round(((run.total_tests - run.total_failures - run.total_errors) / run.total_tests) * 100) : 0}%
                     </div>
                     <button class="text-blue-600 hover:text-blue-800 text-sm font-medium" onclick="dashboard.viewDetails('${run.id}')">
                         View Details →
                     </button>
                 </div>
             </div>
-        `).join('');
+        `
+            )
+            .join('');
     }
 
     renderRecentUploads(uploads) {
         const container = document.getElementById('recent-uploads');
-        if (!container || uploads.length === 0) return;
+        if (!container || uploads.length === 0) {
+            return;
+        }
 
-        container.innerHTML = uploads.map(upload => `
+        container.innerHTML = uploads
+            .map(
+                upload => `
             <div class="flex items-center justify-between py-3 px-4 hover:bg-gray-50 rounded-lg">
                 <div class="flex-1 min-w-0">
                     <p class="text-sm font-medium text-gray-900 truncate">${upload.filename}</p>
@@ -336,7 +359,9 @@ class JUnitDashboard {
                     </span>
                 </div>
             </div>
-        `).join('');
+        `
+            )
+            .join('');
     }
 
     async getRecentUploads() {
@@ -362,10 +387,12 @@ class JUnitDashboard {
 
     initializeStatusChart(stats) {
         const chartContainer = document.getElementById('status-chart');
-        if (!chartContainer) return;
+        if (!chartContainer) {
+            return;
+        }
 
         const chart = echarts.init(chartContainer);
-        
+
         const option = {
             tooltip: {
                 trigger: 'item',
@@ -378,38 +405,40 @@ class JUnitDashboard {
                     fontSize: 12
                 }
             },
-            series: [{
-                name: 'Test Results',
-                type: 'pie',
-                radius: ['40%', '70%'],
-                center: ['60%', '50%'],
-                avoidLabelOverlap: false,
-                itemStyle: {
-                    borderRadius: 4,
-                    borderColor: '#fff',
-                    borderWidth: 2
-                },
-                label: {
-                    show: false,
-                    position: 'center'
-                },
-                emphasis: {
+            series: [
+                {
+                    name: 'Test Results',
+                    type: 'pie',
+                    radius: ['40%', '70%'],
+                    center: ['60%', '50%'],
+                    avoidLabelOverlap: false,
+                    itemStyle: {
+                        borderRadius: 4,
+                        borderColor: '#fff',
+                        borderWidth: 2
+                    },
                     label: {
-                        show: true,
-                        fontSize: '18',
-                        fontWeight: 'bold'
-                    }
-                },
-                labelLine: {
-                    show: false
-                },
-                data: [
-                    { value: stats.passed, name: 'Passed', itemStyle: { color: '#10b981' } },
-                    { value: stats.failed, name: 'Failed', itemStyle: { color: '#f59e0b' } },
-                    { value: stats.error, name: 'Error', itemStyle: { color: '#ef4444' } },
-                    { value: stats.skipped, name: 'Skipped', itemStyle: { color: '#6b7280' } }
-                ]
-            }]
+                        show: false,
+                        position: 'center'
+                    },
+                    emphasis: {
+                        label: {
+                            show: true,
+                            fontSize: '18',
+                            fontWeight: 'bold'
+                        }
+                    },
+                    labelLine: {
+                        show: false
+                    },
+                    data: [
+                        { value: stats.passed, name: 'Passed', itemStyle: { color: '#10b981' } },
+                        { value: stats.failed, name: 'Failed', itemStyle: { color: '#f59e0b' } },
+                        { value: stats.error, name: 'Error', itemStyle: { color: '#ef4444' } },
+                        { value: stats.skipped, name: 'Skipped', itemStyle: { color: '#6b7280' } }
+                    ]
+                }
+            ]
         };
 
         chart.setOption(option);
@@ -423,7 +452,9 @@ class JUnitDashboard {
 
     async initializeTrendChart() {
         const chartContainer = document.getElementById('trend-chart');
-        if (!chartContainer) return;
+        if (!chartContainer) {
+            return;
+        }
 
         const chart = echarts.init(chartContainer);
 
@@ -433,7 +464,8 @@ class JUnitDashboard {
 
             // If no data, show empty state
             if (!trends || trends.length === 0) {
-                chartContainer.innerHTML = '<div class="flex items-center justify-center h-full text-gray-500">No historical data available yet. Upload more test results to see trends.</div>';
+                chartContainer.innerHTML =
+                    '<div class="flex items-center justify-center h-full text-gray-500">No historical data available yet. Upload more test results to see trends.</div>';
                 return;
             }
 
@@ -442,30 +474,24 @@ class JUnitDashboard {
             const passedData = trends.map(t => t.passed || 0);
             const failedData = trends.map(t => (t.failed || 0) + (t.errors || 0));
             const totalTests = trends.map(t => t.total_tests || 0);
-        } catch (error) {
-            console.error('Error loading trend data:', error);
-            // Fallback to empty chart
-            chartContainer.innerHTML = '<div class="flex items-center justify-center h-full text-gray-500">Unable to load trend data</div>';
-            return;
-        }
 
-        const option = {
-            tooltip: {
-                trigger: 'axis',
-                axisPointer: {
-                    type: 'cross',
-                    label: {
-                        backgroundColor: '#6a7985'
-                    }
-                },
-                formatter: function(params) {
-                    const dataIndex = params[0].dataIndex;
-                    const total = totalTests[dataIndex];
-                    const passed = passedData[dataIndex];
-                    const failed = failedData[dataIndex];
-                    const successRate = total > 0 ? ((passed / total) * 100).toFixed(1) : 0;
+            const option = {
+                tooltip: {
+                    trigger: 'axis',
+                    axisPointer: {
+                        type: 'cross',
+                        label: {
+                            backgroundColor: '#6a7985'
+                        }
+                    },
+                    formatter: function (params) {
+                        const dataIndex = params[0].dataIndex;
+                        const total = totalTests[dataIndex];
+                        const passed = passedData[dataIndex];
+                        const failed = failedData[dataIndex];
+                        const successRate = total > 0 ? ((passed / total) * 100).toFixed(1) : 0;
 
-                    return `
+                        return `
                         <div style="font-size: 12px;">
                             <strong>${params[0].axisValue}</strong><br/>
                             Total Tests: ${total}<br/>
@@ -474,87 +500,99 @@ class JUnitDashboard {
                             <strong>Success Rate: ${successRate}%</strong>
                         </div>
                     `;
-                }
-            },
-            legend: {
-                data: ['Passed', 'Failed'],
-                textStyle: {
-                    fontSize: 12
-                }
-            },
-            grid: {
-                left: '3%',
-                right: '4%',
-                bottom: '3%',
-                containLabel: true
-            },
-            xAxis: [{
-                type: 'category',
-                boundaryGap: false,
-                data: dates,
-                axisLabel: {
-                    fontSize: 10
-                }
-            }],
-            yAxis: [{
-                type: 'value',
-                axisLabel: {
-                    fontSize: 10
-                }
-            }],
-            series: [
-                {
-                    name: 'Passed',
-                    type: 'line',
-                    stack: 'Total',
-                    smooth: true,
-                    lineStyle: {
-                        width: 3
-                    },
-                    areaStyle: {
-                        opacity: 0.3
-                    },
-                    emphasis: {
-                        focus: 'series'
-                    },
-                    data: passedData,
-                    itemStyle: {
-                        color: '#10b981'
                     }
                 },
-                {
-                    name: 'Failed',
-                    type: 'line',
-                    stack: 'Total',
-                    smooth: true,
-                    lineStyle: {
-                        width: 3
-                    },
-                    areaStyle: {
-                        opacity: 0.3
-                    },
-                    emphasis: {
-                        focus: 'series'
-                    },
-                    data: failedData,
-                    itemStyle: {
-                        color: '#f59e0b'
+                legend: {
+                    data: ['Passed', 'Failed'],
+                    textStyle: {
+                        fontSize: 12
                     }
-                }
-            ]
-        };
+                },
+                grid: {
+                    left: '3%',
+                    right: '4%',
+                    bottom: '3%',
+                    containLabel: true
+                },
+                xAxis: [
+                    {
+                        type: 'category',
+                        boundaryGap: false,
+                        data: dates,
+                        axisLabel: {
+                            fontSize: 10
+                        }
+                    }
+                ],
+                yAxis: [
+                    {
+                        type: 'value',
+                        axisLabel: {
+                            fontSize: 10
+                        }
+                    }
+                ],
+                series: [
+                    {
+                        name: 'Passed',
+                        type: 'line',
+                        stack: 'Total',
+                        smooth: true,
+                        lineStyle: {
+                            width: 3
+                        },
+                        areaStyle: {
+                            opacity: 0.3
+                        },
+                        emphasis: {
+                            focus: 'series'
+                        },
+                        data: passedData,
+                        itemStyle: {
+                            color: '#10b981'
+                        }
+                    },
+                    {
+                        name: 'Failed',
+                        type: 'line',
+                        stack: 'Total',
+                        smooth: true,
+                        lineStyle: {
+                            width: 3
+                        },
+                        areaStyle: {
+                            opacity: 0.3
+                        },
+                        emphasis: {
+                            focus: 'series'
+                        },
+                        data: failedData,
+                        itemStyle: {
+                            color: '#f59e0b'
+                        }
+                    }
+                ]
+            };
 
-        chart.setOption(option);
-        this.charts.trend = chart;
+            chart.setOption(option);
+            this.charts.trend = chart;
 
-        // Resize chart on window resize
-        window.addEventListener('resize', () => {
-            chart.resize();
-        });
+            // Resize chart on window resize
+            window.addEventListener('resize', () => {
+                chart.resize();
+            });
+        } catch (error) {
+            console.error('Error loading trend data:', error);
+            // Fallback to empty chart
+            chartContainer.innerHTML =
+                '<div class="flex items-center justify-center h-full text-gray-500">Unable to load trend data</div>';
+            return;
+        }
     }
 
     handleRunFilter(event) {
-        this.currentFilters.runId = event.target.value === 'all' ? null : parseInt(event.target.value);
+        this.currentFilters.runId =
+            event.target.value === 'all' ? null : parseInt(event.target.value);
         this.applyFilters();
     }
 
@@ -593,7 +631,9 @@ class JUnitDashboard {
 
     renderFilteredResults(testCases) {
         const container = document.getElementById('filtered-results');
-        if (!container) return;
+        if (!container) {
+            return;
+        }
 
         if (testCases.length === 0) {
             container.innerHTML = `
@@ -604,7 +644,9 @@ class JUnitDashboard {
             return;
         }
 
-        container.innerHTML = testCases.map(testCase => `
+        container.innerHTML = testCases
+            .map(
+                testCase => `
             <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow duration-200">
                 <div class="flex items-center justify-between mb-2">
                     <h4 class="text-sm font-medium text-gray-900 truncate">
@@ -629,7 +671,9 @@ class JUnitDashboard {
                     </div>
                 </div>
             </div>
-        `).join('');
+        `
+            )
+            .join('');
     }
 
     clearAllFilters() {
@@ -639,17 +683,25 @@ class JUnitDashboard {
             dateRange: null,
             runId: null
         };
-        
+
         const runFilter = document.getElementById('run-filter');
         const statusFilter = document.getElementById('status-filter');
         const searchInput = document.getElementById('search-input');
         const dateFilter = document.getElementById('date-filter');
-        
-        if (runFilter) runFilter.value = 'all';
-        if (statusFilter) statusFilter.value = 'all';
-        if (searchInput) searchInput.value = '';
-        if (dateFilter) dateFilter.value = 'all';
-        
+
+        if (runFilter) {
+            runFilter.value = 'all';
+        }
+        if (statusFilter) {
+            statusFilter.value = 'all';
+        }
+        if (searchInput) {
+            searchInput.value = '';
+        }
+        if (dateFilter) {
+            dateFilter.value = 'all';
+        }
+
         this.applyFilters();
     }
 
@@ -700,9 +752,9 @@ class JUnitDashboard {
             type === 'error' ? 'bg-red-500 text-white' : 'bg-green-500 text-white'
         }`;
         notification.textContent = message;
-        
+
         document.body.appendChild(notification);
-        
+
         setTimeout(() => {
             notification.remove();
         }, 5000);
@@ -731,7 +783,7 @@ class JUnitDashboard {
     }
 
     setupScrollAnimations() {
-        const observer = new IntersectionObserver((entries) => {
+        const observer = new IntersectionObserver(entries => {
             entries.forEach(entry => {
                 if (entry.isIntersecting) {
                     entry.target.style.opacity = '1';

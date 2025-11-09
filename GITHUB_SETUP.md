@@ -59,6 +59,7 @@ git push -u origin main
 ## Verify
 
 After pushing, visit your repository URL:
+
 ```
 https://github.com/YOUR_USERNAME/REPO_NAME
 ```
@@ -114,17 +115,17 @@ After pushing, consider:
 If you get an authentication error:
 
 1. **Personal Access Token**: GitHub no longer accepts passwords. Create a token:
-   - Go to GitHub Settings → Developer settings → Personal access tokens
-   - Generate new token (classic)
-   - Select scopes: `repo` (full control of private repositories)
-   - Copy the token and use it as your password
+    - Go to GitHub Settings → Developer settings → Personal access tokens
+    - Generate new token (classic)
+    - Select scopes: `repo` (full control of private repositories)
+    - Copy the token and use it as your password
 
 2. **Or use SSH**: Set up SSH keys for passwordless authentication
-   ```bash
-   ssh-keygen -t ed25519 -C "your_email@example.com"
-   cat ~/.ssh/id_ed25519.pub
-   # Copy the output and add to GitHub Settings → SSH Keys
-   ```
+    ```bash
+    ssh-keygen -t ed25519 -C "your_email@example.com"
+    cat ~/.ssh/id_ed25519.pub
+    # Copy the output and add to GitHub Settings → SSH Keys
+    ```
 
 ### Repository Already Exists
 

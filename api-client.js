@@ -1,6 +1,7 @@
 // JUnit Test Results Dashboard - API Client
 // MongoDB backend client
 
+/* eslint-disable no-redeclare */
 class JUnitAPIClient {
     constructor() {
         // Auto-detect API URL based on environment
@@ -23,7 +24,7 @@ class JUnitAPIClient {
         const port = window.location.port;
 
         // If accessing through standard ports (80/443), don't include port
-        const portPart = (port && port !== '80' && port !== '443') ? `:${port}` : '';
+        const portPart = port && port !== '80' && port !== '443' ? `:${port}` : '';
 
         // API is proxied through Nginx at /api/
         return `${protocol}//${hostname}${portPart}/api/v1`;
@@ -46,10 +47,12 @@ class JUnitAPIClient {
                 let errorObj;
                 try {
                     errorObj = JSON.parse(errorText);
-                } catch (e) {
+                } catch {
                     errorObj = { error: errorText };
                 }
-                throw new Error(errorObj.error || `HTTP ${response.status}: ${response.statusText}`);
+                throw new Error(
+                    errorObj.error || `HTTP ${response.status}: ${response.statusText}`
+                );
             }
 
             return await response.json();
@@ -139,10 +142,18 @@ class JUnitAPIClient {
     async getTestCases(filters = {}) {
         const params = new URLSearchParams();
 
-        if (filters.status) params.append('status', filters.status);
-        if (filters.suite_id) params.append('suite_id', filters.suite_id);
-        if (filters.run_id) params.append('run_id', filters.run_id);
-        if (filters.search) params.append('search', filters.search);
+        if (filters.status) {
+            params.append('status', filters.status);
+        }
+        if (filters.suite_id) {
+            params.append('suite_id', filters.suite_id);
+        }
+        if (filters.run_id) {
+            params.append('run_id', filters.run_id);
+        }
+        if (filters.search) {
+            params.append('search', filters.search);
+        }
 
         const response = await this.request(`/cases?${params.toString()}`);
 
@@ -188,8 +199,8 @@ class JUnitAPIClient {
     async getTestCaseHistory(testName, className) {
         // Search for test cases with matching name and classname
         const response = await this.request(`/cases?search=${encodeURIComponent(testName)}`);
-        const cases = response.data.cases.filter(c =>
-            c.name === testName && c.classname === className
+        const cases = response.data.cases.filter(
+            c => c.name === testName && c.classname === className
         );
 
         // Transform and sort by date
@@ -201,7 +212,12 @@ class JUnitAPIClient {
                 status: c.status,
                 time: c.time || 0,
                 timestamp: c.created_at,
-                is_flaky: c.is_flaky || false
+                is_flaky: c.is_flaky || false,
+                run_id: c.run_id,
+                suite_id: c.suite_id,
+                failure_message: c.result?.failure_message || '',
+                failure_type: c.result?.failure_type || '',
+                stack_trace: c.result?.stack_trace || ''
             }))
             .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
     }
@@ -355,7 +371,9 @@ class JUnitAPIClient {
 
     showConnectionError() {
         const existingError = document.getElementById('api-connection-error');
-        if (existingError) return;
+        if (existingError) {
+            return;
+        }
 
         const errorDiv = document.createElement('div');
         errorDiv.id = 'api-connection-error';
@@ -394,3 +412,4 @@ class JUnitAPIClient {
 // Export for use in other modules
 window.JUnitDatabase = JUnitAPIClient;
 window.JUnitAPIClient = JUnitAPIClient;
+/* eslint-enable no-redeclare */

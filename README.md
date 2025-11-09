@@ -5,6 +5,7 @@ A comprehensive web-based dashboard for viewing, analyzing, and managing JUnit t
 ## Features
 
 ### Core Features
+
 - 📊 **Interactive Dashboard** - View test results with beautiful charts and visualizations
 - 🔄 **CI/CD Integration** - Direct API access from Jenkins, GitHub Actions, and other CI/CD tools
 - 📈 **Real Trend Analysis** - Track test success rates and execution times with actual historical data
@@ -14,6 +15,7 @@ A comprehensive web-based dashboard for viewing, analyzing, and managing JUnit t
 - 🚀 **Production Ready** - PM2 process management and Nginx reverse proxy
 
 ### Advanced Analytics (NEW! ⭐)
+
 - 📜 **Test Case History** - View complete execution history for any test with timeline charts
 - 🎯 **Flaky Test Management** - Dedicated page to track and manage flaky tests with failure rates
 - 🔔 **Actionable Insights** - Automatic detection of new failures, regressions, and issues
@@ -108,9 +110,9 @@ See [ci-cd-examples/Jenkinsfile](ci-cd-examples/Jenkinsfile) for complete exampl
 ```yaml
 - name: Upload test results
   run: |
-    curl -X POST ${{ secrets.JUNIT_API_URL }}/api/v1/upload \
-      -F "file=@test-results.xml" \
-      -F 'ci_metadata={"provider":"github_actions","build_id":"${{ github.run_id }}"}'
+      curl -X POST ${{ secrets.JUNIT_API_URL }}/api/v1/upload \
+        -F "file=@test-results.xml" \
+        -F 'ci_metadata={"provider":"github_actions","build_id":"${{ github.run_id }}"}'
 ```
 
 See [ci-cd-examples/github-actions.yml](ci-cd-examples/github-actions.yml) for complete workflow.
@@ -304,6 +306,7 @@ See [INSTALLATION.md](INSTALLATION.md#security-recommendations) for security bes
 ## Technology Stack
 
 ### Backend
+
 - Node.js 20 LTS
 - Express.js 4.x
 - MongoDB 7.0
@@ -311,12 +314,14 @@ See [INSTALLATION.md](INSTALLATION.md#security-recommendations) for security bes
 - PM2 (process manager)
 
 ### Frontend
+
 - HTML5, CSS3, JavaScript (ES6+)
 - Tailwind CSS
 - ECharts.js (charts)
 - Anime.js (animations)
 
 ### Infrastructure
+
 - Nginx (reverse proxy)
 - Ubuntu 24.04 LTS
 
@@ -331,6 +336,7 @@ This is a self-hosted solution. Feel free to customize for your needs.
 ## Support
 
 For issues or questions:
+
 1. Check [INSTALLATION.md](INSTALLATION.md#troubleshooting)
 2. Review backend logs: `pm2 logs junit-dashboard-api`
 3. Check MongoDB logs: `sudo tail -f /var/log/mongodb/mongod.log`
@@ -338,6 +344,7 @@ For issues or questions:
 ## Changelog
 
 ### Version 2.0 (Phase 1 Implementation)
+
 - ✅ MongoDB backend implementation
 - ✅ RESTful API with Express.js
 - ✅ CI/CD integration (Jenkins, GitHub Actions)
@@ -348,6 +355,7 @@ For issues or questions:
 - ✅ Comprehensive documentation
 
 ### Version 1.0 (Original)
+
 - Client-side IndexedDB implementation
 - Static file dashboard
 - Manual file upload only
