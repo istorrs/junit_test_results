@@ -86,7 +86,9 @@ class InsightsPanel {
             const latestCases = await this.db.getTestCases({ run_id: latestRun.id });
             const previousCases = await this.db.getTestCases({ run_id: previousRun.id });
 
-            const latestFailed = latestCases.filter(c => c.status === 'failed' || c.status === 'error');
+            const latestFailed = latestCases.filter(
+                c => c.status === 'failed' || c.status === 'error'
+            );
             const previousFailed = new Set(
                 previousCases
                     .filter(c => c.status === 'failed' || c.status === 'error')
@@ -114,18 +116,22 @@ class InsightsPanel {
                 flakyTests.slice(0, 5).map(async test => {
                     const history = await this.db.getTestCaseHistory(test.name, test.classname);
                     const recentHistory = history.slice(0, 10);
-                    const failureCount = recentHistory.filter(h => h.status === 'failed' || h.status === 'error').length;
+                    const failureCount = recentHistory.filter(
+                        h => h.status === 'failed' || h.status === 'error'
+                    ).length;
 
                     return {
                         ...test,
                         failureCount,
                         totalRuns: recentHistory.length,
-                        failureRate: (failureCount / recentHistory.length * 100).toFixed(1)
+                        failureRate: ((failureCount / recentHistory.length) * 100).toFixed(1)
                     };
                 })
             );
 
-            return enrichedTests.filter(t => t.failureCount > 0).sort((a, b) => b.failureRate - a.failureRate);
+            return enrichedTests
+                .filter(t => t.failureCount > 0)
+                .sort((a, b) => b.failureRate - a.failureRate);
         } catch (error) {
             console.error('Error detecting flaky tests:', error);
             return [];
@@ -148,20 +154,29 @@ class InsightsPanel {
 
             for (const testCase of recentCases) {
                 try {
-                    const history = await this.db.getTestCaseHistory(testCase.name, testCase.classname);
+                    const history = await this.db.getTestCaseHistory(
+                        testCase.name,
+                        testCase.classname
+                    );
 
-                    if (history.length < 5) continue;
+                    if (history.length < 5) {
+                        continue;
+                    }
 
                     // Compare recent 3 runs vs previous 5 runs
                     const recent = history.slice(0, 3);
                     const previous = history.slice(3, 8);
 
-                    const recentAvg = recent.reduce((sum, h) => sum + (h.time || 0), 0) / recent.length;
-                    const previousAvg = previous.reduce((sum, h) => sum + (h.time || 0), 0) / previous.length;
+                    const recentAvg =
+                        recent.reduce((sum, h) => sum + (h.time || 0), 0) / recent.length;
+                    const previousAvg =
+                        previous.reduce((sum, h) => sum + (h.time || 0), 0) / previous.length;
 
-                    if (previousAvg === 0) continue;
+                    if (previousAvg === 0) {
+                        continue;
+                    }
 
-                    const percentageChange = ((recentAvg - previousAvg) / previousAvg * 100);
+                    const percentageChange = ((recentAvg - previousAvg) / previousAvg) * 100;
 
                     // Flag if more than 20% slower
                     if (percentageChange > 20) {
@@ -172,13 +187,15 @@ class InsightsPanel {
                             percentageChange: percentageChange.toFixed(1)
                         });
                     }
-                } catch (error) {
+                } catch {
                     // Skip this test if history fails
                     continue;
                 }
             }
 
-            return regressions.sort((a, b) => parseFloat(b.percentageChange) - parseFloat(a.percentageChange)).slice(0, 3);
+            return regressions
+                .sort((a, b) => parseFloat(b.percentageChange) - parseFloat(a.percentageChange))
+                .slice(0, 3);
         } catch (error) {
             console.error('Error detecting performance regressions:', error);
             return [];
@@ -187,15 +204,18 @@ class InsightsPanel {
 
     async detectUnhealthySuites(latestRun) {
         try {
-            if (!latestRun) return [];
+            if (!latestRun) {
+                return [];
+            }
 
             const suites = await this.db.getTestSuites(latestRun.id);
 
             const unhealthySuites = suites
                 .map(suite => {
-                    const successRate = suite.tests > 0
-                        ? ((suite.tests - suite.failures - suite.errors) / suite.tests * 100)
-                        : 0;
+                    const successRate =
+                        suite.tests > 0
+                            ? ((suite.tests - suite.failures - suite.errors) / suite.tests) * 100
+                            : 0;
 
                     return {
                         ...suite,
@@ -215,7 +235,9 @@ class InsightsPanel {
 
     render(containerId) {
         const container = document.getElementById(containerId);
-        if (!container) return;
+        if (!container) {
+            return;
+        }
 
         if (this.insights.length === 0) {
             container.innerHTML = `
@@ -263,7 +285,9 @@ class InsightsPanel {
                     Requires Attention (${this.insights.length})
                 </h3>
                 <div class="space-y-4">
-                    ${this.insights.map(insight => `
+                    ${this.insights
+                        .map(
+                            insight => `
                         <div class="border ${severityColors[insight.severity]} rounded-lg p-4">
                             <div class="flex items-start">
                                 <div class="flex-shrink-0">
@@ -284,7 +308,9 @@ class InsightsPanel {
                                 </div>
                             </div>
                         </div>
-                    `).join('')}
+                    `
+                        )
+                        .join('')}
                 </div>
             </div>
         `;

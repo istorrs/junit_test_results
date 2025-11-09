@@ -59,12 +59,17 @@ class TestCaseHistoryPage {
     updateSummaryCards() {
         const totalRuns = this.historyData.length;
         const passedRuns = this.historyData.filter(h => h.status === 'passed').length;
-        const failedRuns = this.historyData.filter(h => h.status === 'failed' || h.status === 'error').length;
-        const successRate = totalRuns > 0 ? (passedRuns / totalRuns * 100).toFixed(1) : 0;
+        const failedRuns = this.historyData.filter(
+            h => h.status === 'failed' || h.status === 'error'
+        ).length;
+        const successRate = totalRuns > 0 ? ((passedRuns / totalRuns) * 100).toFixed(1) : 0;
 
-        const avgDuration = totalRuns > 0
-            ? (this.historyData.reduce((sum, h) => sum + (h.time || 0), 0) / totalRuns).toFixed(2)
-            : 0;
+        const avgDuration =
+            totalRuns > 0
+                ? (this.historyData.reduce((sum, h) => sum + (h.time || 0), 0) / totalRuns).toFixed(
+                      2
+                  )
+                : 0;
 
         // Check if test is flaky (has both passes and failures)
         const isFlaky = passedRuns > 0 && failedRuns > 0;
@@ -106,13 +111,15 @@ class TestCaseHistoryPage {
             <span class="px-3 py-1 text-sm font-medium rounded-full ${statusColors[latestStatus] || 'bg-gray-100 text-gray-800'}">
                 Latest: ${latestStatus.toUpperCase()}
             </span>
-            ${(isFlaky || flakyStatus) ? '<span class="px-3 py-1 text-sm font-medium rounded-full bg-yellow-100 text-yellow-800">⚠️ FLAKY</span>' : ''}
+            ${isFlaky || flakyStatus ? '<span class="px-3 py-1 text-sm font-medium rounded-full bg-yellow-100 text-yellow-800">⚠️ FLAKY</span>' : ''}
         `;
     }
 
     renderTimelineChart() {
         const chartContainer = document.getElementById('timeline-chart');
-        if (!chartContainer) return;
+        if (!chartContainer) {
+            return;
+        }
 
         const chart = echarts.init(chartContainer);
 
@@ -123,17 +130,17 @@ class TestCaseHistoryPage {
         // Create series data with colors based on status
         const seriesData = recentData.map(h => {
             const statusValues = {
-                'passed': 1,
-                'failed': 0.33,
-                'error': 0.66,
-                'skipped': 0
+                passed: 1,
+                failed: 0.33,
+                error: 0.66,
+                skipped: 0
             };
 
             const colors = {
-                'passed': '#10b981',
-                'failed': '#ef4444',
-                'error': '#f59e0b',
-                'skipped': '#6b7280'
+                passed: '#10b981',
+                failed: '#ef4444',
+                error: '#f59e0b',
+                skipped: '#6b7280'
             };
 
             return {
@@ -150,7 +157,7 @@ class TestCaseHistoryPage {
         const option = {
             tooltip: {
                 trigger: 'axis',
-                formatter: function(params) {
+                formatter: function (params) {
                     const data = params[0].data;
                     return `
                         <div style="font-size: 12px;">
@@ -181,14 +188,16 @@ class TestCaseHistoryPage {
                 min: 0,
                 max: 1
             },
-            series: [{
-                type: 'scatter',
-                data: seriesData,
-                symbolSize: 12,
-                label: {
-                    show: false
+            series: [
+                {
+                    type: 'scatter',
+                    data: seriesData,
+                    symbolSize: 12,
+                    label: {
+                        show: false
+                    }
                 }
-            }]
+            ]
         };
 
         chart.setOption(option);
@@ -199,7 +208,9 @@ class TestCaseHistoryPage {
 
     renderPerformanceChart() {
         const chartContainer = document.getElementById('performance-chart');
-        if (!chartContainer) return;
+        if (!chartContainer) {
+            return;
+        }
 
         const chart = echarts.init(chartContainer);
 
@@ -210,13 +221,15 @@ class TestCaseHistoryPage {
 
         // Calculate average and standard deviation for regression detection
         const avgDuration = durations.reduce((sum, d) => sum + parseFloat(d), 0) / durations.length;
-        const variance = durations.reduce((sum, d) => sum + Math.pow(parseFloat(d) - avgDuration, 2), 0) / durations.length;
+        const variance =
+            durations.reduce((sum, d) => sum + Math.pow(parseFloat(d) - avgDuration, 2), 0) /
+            durations.length;
         const stdDev = Math.sqrt(variance);
 
         // Detect performance trend
         const recentAvg = durations.slice(-5).reduce((sum, d) => sum + parseFloat(d), 0) / 5;
         const oldAvg = durations.slice(0, 5).reduce((sum, d) => sum + parseFloat(d), 0) / 5;
-        const trendPercentage = oldAvg > 0 ? ((recentAvg - oldAvg) / oldAvg * 100).toFixed(1) : 0;
+        const trendPercentage = oldAvg > 0 ? (((recentAvg - oldAvg) / oldAvg) * 100).toFixed(1) : 0;
 
         // Update trend indicator
         const trendIndicator = document.getElementById('performance-trend-indicator');
@@ -231,7 +244,7 @@ class TestCaseHistoryPage {
         const option = {
             tooltip: {
                 trigger: 'axis',
-                formatter: function(params) {
+                formatter: function (params) {
                     return `
                         <div style="font-size: 12px;">
                             <strong>${params[0].axisValue}</strong><br/>
@@ -327,7 +340,9 @@ class TestCaseHistoryPage {
     }
 
     renderFailureAnalysis() {
-        const failures = this.historyData.filter(h => h.status === 'failed' || h.status === 'error');
+        const failures = this.historyData.filter(
+            h => h.status === 'failed' || h.status === 'error'
+        );
 
         if (failures.length === 0) {
             document.getElementById('failure-analysis-section').style.display = 'none';
@@ -360,10 +375,12 @@ class TestCaseHistoryPage {
         content.innerHTML = `
             <div class="space-y-4">
                 <div class="text-sm text-gray-600 mb-4">
-                    Total Failures: ${failures.length} / ${this.historyData.length} runs (${(failures.length / this.historyData.length * 100).toFixed(1)}%)
+                    Total Failures: ${failures.length} / ${this.historyData.length} runs (${((failures.length / this.historyData.length) * 100).toFixed(1)}%)
                 </div>
                 <h4 class="font-semibold text-gray-900 mb-2">Most Common Failure Messages:</h4>
-                ${sortedFailures.map(([message, data]) => `
+                ${sortedFailures
+                    .map(
+                        ([message, data]) => `
                     <div class="bg-red-50 border border-red-200 rounded-lg p-4">
                         <div class="flex items-start justify-between mb-2">
                             <div class="flex-1">
@@ -377,14 +394,18 @@ class TestCaseHistoryPage {
                             Last occurred: ${new Date(data.lastOccurrence).toLocaleDateString()}
                         </p>
                     </div>
-                `).join('')}
+                `
+                    )
+                    .join('')}
             </div>
         `;
     }
 
     renderHistoryTable() {
         const tableBody = document.getElementById('history-table-body');
-        if (!tableBody) return;
+        if (!tableBody) {
+            return;
+        }
 
         const statusColors = {
             passed: 'text-green-800 bg-green-100',
@@ -393,7 +414,9 @@ class TestCaseHistoryPage {
             skipped: 'text-gray-800 bg-gray-100'
         };
 
-        tableBody.innerHTML = this.historyData.map(item => `
+        tableBody.innerHTML = this.historyData
+            .map(
+                item => `
             <tr class="hover:bg-gray-50">
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     ${new Date(item.timestamp).toLocaleString()}
@@ -417,7 +440,9 @@ class TestCaseHistoryPage {
                     </button>
                 </td>
             </tr>
-        `).join('');
+        `
+            )
+            .join('');
     }
 
     setupEventListeners() {
@@ -450,7 +475,9 @@ class TestCaseHistoryPage {
             skipped: 'text-gray-800 bg-gray-100'
         };
 
-        tableBody.innerHTML = filteredData.map(item => `
+        tableBody.innerHTML = filteredData
+            .map(
+                item => `
             <tr class="hover:bg-gray-50">
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     ${new Date(item.timestamp).toLocaleString()}
@@ -474,7 +501,9 @@ class TestCaseHistoryPage {
                     </button>
                 </td>
             </tr>
-        `).join('');
+        `
+            )
+            .join('');
     }
 
     viewTestDetails(testCaseId) {
