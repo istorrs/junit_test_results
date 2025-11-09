@@ -4,14 +4,22 @@ A comprehensive web-based dashboard for viewing, analyzing, and managing JUnit t
 
 ## Features
 
+### Core Features
 - 📊 **Interactive Dashboard** - View test results with beautiful charts and visualizations
 - 🔄 **CI/CD Integration** - Direct API access from Jenkins, GitHub Actions, and other CI/CD tools
-- 📈 **Trend Analysis** - Track test success rates and execution times over time
+- 📈 **Real Trend Analysis** - Track test success rates and execution times with actual historical data
 - 🔍 **Advanced Filtering** - Search and filter tests by status, name, date, and more
-- 🎯 **Flaky Test Detection** - Automatically identify tests that fail intermittently
 - 📁 **Batch Upload** - Upload multiple JUnit XML files at once
 - 🗄️ **MongoDB Backend** - Scalable database for storing test history
 - 🚀 **Production Ready** - PM2 process management and Nginx reverse proxy
+
+### Advanced Analytics (NEW! ⭐)
+- 📜 **Test Case History** - View complete execution history for any test with timeline charts
+- 🎯 **Flaky Test Management** - Dedicated page to track and manage flaky tests with failure rates
+- 🔔 **Actionable Insights** - Automatic detection of new failures, regressions, and issues
+- ⚡ **Performance Tracking** - Monitor test execution times and detect performance regressions
+- 📉 **Failure Analysis** - Automatic grouping and analysis of common failure patterns
+- 🎨 **Visual Indicators** - Flaky badges, trend indicators, and severity-based alerts
 
 ## Architecture
 
