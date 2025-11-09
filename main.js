@@ -404,23 +404,32 @@ class JUnitDashboard {
         });
     }
 
-    initializeTrendChart() {
+    async initializeTrendChart() {
         const chartContainer = document.getElementById('trend-chart');
         if (!chartContainer) return;
 
         const chart = echarts.init(chartContainer);
-        
-        // Mock trend data - in real implementation, this would come from historical data
-        const dates = [];
-        const passedData = [];
-        const failedData = [];
-        
-        for (let i = 6; i >= 0; i--) {
-            const date = new Date();
-            date.setDate(date.getDate() - i);
-            dates.push(date.toLocaleDateString());
-            passedData.push(Math.floor(Math.random() * 50) + 80);
-            failedData.push(Math.floor(Math.random() * 20) + 5);
+
+        try {
+            // Fetch real trend data from API
+            const trends = await this.db.getTrends({ limit: 30 });
+
+            // If no data, show empty state
+            if (!trends || trends.length === 0) {
+                chartContainer.innerHTML = '<div class="flex items-center justify-center h-full text-gray-500">No historical data available yet. Upload more test results to see trends.</div>';
+                return;
+            }
+
+            // Prepare data from API response
+            const dates = trends.map(t => new Date(t.date).toLocaleDateString());
+            const passedData = trends.map(t => t.passed || 0);
+            const failedData = trends.map(t => (t.failed || 0) + (t.errors || 0));
+            const totalTests = trends.map(t => t.total_tests || 0);
+        } catch (error) {
+            console.error('Error loading trend data:', error);
+            // Fallback to empty chart
+            chartContainer.innerHTML = '<div class="flex items-center justify-center h-full text-gray-500">Unable to load trend data</div>';
+            return;
         }
 
         const option = {
@@ -431,6 +440,23 @@ class JUnitDashboard {
                     label: {
                         backgroundColor: '#6a7985'
                     }
+                },
+                formatter: function(params) {
+                    const dataIndex = params[0].dataIndex;
+                    const total = totalTests[dataIndex];
+                    const passed = passedData[dataIndex];
+                    const failed = failedData[dataIndex];
+                    const successRate = total > 0 ? ((passed / total) * 100).toFixed(1) : 0;
+
+                    return `
+                        <div style="font-size: 12px;">
+                            <strong>${params[0].axisValue}</strong><br/>
+                            Total Tests: ${total}<br/>
+                            <span style="color: #10b981;">● Passed: ${passed}</span><br/>
+                            <span style="color: #f59e0b;">● Failed: ${failed}</span><br/>
+                            <strong>Success Rate: ${successRate}%</strong>
+                        </div>
+                    `;
                 }
             },
             legend: {
@@ -566,7 +592,7 @@ class JUnitDashboard {
                 <div class="flex items-center justify-between mb-2">
                     <h4 class="text-sm font-medium text-gray-900 truncate">
                         ${testCase.name}
-                        ${testCase.is_flaky ? '<span class="ml-2 px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">FLAKY</span>' : ''}
+                        ${testCase.is_flaky ? '<span class="ml-2 px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">⚠️ FLAKY</span>' : ''}
                     </h4>
                     <span class="px-2 py-1 text-xs font-medium rounded-full ${this.getStatusColorClass(testCase.status)}">
                         ${testCase.status}
@@ -576,9 +602,14 @@ class JUnitDashboard {
                 <div class="flex items-center justify-between text-xs text-gray-500">
                     <span>${testCase.time.toFixed(3)}s</span>
                     <span>${testCase.assertions} assertions</span>
-                    <button class="text-blue-600 hover:text-blue-800 text-xs font-medium" onclick="dashboard.viewTestDetails('${testCase.id}')">
-                        View Details →
-                    </button>
+                    <div class="flex gap-2">
+                        <button class="text-green-600 hover:text-green-800 font-medium" onclick="dashboard.viewTestHistory('${testCase.name.replace(/'/g, "\\'")}', '${testCase.classname.replace(/'/g, "\\'")}')">
+                            📊 History
+                        </button>
+                        <button class="text-blue-600 hover:text-blue-800 font-medium" onclick="dashboard.viewTestDetails('${testCase.id}')">
+                            Details →
+                        </button>
+                    </div>
                 </div>
             </div>
         `).join('');
@@ -627,6 +658,15 @@ class JUnitDashboard {
         } else {
             alert('Test details modal not initialized');
         }
+    }
+
+    viewTestHistory(testName, testClass) {
+        // Navigate to test case history page
+        const params = new URLSearchParams({
+            name: testName,
+            classname: testClass
+        });
+        window.location.href = `test-case-history.html?${params.toString()}`;
     }
 
     showError(message) {
