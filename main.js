@@ -173,6 +173,7 @@ class JUnitDashboard {
             this.renderRecentUploads(recentUploads);
             this.populateRunFilter(testRuns);
             this.initializeCharts(statistics);
+            await this.loadInsights();
         } catch (error) {
             console.error('Error loading dashboard:', error);
             console.error('Error details:', {
@@ -192,13 +193,29 @@ class JUnitDashboard {
         }
     }
 
+    async loadInsights() {
+        try {
+            if (typeof InsightsPanel === 'undefined') {
+                console.warn('InsightsPanel not loaded');
+                return;
+            }
+
+            const insightsPanel = new InsightsPanel(this.db);
+            await insightsPanel.loadInsights();
+            insightsPanel.render('insights-panel');
+        } catch (error) {
+            console.error('Error loading insights:', error);
+            // Don't show error to user, just log it
+        }
+    }
+
     populateRunFilter(testRuns) {
         const runFilter = document.getElementById('run-filter');
         if (!runFilter) return;
 
         // Clear existing options except "All"
         runFilter.innerHTML = '<option value="all">All Test Runs</option>';
-        
+
         testRuns.forEach(run => {
             const option = document.createElement('option');
             option.value = run.id;
