@@ -1,0 +1,85 @@
+pipeline {
+    agent any
+
+    environment {
+        JUNIT_API_URL = 'http://your-ubuntu-server:5000/api/v1/upload'
+        // Or use your server IP: http://192.168.1.100:5000/api/v1/upload
+    }
+
+    stages {
+        stage('Build') {
+            steps {
+                echo 'Building application...'
+                // Your build steps here
+                // Example for Maven:
+                // sh 'mvn clean compile'
+                // Example for Gradle:
+                // sh './gradlew build'
+            }
+        }
+
+        stage('Test') {
+            steps {
+                echo 'Running tests...'
+                // Example for Maven:
+                // sh 'mvn test'
+                // Example for Gradle:
+                // sh './gradlew test'
+                // Example for npm:
+                // sh 'npm test'
+            }
+        }
+
+        stage('Upload Test Results') {
+            steps {
+                script {
+                    // Prepare CI metadata
+                    def ciMetadata = """
+                    {
+                        "provider": "jenkins",
+                        "build_id": "${env.BUILD_ID}",
+                        "build_url": "${env.BUILD_URL}",
+                        "job_name": "${env.JOB_NAME}",
+                        "commit_sha": "${env.GIT_COMMIT}",
+                        "branch": "${env.GIT_BRANCH}",
+                        "repository": "${env.GIT_URL}"
+                    }
+                    """
+
+                    // Find and upload all JUnit XML files
+                    sh '''
+                        # For Maven projects (adjust path as needed)
+                        find . -name "*.xml" -path "*/target/surefire-reports/*" | while read xmlfile; do
+                            echo "Uploading $xmlfile..."
+                            curl -X POST ''' + env.JUNIT_API_URL + ''' \
+                                -F "file=@$xmlfile" \
+                                -F 'ci_metadata=''' + ciMetadata + '''' \
+                                --fail --silent --show-error || echo "Failed to upload $xmlfile"
+                        done
+
+                        # For Gradle projects (adjust path as needed)
+                        find . -name "*.xml" -path "*/build/test-results/*" | while read xmlfile; do
+                            echo "Uploading $xmlfile..."
+                            curl -X POST ''' + env.JUNIT_API_URL + ''' \
+                                -F "file=@$xmlfile" \
+                                -F 'ci_metadata=''' + ciMetadata + '''' \
+                                --fail --silent --show-error || echo "Failed to upload $xmlfile"
+                        done
+                    '''
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            echo 'Pipeline completed'
+        }
+        success {
+            echo 'Build and tests succeeded! Test results uploaded to dashboard.'
+        }
+        failure {
+            echo 'Build or tests failed. Check the dashboard for details.'
+        }
+    }
+}

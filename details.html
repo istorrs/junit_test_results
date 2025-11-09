@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Details - JUnit Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.4.3/echarts.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-clike.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-java.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            min-height: 100vh;
+        }
+        
+        .code-font {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        
+        .test-case-card {
+            transition: all 0.3s ease;
+            border-left: 4px solid transparent;
+        }
+        
+        .test-case-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        }
+        
+        .test-case-card.passed {
+            border-left-color: #10b981;
+        }
+        
+        .test-case-card.failed {
+            border-left-color: #ef4444;
+        }
+        
+        .test-case-card.error {
+            border-left-color: #f59e0b;
+        }
+        
+        .test-case-card.skipped {
+            border-left-color: #6b7280;
+        }
+        
+        .stack-trace {
+            background: #1a1a1a;
+            color: #e5e5e5;
+            border-radius: 8px;
+            padding: 16px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            overflow-x: auto;
+        }
+        
+        .performance-chart {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+        }
+        
+        .nav-link {
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        
+        .nav-link:hover {
+            color: #3b82f6;
+        }
+        
+        .nav-link.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: #3b82f6;
+            border-radius: 1px;
+        }
+        
+        .expandable-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+        
+        .expandable-content.expanded {
+            max-height: 1000px;
+        }
+        
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .status-badge.passed {
+            background: #dcfce7;
+            color: #166534;
+        }
+        
+        .status-badge.failed {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        
+        .status-badge.error {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        
+        .status-badge.skipped {
+            background: #f3f4f6;
+            color: #374151;
+        }
+        
+        .metric-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+        }
+        
+        .metric-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <h1 class="text-xl font-bold text-gray-900">JUnit Dashboard</h1>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-8">
+                    <a href="index.html" class="nav-link text-gray-600 hover:text-gray-900 font-medium">Dashboard</a>
+                    <a href="details.html" class="nav-link active text-gray-900 font-medium">Details</a>
+                    <a href="reports.html" class="nav-link text-gray-600 hover:text-gray-900 font-medium">Reports</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Header -->
+    <div class="bg-white shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900">Test Run Details</h1>
+                    <p class="text-gray-600 mt-1" id="run-info">Loading test run information...</p>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button id="export-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200">
+                        Export Results
+                    </button>
+                    <button onclick="history.back()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-medium transition-colors duration-200">
+                        ← Back
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Summary Cards -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
+            <div class="metric-card rounded-lg p-6 text-center">
+                <div class="text-3xl font-bold text-gray-900 mb-1" id="total-tests-summary">-</div>
+                <div class="text-sm text-gray-600">Total Tests</div>
+            </div>
+            <div class="metric-card rounded-lg p-6 text-center">
+                <div class="text-3xl font-bold text-green-600 mb-1" id="passed-tests-summary">-</div>
+                <div class="text-sm text-gray-600">Passed</div>
+            </div>
+            <div class="metric-card rounded-lg p-6 text-center">
+                <div class="text-3xl font-bold text-red-600 mb-1" id="failed-tests-summary">-</div>
+                <div class="text-sm text-gray-600">Failed</div>
+            </div>
+            <div class="metric-card rounded-lg p-6 text-center">
+                <div class="text-3xl font-bold text-blue-600 mb-1" id="total-time-summary">-</div>
+                <div class="text-sm text-gray-600">Total Time</div>
+            </div>
+        </div>
+
+        <!-- Performance Chart -->
+        <div class="performance-chart p-6 mb-8">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Test Execution Performance</h3>
+            <div id="performance-chart" style="height: 300px;"></div>
+        </div>
+
+        <!-- Test Suites -->
+        <div class="mb-8">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-2xl font-bold text-gray-900">Test Suites</h2>
+                <div class="flex items-center space-x-4">
+                    <select id="suite-filter" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="all">All Suites</option>
+                    </select>
+                    <button id="expand-all" class="text-blue-600 hover:text-blue-800 font-medium">Expand All</button>
+                </div>
+            </div>
+            <div id="test-suites-container">
+                <!-- Test suites will be populated here -->
+            </div>
+        </div>
+
+        <!-- Failed Tests Analysis -->
+        <div id="failed-tests-section" class="bg-white rounded-lg shadow-sm border border-gray-200 mb-8" style="display: none;">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-900">Failed Tests Analysis</h3>
+            </div>
+            <div id="failed-tests-container" class="p-6">
+                <!-- Failed tests will be populated here -->
+            </div>
+        </div>
+
+        <!-- Test Case List -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-lg font-semibold text-gray-900">Test Cases</h3>
+                    <div class="flex items-center space-x-4">
+                        <select id="status-filter" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="all">All Status</option>
+                            <option value="passed">Passed</option>
+                            <option value="failed">Failed</option>
+                            <option value="error">Error</option>
+                            <option value="skipped">Skipped</option>
+                        </select>
+                        <input type="text" id="test-search" placeholder="Search tests..." class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                </div>
+            </div>
+            <div id="test-cases-container" class="divide-y divide-gray-200">
+                <!-- Test cases will be populated here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-gray-200 mt-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div class="text-center text-gray-600">
+                <p>&copy; 2025 JUnit Test Results Dashboard. Built with modern web technologies.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Load Scripts -->
+    <script src="api-client.js"></script>
+    <script src="test-details-modal.js"></script>
+    <script>
+        class TestDetailsPage {
+            constructor() {
+                this.db = new JUnitAPIClient();
+                this.runId = null;
+                this.testSuites = [];
+                this.testCases = [];
+                this.init();
+            }
+
+            async init() {
+                try {
+                    this.runId = this.getRunIdFromUrl();
+                    if (this.runId) {
+                        await this.loadTestRunDetails();
+                    } else {
+                        this.showError('No test run specified');
+                    }
+                    this.setupEventListeners();
+                } catch (error) {
+                    console.error('Failed to initialize details page:', error);
+                    this.showError('Failed to load test details');
+                }
+            }
+
+            getRunIdFromUrl() {
+                const urlParams = new URLSearchParams(window.location.search);
+                return urlParams.get('run') || null;
+            }
+
+            async loadTestRunDetails() {
+                const [testRun, testSuites, testCases, statistics] = await Promise.all([
+                    this.getTestRun(this.runId),
+                    this.db.getTestSuites(this.runId),
+                    this.db.getTestCases({ run_id: this.runId }),
+                    this.db.getTestStatistics(this.runId)
+                ]);
+
+                this.testSuites = testSuites;
+                this.testCases = testCases;
+
+                this.updateRunInfo(testRun);
+                this.updateSummaryCards(statistics);
+                this.renderTestSuites();
+                this.renderTestCases();
+                this.initializePerformanceChart();
+                this.renderFailedTestsAnalysis();
+            }
+
+            async getTestRun(runId) {
+                const response = await this.db.getTestRun(runId);
+                return response.run;
+            }
+
+            updateRunInfo(testRun) {
+                const runInfoElement = document.getElementById('run-info');
+                if (runInfoElement && testRun) {
+                    const date = new Date(testRun.timestamp).toLocaleString();
+                    runInfoElement.textContent = `${testRun.name} • ${date} • ${testRun.total_tests} tests`;
+                }
+            }
+
+            updateSummaryCards(stats) {
+                const elements = {
+                    total: document.getElementById('total-tests-summary'),
+                    passed: document.getElementById('passed-tests-summary'),
+                    failed: document.getElementById('failed-tests-summary'),
+                    time: document.getElementById('total-time-summary')
+                };
+
+                if (elements.total) elements.total.textContent = stats.total;
+                if (elements.passed) elements.passed.textContent = stats.passed;
+                if (elements.failed) elements.failed.textContent = stats.failed + stats.error;
+                if (elements.time) elements.time.textContent = `${stats.total_time.toFixed(2)}s`;
+            }
+
+            renderTestSuites() {
+                const container = document.getElementById('test-suites-container');
+                const filter = document.getElementById('suite-filter');
+                
+                if (!container) return;
+
+                // Populate suite filter
+                if (filter) {
+                    filter.innerHTML = '<option value="all">All Suites</option>';
+                    this.testSuites.forEach(suite => {
+                        const option = document.createElement('option');
+                        option.value = suite.id;
+                        option.textContent = suite.name;
+                        filter.appendChild(option);
+                    });
+                }
+
+                container.innerHTML = this.testSuites.map(suite => `
+                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
+                        <div class="px-6 py-4 border-b border-gray-200 cursor-pointer" onclick="detailsPage.toggleSuite('${suite.id}')">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <h4 class="text-lg font-semibold text-gray-900">${suite.name}</h4>
+                                    <p class="text-sm text-gray-600">${suite.tests} tests • ${suite.time.toFixed(2)}s</p>
+                                </div>
+                                <div class="flex items-center space-x-2">
+                                    ${suite.failures > 0 ? `<span class="px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800">${suite.failures} failed</span>` : ''}
+                                    ${suite.errors > 0 ? `<span class="px-2 py-1 text-xs font-medium rounded-full bg-orange-100 text-orange-800">${suite.errors} errors</span>` : ''}
+                                    <svg class="w-5 h-5 text-gray-400 transform transition-transform" id="suite-arrow-${suite.id}">
+                                        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="expandable-content" id="suite-content-${suite.id}">
+                            <div class="p-6">
+                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="suite-tests-${suite.id}">
+                                    <!-- Test cases will be populated here -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            renderTestCases() {
+                const container = document.getElementById('test-cases-container');
+                if (!container) return;
+
+                container.innerHTML = this.testCases.map(testCase => `
+                    <div class="test-case-card ${testCase.status} p-6" data-test-case-id="${testCase.id}">
+                        <div class="flex items-start justify-between mb-3">
+                            <div class="flex-1">
+                                <h4 class="text-sm font-semibold text-gray-900 mb-1">${testCase.name}</h4>
+                                <p class="text-xs text-gray-600 mb-2">${testCase.classname}</p>
+                                <span class="status-badge ${testCase.status}">${testCase.status}</span>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-sm font-medium text-gray-900">${testCase.time.toFixed(3)}s</div>
+                                <div class="text-xs text-gray-600">${testCase.assertions} assertions</div>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <div class="text-xs text-gray-500">
+                                ${testCase.file ? `File: ${testCase.file}` : ''}
+                                ${testCase.line ? `Line: ${testCase.line}` : ''}
+                            </div>
+                            <button class="text-blue-600 hover:text-blue-800 text-xs font-medium" onclick="detailsPage.viewTestDetails('${testCase.id}')">
+                                View Details →
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            renderFailedTestsAnalysis() {
+                const failedTests = this.testCases.filter(test => test.status === 'failed' || test.status === 'error');
+                const section = document.getElementById('failed-tests-section');
+                const container = document.getElementById('failed-tests-container');
+                
+                if (!section || !container) return;
+
+                if (failedTests.length === 0) {
+                    section.style.display = 'none';
+                    return;
+                }
+
+                section.style.display = 'block';
+                container.innerHTML = failedTests.map(test => `
+                    <div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+                        <div class="flex items-start justify-between mb-3">
+                            <div class="flex-1">
+                                <h5 class="text-sm font-semibold text-red-900">${test.name}</h5>
+                                <p class="text-xs text-red-700 mt-1">${test.classname}</p>
+                            </div>
+                            <span class="px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800 uppercase">
+                                ${test.status}
+                            </span>
+                        </div>
+                        ${test.failure_message ? `
+                            <div class="mb-3">
+                                <p class="text-sm text-red-800 font-medium mb-2">Error Message:</p>
+                                <p class="text-sm text-red-700 bg-red-100 p-3 rounded">${test.failure_message}</p>
+                            </div>
+                        ` : ''}
+                        <div class="text-xs text-red-600">
+                            Execution Time: ${test.time.toFixed(3)}s
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            initializePerformanceChart() {
+                const chartContainer = document.getElementById('performance-chart');
+                if (!chartContainer) return;
+
+                const chart = echarts.init(chartContainer);
+
+                // Prepare data - sort by execution time descending to show slowest tests first
+                const sortedTests = [...this.testCases].sort((a, b) => b.time - a.time).slice(0, 20);
+                const testNames = sortedTests.map(test => test.name.substring(0, 20) + '...');
+                const executionTimes = sortedTests.map(test => test.time);
+
+                // Color bars based on performance (execution time) - fast = green, slow = red
+                const maxTime = Math.max(...executionTimes);
+                const minTime = Math.min(...executionTimes);
+                const timeRange = maxTime - minTime || 1;
+
+                const performanceColors = executionTimes.map(time => {
+                    // Calculate color gradient from green (fast) to red (slow)
+                    const ratio = (time - minTime) / timeRange;
+                    if (ratio < 0.33) return '#10b981'; // Green - fast
+                    if (ratio < 0.67) return '#f59e0b'; // Orange - medium
+                    return '#ef4444'; // Red - slow
+                });
+
+                const option = {
+                    tooltip: {
+                        trigger: 'axis',
+                        axisPointer: {
+                            type: 'shadow'
+                        },
+                        formatter: function(params) {
+                            const data = params[0];
+                            return `${data.name}<br/>Time: ${data.value.toFixed(3)}s`;
+                        }
+                    },
+                    grid: {
+                        left: '3%',
+                        right: '4%',
+                        bottom: '3%',
+                        containLabel: true
+                    },
+                    xAxis: {
+                        type: 'category',
+                        data: testNames,
+                        axisLabel: {
+                            fontSize: 10,
+                            rotate: 45
+                        }
+                    },
+                    yAxis: {
+                        type: 'value',
+                        name: 'Execution Time (s)',
+                        axisLabel: {
+                            fontSize: 10
+                        }
+                    },
+                    series: [{
+                        type: 'bar',
+                        data: executionTimes.map((time, index) => ({
+                            value: time,
+                            itemStyle: {
+                                color: performanceColors[index]
+                            }
+                        })),
+                        barWidth: '60%'
+                    }]
+                };
+
+                chart.setOption(option);
+                window.addEventListener('resize', () => chart.resize());
+            }
+
+            setupEventListeners() {
+                const statusFilter = document.getElementById('status-filter');
+                const testSearch = document.getElementById('test-search');
+                const suiteFilter = document.getElementById('suite-filter');
+                const expandAllBtn = document.getElementById('expand-all');
+                const exportBtn = document.getElementById('export-btn');
+
+                if (statusFilter) {
+                    statusFilter.addEventListener('change', this.filterTestCases.bind(this));
+                }
+                if (testSearch) {
+                    testSearch.addEventListener('input', this.filterTestCases.bind(this));
+                }
+                if (suiteFilter) {
+                    suiteFilter.addEventListener('change', this.filterTestCases.bind(this));
+                }
+                if (expandAllBtn) {
+                    expandAllBtn.addEventListener('click', this.expandAllSuites.bind(this));
+                }
+                if (exportBtn) {
+                    exportBtn.addEventListener('click', this.exportResults.bind(this));
+                }
+            }
+
+            filterTestCases() {
+                const statusFilter = document.getElementById('status-filter').value;
+                const searchTerm = document.getElementById('test-search').value.toLowerCase();
+                const suiteFilter = document.getElementById('suite-filter').value;
+
+                let filteredCases = this.testCases;
+
+                if (statusFilter !== 'all') {
+                    filteredCases = filteredCases.filter(test => test.status === statusFilter);
+                }
+
+                if (searchTerm) {
+                    filteredCases = filteredCases.filter(test => 
+                        test.name.toLowerCase().includes(searchTerm) ||
+                        test.classname.toLowerCase().includes(searchTerm)
+                    );
+                }
+
+                if (suiteFilter !== 'all') {
+                    filteredCases = filteredCases.filter(test => test.suite_id === parseInt(suiteFilter));
+                }
+
+                this.renderFilteredTestCases(filteredCases);
+            }
+
+            renderFilteredTestCases(testCases) {
+                const container = document.getElementById('test-cases-container');
+                if (!container) return;
+
+                container.innerHTML = testCases.map(testCase => `
+                    <div class="test-case-card ${testCase.status} p-6" data-test-case-id="${testCase.id}">
+                        <div class="flex items-start justify-between mb-3">
+                            <div class="flex-1">
+                                <h4 class="text-sm font-semibold text-gray-900 mb-1">${testCase.name}</h4>
+                                <p class="text-xs text-gray-600 mb-2">${testCase.classname}</p>
+                                <span class="status-badge ${testCase.status}">${testCase.status}</span>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-sm font-medium text-gray-900">${testCase.time.toFixed(3)}s</div>
+                                <div class="text-xs text-gray-600">${testCase.assertions} assertions</div>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <div class="text-xs text-gray-500">
+                                ${testCase.file ? `File: ${testCase.file}` : ''}
+                                ${testCase.line ? `Line: ${testCase.line}` : ''}
+                            </div>
+                            <button class="text-blue-600 hover:text-blue-800 text-xs font-medium" onclick="detailsPage.viewTestDetails('${testCase.id}')">
+                                View Details →
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            toggleSuite(suiteId) {
+                const content = document.getElementById(`suite-content-${suiteId}`);
+                const arrow = document.getElementById(`suite-arrow-${suiteId}`);
+                const testsContainer = document.getElementById(`suite-tests-${suiteId}`);
+                
+                if (content && arrow) {
+                    const isExpanded = content.classList.contains('expanded');
+                    
+                    if (isExpanded) {
+                        content.classList.remove('expanded');
+                        arrow.style.transform = 'rotate(0deg)';
+                    } else {
+                        content.classList.add('expanded');
+                        arrow.style.transform = 'rotate(180deg)';
+                        
+                        // Load test cases for this suite
+                        if (testsContainer) {
+                            const suiteTests = this.testCases.filter(test => test.suite_id === suiteId);
+                            testsContainer.innerHTML = suiteTests.map(test => `
+                                <div class="bg-gray-50 rounded-lg p-3">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <h5 class="text-sm font-medium text-gray-900 truncate">${test.name}</h5>
+                                        <span class="status-badge ${test.status}">${test.status}</span>
+                                    </div>
+                                    <div class="text-xs text-gray-600">
+                                        Time: ${test.time.toFixed(3)}s
+                                    </div>
+                                </div>
+                            `).join('');
+                        }
+                    }
+                }
+            }
+
+            expandAllSuites() {
+                this.testSuites.forEach(suite => {
+                    const content = document.getElementById(`suite-content-${suite.id}`);
+                    const arrow = document.getElementById(`suite-arrow-${suite.id}`);
+                    
+                    if (content && arrow) {
+                        content.classList.add('expanded');
+                        arrow.style.transform = 'rotate(180deg)';
+                    }
+                });
+            }
+
+            viewTestDetails(testCaseId) {
+                if (window.testDetailsModal) {
+                    window.testDetailsModal.show(testCaseId, this.db);
+                } else {
+                    alert('Test details modal not initialized');
+                }
+            }
+
+            exportResults() {
+                // In a real implementation, this would generate and download a report
+                const data = {
+                    testRun: this.runId,
+                    testSuites: this.testSuites,
+                    testCases: this.testCases,
+                    exportDate: new Date().toISOString()
+                };
+                
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `test-results-${this.runId}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+            }
+
+            showError(message) {
+                const notification = document.createElement('div');
+                notification.className = 'fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 bg-red-500 text-white';
+                notification.textContent = message;
+                document.body.appendChild(notification);
+                setTimeout(() => notification.remove(), 5000);
+            }
+        }
+
+        // Initialize details page
+        document.addEventListener('DOMContentLoaded', () => {
+            window.detailsPage = new TestDetailsPage();
+        });
+    </script>
+</body>
+</html>

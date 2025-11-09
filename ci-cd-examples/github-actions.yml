@@ -1,0 +1,80 @@
+name: Run Tests and Upload Results
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK (for Java projects)
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      # For Node.js projects, use this instead:
+      # - name: Set up Node.js
+      #   uses: actions/setup-node@v4
+      #   with:
+      #     node-version: '20'
+
+      - name: Run tests (Maven)
+        run: mvn clean test
+        # For Gradle: ./gradlew test
+        # For npm: npm test
+
+      - name: Upload test results to dashboard
+        if: always()  # Run even if tests fail
+        env:
+          JUNIT_API_URL: ${{ secrets.JUNIT_API_URL }}
+        run: |
+          # Find all JUnit XML files and upload them
+          # For Maven projects:
+          find . -name "*.xml" -path "*/target/surefire-reports/*" | while read xmlfile; do
+            echo "Uploading $xmlfile..."
+
+            # Prepare CI metadata JSON
+            CI_METADATA=$(cat <<EOF
+          {
+            "provider": "github_actions",
+            "build_id": "${{ github.run_id }}",
+            "build_url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}",
+            "job_name": "${{ github.workflow }}",
+            "commit_sha": "${{ github.sha }}",
+            "branch": "${{ github.ref_name }}",
+            "repository": "${{ github.repository }}"
+          }
+          EOF
+          )
+
+            # Upload to dashboard API
+            curl -X POST "${JUNIT_API_URL}/api/v1/upload" \
+              -F "file=@$xmlfile" \
+              -F "ci_metadata=${CI_METADATA}" \
+              --fail --silent --show-error || echo "Failed to upload $xmlfile"
+          done
+
+          # For Gradle projects (uncomment if needed):
+          # find . -name "*.xml" -path "*/build/test-results/*" | while read xmlfile; do
+          #   curl -X POST "${JUNIT_API_URL}/api/v1/upload" \
+          #     -F "file=@$xmlfile" \
+          #     -F "ci_metadata=${CI_METADATA}" \
+          #     --fail --silent --show-error || echo "Failed to upload $xmlfile"
+          # done
+
+      - name: Archive test results (optional backup)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: junit-test-results
+          path: |
+            **/target/surefire-reports/*.xml
+            **/build/test-results/**/*.xml

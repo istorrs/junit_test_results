@@ -1,0 +1,699 @@
+// JUnit Test Results Dashboard - Main Application Logic
+class JUnitDashboard {
+    constructor() {
+        this.db = new JUnitDatabase();
+        this.currentFilters = {
+            status: 'all',
+            search: '',
+            dateRange: null,
+            runId: null
+        };
+        this.charts = {};
+        this.init();
+    }
+
+    async init() {
+        try {
+            await this.db.initializeDatabase();
+            this.setupEventListeners();
+            this.loadDashboard();
+            this.initializeAnimations();
+        } catch (error) {
+            console.error('Failed to initialize dashboard:', error);
+            console.error('Error details:', {
+                message: error.message,
+                stack: error.stack,
+                name: error.name,
+                cause: error.cause
+            });
+            this.showError('Failed to initialize application. Please refresh the page.');
+        }
+    }
+
+    setupEventListeners() {
+        // File upload handlers
+        const uploadZone = document.getElementById('upload-zone');
+        const fileInput = document.getElementById('file-input');
+        
+        if (uploadZone && fileInput) {
+            uploadZone.addEventListener('dragover', this.handleDragOver.bind(this));
+            uploadZone.addEventListener('drop', this.handleDrop.bind(this));
+            uploadZone.addEventListener('click', () => fileInput.click());
+            fileInput.addEventListener('change', this.handleFileSelect.bind(this));
+        }
+
+        // Filter handlers
+        const runFilter = document.getElementById('run-filter');
+        const statusFilter = document.getElementById('status-filter');
+        const searchInput = document.getElementById('search-input');
+        const dateFilter = document.getElementById('date-filter');
+        const clearFilters = document.getElementById('clear-filters');
+        
+        if (runFilter) {
+            runFilter.addEventListener('change', this.handleRunFilter.bind(this));
+        }
+        if (statusFilter) {
+            statusFilter.addEventListener('change', this.handleStatusFilter.bind(this));
+        }
+        if (searchInput) {
+            searchInput.addEventListener('input', this.handleSearchInput.bind(this));
+        }
+        if (dateFilter) {
+            dateFilter.addEventListener('change', this.handleDateFilter.bind(this));
+        }
+        if (clearFilters) {
+            clearFilters.addEventListener('click', this.clearAllFilters.bind(this));
+        }
+
+        // Sort handlers
+        const sortOptions = document.querySelectorAll('[data-sort]');
+        sortOptions.forEach(option => {
+            option.addEventListener('click', this.handleSort.bind(this));
+        });
+
+        // Handle page visibility changes to reload data
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) {
+                this.loadDashboard();
+            }
+        });
+
+        // Handle navigation to reload data
+        window.addEventListener('focus', () => {
+            this.loadDashboard();
+        });
+    }
+
+    handleDragOver(event) {
+        event.preventDefault();
+        event.currentTarget.classList.add('drag-over');
+    }
+
+    handleDrop(event) {
+        event.preventDefault();
+        event.currentTarget.classList.remove('drag-over');
+        const files = Array.from(event.dataTransfer.files);
+        this.processFiles(files);
+    }
+
+    handleFileSelect(event) {
+        const files = Array.from(event.target.files);
+        this.processFiles(files);
+    }
+
+    async processFiles(files) {
+        const xmlFiles = files.filter(file => file.name.endsWith('.xml'));
+        
+        if (xmlFiles.length === 0) {
+            this.showError('Please select JUnit XML files (.xml)');
+            return;
+        }
+
+        this.showUploadProgress();
+
+        try {
+            for (const file of xmlFiles) {
+                const content = await this.readFileContent(file);
+                const result = await this.db.parseAndStoreJUnitXML(content, file.name);
+                
+                if (result.success) {
+                    this.showSuccess(`Successfully processed ${file.name}`);
+                }
+            }
+            
+            this.hideUploadProgress();
+            await this.loadDashboard();
+            
+        } catch (error) {
+            console.error('Error processing files:', error);
+            this.showError('Error processing files: ' + error.message);
+            this.hideUploadProgress();
+        }
+    }
+
+    readFileContent(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (event) => resolve(event.target.result);
+            reader.onerror = () => reject(new Error('Failed to read file'));
+            reader.readAsText(file);
+        });
+    }
+
+    showUploadProgress() {
+        const progressContainer = document.getElementById('upload-progress');
+        if (progressContainer) {
+            progressContainer.innerHTML = `
+                <div class="flex items-center justify-center p-4">
+                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                    <span class="ml-3 text-gray-700">Processing files...</span>
+                </div>
+            `;
+            progressContainer.classList.remove('hidden');
+        }
+    }
+
+    hideUploadProgress() {
+        const progressContainer = document.getElementById('upload-progress');
+        if (progressContainer) {
+            progressContainer.classList.add('hidden');
+        }
+    }
+
+    async loadDashboard() {
+        try {
+            const [testRuns, recentUploads, statistics] = await Promise.all([
+                this.db.getTestRuns(10),
+                this.getRecentUploads(),
+                this.db.getTestStatistics()
+            ]);
+
+            this.updateDashboardStats(statistics);
+            this.renderTestRuns(testRuns);
+            this.renderRecentUploads(recentUploads);
+            this.populateRunFilter(testRuns);
+            this.initializeCharts(statistics);
+        } catch (error) {
+            console.error('Error loading dashboard:', error);
+            console.error('Error details:', {
+                message: error.message,
+                stack: error.stack,
+                name: error.name
+            });
+            this.showError('Failed to load dashboard data: ' + error.message);
+
+            // Log detailed error for debugging
+            if (window.dashboardDebugger) {
+                window.dashboardDebugger.logError('Dashboard Load Error', {
+                    message: error.message,
+                    stack: error.stack
+                });
+            }
+        }
+    }
+
+    populateRunFilter(testRuns) {
+        const runFilter = document.getElementById('run-filter');
+        if (!runFilter) return;
+
+        // Clear existing options except "All"
+        runFilter.innerHTML = '<option value="all">All Test Runs</option>';
+        
+        testRuns.forEach(run => {
+            const option = document.createElement('option');
+            option.value = run.id;
+            option.textContent = `${run.name} (${new Date(run.timestamp).toLocaleDateString()})`;
+            runFilter.appendChild(option);
+        });
+    }
+
+    updateDashboardStats(stats) {
+        const elements = {
+            total: document.getElementById('total-tests'),
+            passed: document.getElementById('passed-tests'),
+            failed: document.getElementById('failed-tests'),
+            error: document.getElementById('error-tests'),
+            skipped: document.getElementById('skipped-tests'),
+            totalTime: document.getElementById('total-time')
+        };
+
+        if (elements.total) elements.total.textContent = stats.total;
+        if (elements.passed) elements.passed.textContent = stats.passed;
+        if (elements.failed) elements.failed.textContent = stats.failed;
+        if (elements.error) elements.error.textContent = stats.error;
+        if (elements.skipped) elements.skipped.textContent = stats.skipped;
+        if (elements.totalTime) elements.totalTime.textContent = `${stats.total_time.toFixed(2)}s`;
+
+        // Animate counters
+        this.animateCounters();
+    }
+
+    animateCounters() {
+        const counters = document.querySelectorAll('[data-counter]');
+        counters.forEach(counter => {
+            const target = parseInt(counter.textContent);
+            let current = 0;
+            const increment = target / 50;
+            const timer = setInterval(() => {
+                current += increment;
+                if (current >= target) {
+                    current = target;
+                    clearInterval(timer);
+                }
+                counter.textContent = Math.floor(current);
+            }, 20);
+        });
+    }
+
+    renderTestRuns(testRuns) {
+        const container = document.getElementById('test-runs-container');
+        if (!container) return;
+
+        if (testRuns.length === 0) {
+            container.innerHTML = `
+                <div class="col-span-full text-center py-12">
+                    <div class="text-gray-400 mb-4">
+                        <svg class="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-medium text-gray-900 mb-2">No test results yet</h3>
+                    <p class="text-gray-600">Upload JUnit XML files to see your test results here</p>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = testRuns.map(run => `
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow duration-200" data-run-id="${run.id}">
+                <div class="flex items-start justify-between mb-4">
+                    <div class="flex-1">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-1">${run.name}</h3>
+                        <p class="text-sm text-gray-600">${new Date(run.timestamp).toLocaleString()}</p>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <span class="px-2 py-1 text-xs font-medium rounded-full ${this.getStatusColorClass('passed')}">
+                            ${run.total_tests - run.total_failures - run.total_errors - run.total_skipped} passed
+                        </span>
+                        ${run.total_failures > 0 ? `<span class="px-2 py-1 text-xs font-medium rounded-full ${this.getStatusColorClass('failed')}">${run.total_failures} failed</span>` : ''}
+                        ${run.total_errors > 0 ? `<span class="px-2 py-1 text-xs font-medium rounded-full ${this.getStatusColorClass('error')}">${run.total_errors} errors</span>` : ''}
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <div class="text-2xl font-bold text-gray-900">${run.total_tests}</div>
+                        <div class="text-sm text-gray-600">Total Tests</div>
+                    </div>
+                    <div>
+                        <div class="text-2xl font-bold text-gray-900">${run.time.toFixed(2)}s</div>
+                        <div class="text-sm text-gray-600">Execution Time</div>
+                    </div>
+                </div>
+                
+                <div class="flex items-center justify-between">
+                    <div class="text-sm text-gray-600">
+                        Success Rate: ${run.total_tests > 0 ? Math.round((run.total_tests - run.total_failures - run.total_errors) / run.total_tests * 100) : 0}%
+                    </div>
+                    <button class="text-blue-600 hover:text-blue-800 text-sm font-medium" onclick="dashboard.viewDetails('${run.id}')">
+                        View Details →
+                    </button>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    renderRecentUploads(uploads) {
+        const container = document.getElementById('recent-uploads');
+        if (!container || uploads.length === 0) return;
+
+        container.innerHTML = uploads.map(upload => `
+            <div class="flex items-center justify-between py-3 px-4 hover:bg-gray-50 rounded-lg">
+                <div class="flex-1 min-w-0">
+                    <p class="text-sm font-medium text-gray-900 truncate">${upload.filename}</p>
+                    <p class="text-xs text-gray-600">${new Date(upload.upload_timestamp).toLocaleString()}</p>
+                </div>
+                <div class="ml-3">
+                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${upload.status === 'completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">
+                        ${upload.status}
+                    </span>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    async getRecentUploads() {
+        // For API client, we'll get recent uploads from test runs data
+        // This is a simplified version - you could add a dedicated API endpoint for uploads
+        try {
+            const testRuns = await this.db.getTestRuns(5);
+            return testRuns.map(run => ({
+                filename: run.name || `Test Run ${run.id}`,
+                upload_timestamp: run.timestamp || run.created_at,
+                status: 'completed'
+            }));
+        } catch (error) {
+            console.error('Error fetching recent uploads:', error);
+            return [];
+        }
+    }
+
+    initializeCharts(stats) {
+        this.initializeStatusChart(stats);
+        this.initializeTrendChart();
+    }
+
+    initializeStatusChart(stats) {
+        const chartContainer = document.getElementById('status-chart');
+        if (!chartContainer) return;
+
+        const chart = echarts.init(chartContainer);
+        
+        const option = {
+            tooltip: {
+                trigger: 'item',
+                formatter: '{a} <br/>{b}: {c} ({d}%)'
+            },
+            legend: {
+                orient: 'vertical',
+                left: 'left',
+                textStyle: {
+                    fontSize: 12
+                }
+            },
+            series: [{
+                name: 'Test Results',
+                type: 'pie',
+                radius: ['40%', '70%'],
+                center: ['60%', '50%'],
+                avoidLabelOverlap: false,
+                itemStyle: {
+                    borderRadius: 4,
+                    borderColor: '#fff',
+                    borderWidth: 2
+                },
+                label: {
+                    show: false,
+                    position: 'center'
+                },
+                emphasis: {
+                    label: {
+                        show: true,
+                        fontSize: '18',
+                        fontWeight: 'bold'
+                    }
+                },
+                labelLine: {
+                    show: false
+                },
+                data: [
+                    { value: stats.passed, name: 'Passed', itemStyle: { color: '#10b981' } },
+                    { value: stats.failed, name: 'Failed', itemStyle: { color: '#f59e0b' } },
+                    { value: stats.error, name: 'Error', itemStyle: { color: '#ef4444' } },
+                    { value: stats.skipped, name: 'Skipped', itemStyle: { color: '#6b7280' } }
+                ]
+            }]
+        };
+
+        chart.setOption(option);
+        this.charts.status = chart;
+
+        // Resize chart on window resize
+        window.addEventListener('resize', () => {
+            chart.resize();
+        });
+    }
+
+    initializeTrendChart() {
+        const chartContainer = document.getElementById('trend-chart');
+        if (!chartContainer) return;
+
+        const chart = echarts.init(chartContainer);
+        
+        // Mock trend data - in real implementation, this would come from historical data
+        const dates = [];
+        const passedData = [];
+        const failedData = [];
+        
+        for (let i = 6; i >= 0; i--) {
+            const date = new Date();
+            date.setDate(date.getDate() - i);
+            dates.push(date.toLocaleDateString());
+            passedData.push(Math.floor(Math.random() * 50) + 80);
+            failedData.push(Math.floor(Math.random() * 20) + 5);
+        }
+
+        const option = {
+            tooltip: {
+                trigger: 'axis',
+                axisPointer: {
+                    type: 'cross',
+                    label: {
+                        backgroundColor: '#6a7985'
+                    }
+                }
+            },
+            legend: {
+                data: ['Passed', 'Failed'],
+                textStyle: {
+                    fontSize: 12
+                }
+            },
+            grid: {
+                left: '3%',
+                right: '4%',
+                bottom: '3%',
+                containLabel: true
+            },
+            xAxis: [{
+                type: 'category',
+                boundaryGap: false,
+                data: dates,
+                axisLabel: {
+                    fontSize: 10
+                }
+            }],
+            yAxis: [{
+                type: 'value',
+                axisLabel: {
+                    fontSize: 10
+                }
+            }],
+            series: [
+                {
+                    name: 'Passed',
+                    type: 'line',
+                    stack: 'Total',
+                    smooth: true,
+                    lineStyle: {
+                        width: 3
+                    },
+                    areaStyle: {
+                        opacity: 0.3
+                    },
+                    emphasis: {
+                        focus: 'series'
+                    },
+                    data: passedData,
+                    itemStyle: {
+                        color: '#10b981'
+                    }
+                },
+                {
+                    name: 'Failed',
+                    type: 'line',
+                    stack: 'Total',
+                    smooth: true,
+                    lineStyle: {
+                        width: 3
+                    },
+                    areaStyle: {
+                        opacity: 0.3
+                    },
+                    emphasis: {
+                        focus: 'series'
+                    },
+                    data: failedData,
+                    itemStyle: {
+                        color: '#f59e0b'
+                    }
+                }
+            ]
+        };
+
+        chart.setOption(option);
+        this.charts.trend = chart;
+
+        // Resize chart on window resize
+        window.addEventListener('resize', () => {
+            chart.resize();
+        });
+    }
+
+    handleRunFilter(event) {
+        this.currentFilters.runId = event.target.value === 'all' ? null : parseInt(event.target.value);
+        this.applyFilters();
+    }
+
+    handleStatusFilter(event) {
+        this.currentFilters.status = event.target.value;
+        this.applyFilters();
+    }
+
+    handleSearchInput(event) {
+        this.currentFilters.search = event.target.value;
+        this.applyFilters();
+    }
+
+    handleDateFilter(event) {
+        this.currentFilters.dateRange = event.target.value;
+        this.applyFilters();
+    }
+
+    handleSort(event) {
+        const sortBy = event.target.dataset.sort;
+        console.log('Sorting by:', sortBy);
+        // TODO: Implement sorting logic
+        // For now, just log the sort option
+        this.currentFilters.sortBy = sortBy;
+        this.applyFilters();
+    }
+
+    async applyFilters() {
+        try {
+            const testCases = await this.db.getTestCases(this.currentFilters);
+            this.renderFilteredResults(testCases);
+        } catch (error) {
+            console.error('Error applying filters:', error);
+        }
+    }
+
+    renderFilteredResults(testCases) {
+        const container = document.getElementById('filtered-results');
+        if (!container) return;
+
+        if (testCases.length === 0) {
+            container.innerHTML = `
+                <div class="text-center py-8">
+                    <p class="text-gray-600">No test cases match your filters</p>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = testCases.map(testCase => `
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow duration-200">
+                <div class="flex items-center justify-between mb-2">
+                    <h4 class="text-sm font-medium text-gray-900 truncate">
+                        ${testCase.name}
+                        ${testCase.is_flaky ? '<span class="ml-2 px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">FLAKY</span>' : ''}
+                    </h4>
+                    <span class="px-2 py-1 text-xs font-medium rounded-full ${this.getStatusColorClass(testCase.status)}">
+                        ${testCase.status}
+                    </span>
+                </div>
+                <div class="text-xs text-gray-600 mb-2">${testCase.classname}</div>
+                <div class="flex items-center justify-between text-xs text-gray-500">
+                    <span>${testCase.time.toFixed(3)}s</span>
+                    <span>${testCase.assertions} assertions</span>
+                    <button class="text-blue-600 hover:text-blue-800 text-xs font-medium" onclick="dashboard.viewTestDetails('${testCase.id}')">
+                        View Details →
+                    </button>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    clearAllFilters() {
+        this.currentFilters = {
+            status: 'all',
+            search: '',
+            dateRange: null,
+            runId: null
+        };
+        
+        const runFilter = document.getElementById('run-filter');
+        const statusFilter = document.getElementById('status-filter');
+        const searchInput = document.getElementById('search-input');
+        const dateFilter = document.getElementById('date-filter');
+        
+        if (runFilter) runFilter.value = 'all';
+        if (statusFilter) statusFilter.value = 'all';
+        if (searchInput) searchInput.value = '';
+        if (dateFilter) dateFilter.value = 'all';
+        
+        this.applyFilters();
+    }
+
+    getStatusColorClass(status) {
+        const colors = {
+            passed: 'bg-green-100 text-green-800',
+            failed: 'bg-red-100 text-red-800',
+            error: 'bg-orange-100 text-orange-800',
+            skipped: 'bg-gray-100 text-gray-800'
+        };
+        return colors[status] || 'bg-gray-100 text-gray-800';
+    }
+
+    viewDetails(runId) {
+        console.log('viewDetails called with runId:', runId);
+        console.log('Navigating to:', `details.html?run=${runId}`);
+        window.location.href = `details.html?run=${runId}`;
+    }
+
+    viewTestDetails(testCaseId) {
+        if (window.testDetailsModal) {
+            window.testDetailsModal.show(testCaseId, this.db);
+        } else {
+            alert('Test details modal not initialized');
+        }
+    }
+
+    showError(message) {
+        this.showNotification(message, 'error');
+    }
+
+    showSuccess(message) {
+        this.showNotification(message, 'success');
+    }
+
+    showNotification(message, type) {
+        const notification = document.createElement('div');
+        notification.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 ${
+            type === 'error' ? 'bg-red-500 text-white' : 'bg-green-500 text-white'
+        }`;
+        notification.textContent = message;
+        
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+            notification.remove();
+        }, 5000);
+    }
+
+    initializeAnimations() {
+        // Initialize text animations
+        if (typeof Splitting !== 'undefined') {
+            Splitting();
+        }
+
+        // Initialize typed text effects
+        const typedElements = document.querySelectorAll('[data-typed]');
+        typedElements.forEach(element => {
+            if (typeof Typed !== 'undefined') {
+                new Typed(element, {
+                    strings: [element.dataset.typed],
+                    typeSpeed: 50,
+                    showCursor: false
+                });
+            }
+        });
+
+        // Animate cards on scroll
+        this.setupScrollAnimations();
+    }
+
+    setupScrollAnimations() {
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                }
+            });
+        });
+
+        const cards = document.querySelectorAll('.animate-card');
+        cards.forEach(card => {
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(20px)';
+            card.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+            observer.observe(card);
+        });
+    }
+}
+
+// Initialize dashboard when DOM is loaded
+document.addEventListener('DOMContentLoaded', () => {
+    window.dashboard = new JUnitDashboard();
+});
