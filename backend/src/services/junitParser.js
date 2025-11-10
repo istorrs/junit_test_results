@@ -21,7 +21,10 @@ const parseJUnitXML = async (xmlContent, filename, ciMetadata = null, uploaderIn
         const contentHash = generateHash(xmlContent);
 
         // Check for duplicate
-        const existingUpload = await FileUpload.findOne({ content_hash: contentHash, status: 'completed' });
+        const existingUpload = await FileUpload.findOne({
+            content_hash: contentHash,
+            status: 'completed'
+        });
         if (existingUpload) {
             logger.warn('Duplicate test results detected', { filename, contentHash });
             return {
@@ -85,15 +88,21 @@ const parseJUnitXML = async (xmlContent, filename, ciMetadata = null, uploaderIn
         }
 
         // Update test run name based on test case classnames if name is generic
-        if (testRun.name === 'pytest tests' || testRun.name === 'pytest' || !testRun.name || testRun.name === filename) {
+        if (
+            testRun.name === 'pytest tests' ||
+            testRun.name === 'pytest' ||
+            !testRun.name ||
+            testRun.name === filename
+        ) {
             const testCases = await TestCase.find({ run_id: testRun._id }).limit(100);
             const classnames = [...new Set(testCases.map(tc => tc.classname).filter(c => c))];
 
             if (classnames.length > 0) {
                 // Use the most common classname or combine first few unique ones
-                const newName = classnames.length === 1
-                    ? classnames[0]
-                    : classnames.slice(0, 3).join(', ') + (classnames.length > 3 ? '...' : '');
+                const newName =
+                    classnames.length === 1
+                        ? classnames[0]
+                        : classnames.slice(0, 3).join(', ') + (classnames.length > 3 ? '...' : '');
 
                 await TestRun.findByIdAndUpdate(testRun._id, { name: newName });
                 testRun.name = newName;
@@ -125,7 +134,6 @@ const parseJUnitXML = async (xmlContent, filename, ciMetadata = null, uploaderIn
             file_upload_id: fileUpload._id,
             stats
         };
-
     } catch (error) {
         logger.error('Error parsing JUnit XML', { error: error.message });
         throw error;
@@ -169,23 +177,111 @@ const processTestCase = async (caseData, suiteId, runId, fileUploadId) => {
     let skippedMessage = null;
     let stackTrace = null;
 
+    // Helper function to extract error message from stack trace
+    const extractErrorMessage = (trace, existingMessage) => {
+        if (existingMessage) {
+            return existingMessage;
+        }
+        if (!trace) {
+            return null;
+        }
+
+        // For Python/pytest stack traces, find the FIRST exception (root cause)
+        // Python stack traces show exceptions in order, first one is the root cause
+        // Format:
+        //   libraries/mqtt_explore.py:859: MQTTClientMessageTimeoutException
+        //   E       libraries.mqtt_explore.MQTTClientMessageTimeoutException
+        //
+        // Or for assertions:
+        //   E       AssertionError: expected value
+        //
+        // Look for lines starting with "E       " which pytest uses to mark exception lines
+        const lines = trace.split('\n');
+
+        // First pass: find the first "E       " line with an exception
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i];
+            // Pytest marks exception lines with "E       " or "E   "
+            if (line.match(/^E\s{3,}/)) {
+                const exceptionLine = line.replace(/^E\s+/, '').trim();
+                // This is an exception line - extract it
+                if (
+                    exceptionLine &&
+                    !exceptionLine.startsWith('>>>') &&
+                    !exceptionLine.startsWith('self =')
+                ) {
+                    return exceptionLine.length > 500
+                        ? exceptionLine.substring(0, 500) + '...'
+                        : exceptionLine;
+                }
+            }
+
+            // Also look for file:line: ExceptionType format (before the E lines)
+            const fileMatch = line.match(/^\s*(.+?):(\d+):\s*([A-Z]\w+(?:Error|Exception))/);
+            if (fileMatch) {
+                const [, file, lineNum, exceptionType] = fileMatch;
+                const fileName = file.split('/').pop();
+                return `${exceptionType} at ${fileName}:${lineNum}`;
+            }
+        }
+
+        // Second pass: look for "raise" or "assert" statements (root cause)
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i];
+            const trimmed = line.trim();
+            if (trimmed.startsWith('raise ') || trimmed.startsWith('assert ')) {
+                // Found the root cause raise/assert statement
+                return trimmed.length > 500 ? trimmed.substring(0, 500) + '...' : trimmed;
+            }
+        }
+
+        // Fallback: look for "Failed:" line (pytest wrapper)
+        for (const line of lines) {
+            const trimmed = line.trim();
+            if (trimmed.startsWith('Failed:')) {
+                const cleaned = trimmed.replace(/^Failed:\s*/, '');
+                return cleaned.length > 500 ? cleaned.substring(0, 500) + '...' : cleaned;
+            }
+        }
+
+        // Last resort: first non-empty line that looks like an error
+        for (const line of lines) {
+            const trimmed = line.trim();
+            if (
+                trimmed &&
+                !trimmed.startsWith('at ') &&
+                !trimmed.startsWith('File ') &&
+                !trimmed.startsWith('>') &&
+                !trimmed.startsWith('_')
+            ) {
+                return trimmed.length > 500 ? trimmed.substring(0, 500) + '...' : trimmed;
+            }
+        }
+
+        return null;
+    };
+
     // Determine status
     if (caseData.failure) {
         status = 'failed';
         const failure = caseData.failure;
-        failureMessage = failure.message || failure._ || '';
+        const traceContent = failure._ || '';
+        failureMessage = extractErrorMessage(traceContent, failure.message);
         failureType = failure.type || '';
-        stackTrace = failure._ || failure.message || '';
+        stackTrace = traceContent || failure.message || '';
     } else if (caseData.error) {
         status = 'error';
         const error = caseData.error;
-        errorMessage = error.message || error._ || '';
+        const traceContent = error._ || '';
+        errorMessage = extractErrorMessage(traceContent, error.message);
         errorType = error.type || '';
-        stackTrace = error._ || error.message || '';
+        stackTrace = traceContent || error.message || '';
     } else if (caseData.skipped !== undefined) {
         status = 'skipped';
-        skippedMessage = typeof caseData.skipped === 'string' ? caseData.skipped :
-                         (caseData.skipped.message || '');
+        skippedMessage =
+            typeof caseData.skipped === 'string'
+                ? caseData.skipped
+                : caseData.skipped.message || '';
     }
 
     // Create test case
@@ -223,7 +319,7 @@ const processTestCase = async (caseData, suiteId, runId, fileUploadId) => {
     });
 };
 
-const calculateStats = async (runId) => {
+const calculateStats = async runId => {
     const cases = await TestCase.find({ run_id: runId });
 
     return {

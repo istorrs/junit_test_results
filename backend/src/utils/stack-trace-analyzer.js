@@ -91,43 +91,89 @@ class StackTraceAnalyzer {
 
     /**
      * Extract exception type from stack trace or error message
+     * Prioritizes finding the ROOT CAUSE (first exception in Python traces)
      * @param {string} stackTrace - Stack trace
      * @param {string} errorMessage - Error message
      * @returns {string} Exception type
      */
     static extractExceptionType(stackTrace, errorMessage) {
-        // Common Java exception patterns
-        const javaExceptions = [
-            'NullPointerException',
+        // Python exceptions (most common in pytest)
+        const pythonExceptions = [
             'AssertionError',
-            'IllegalArgumentException',
-            'IllegalStateException',
-            'IOException',
-            'SQLException',
-            'RuntimeException',
-            'TimeoutException',
-            'InterruptedException',
-            'ConcurrentModificationException'
+            'AttributeError',
+            'ImportError',
+            'IndexError',
+            'KeyError',
+            'NameError',
+            'TypeError',
+            'ValueError',
+            'RuntimeError',
+            'TimeoutError',
+            'ConnectionError',
+            'OSError',
+            'Exception',
+            'StopIteration',
+            'ZeroDivisionError',
+            'FileNotFoundError',
+            'PermissionError',
+            'NotImplementedError'
         ];
 
-        // Check stack trace first
+        // Check stack trace first - look for FIRST exception (root cause)
         if (stackTrace) {
-            for (const exception of javaExceptions) {
+            const lines = stackTrace.split('\n');
+
+            // For Python/pytest: find first "E       ExceptionType" line
+            for (const line of lines) {
+                if (line.match(/^E\s{3,}/)) {
+                    const exceptionLine = line.replace(/^E\s+/, '').trim();
+                    // Extract exception type from this line
+                    const exMatch = exceptionLine.match(
+                        /([a-zA-Z_][\w.]*\.)?([A-Z][\w]*(?:Exception|Error))/
+                    );
+                    if (exMatch) {
+                        return exMatch[2]; // Return just the exception name, not the module path
+                    }
+                }
+
+                // Also check for "file.py:123: ExceptionType" format (comes before E line)
+                const fileMatch = line.match(/^\s*.+?:\d+:\s*([A-Z][\w]*(?:Error|Exception))/);
+                if (fileMatch) {
+                    return fileMatch[1];
+                }
+            }
+
+            // Check for standard Python exceptions
+            for (const exception of pythonExceptions) {
                 if (stackTrace.includes(exception)) {
                     return exception;
                 }
             }
-            // Try to extract any exception type
-            const match = stackTrace.match(/([a-zA-Z.]+Exception|[a-zA-Z.]+Error)/);
+
+            // Try to extract custom exception types
+            // Python: libraries.module.CustomException or just CustomException
+            const match = stackTrace.match(/([a-zA-Z_][\w.]*\.)?([A-Z][\w]*(?:Exception|Error))/);
             if (match) {
-                const parts = match[1].split('.');
-                return parts[parts.length - 1];
+                return match[2]; // Return just the exception name
+            }
+
+            // Check for "raise ExceptionType" statements
+            const raiseMatch = stackTrace.match(/raise\s+([A-Z][\w]*(?:Exception|Error))/);
+            if (raiseMatch) {
+                return raiseMatch[1];
             }
         }
 
         // Check error message
         if (errorMessage) {
-            for (const exception of javaExceptions) {
+            // Extract from error message
+            const match = errorMessage.match(/([a-zA-Z_][\w.]*\.)?([A-Z][\w]*(?:Exception|Error))/);
+            if (match) {
+                return match[2];
+            }
+
+            // Check for standard exceptions in message
+            for (const exception of pythonExceptions) {
                 if (errorMessage.includes(exception)) {
                     return exception;
                 }
@@ -138,7 +184,9 @@ class StackTraceAnalyzer {
     }
 
     /**
-     * Extract root cause location (class and method) from stack trace
+     * Extract root cause location from stack trace
+     * For Python: finds the FIRST file:line where exception was raised
+     * For Java: finds the first at X.method() call
      * @param {string} stackTrace - Stack trace
      * @returns {object} {className, methodName, location}
      */
@@ -147,13 +195,62 @@ class StackTraceAnalyzer {
             return { className: 'Unknown', methodName: 'unknown', location: 'Unknown.unknown' };
         }
 
-        // Try to find the first stack frame (usually the root cause)
-        // Format: at package.Class.method(File.java:line)
-        const match = stackTrace.match(/at\s+([a-zA-Z0-9_.]+)\.([a-zA-Z0-9_<>]+)\([^)]+\)/);
+        const lines = stackTrace.split('\n');
 
-        if (match) {
-            const fullClass = match[1];
-            const method = match[2];
+        // Python/pytest format: look for first file.py:line_number
+        // This appears BEFORE the "E   " lines and indicates where the error originated
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i];
+
+            // Match: libraries/mqtt_explore.py:859: or just mqtt_explore.py:859:
+            const pythonMatch = line.match(/^\s*(.+?\/)?([a-zA-Z0-9_]+\.py):(\d+):/);
+            if (pythonMatch) {
+                const fileName = pythonMatch[2].replace('.py', '');
+                const lineNum = pythonMatch[3];
+
+                // Try to find the function name in nearby lines
+                // Look backward for "def function_name"
+                let functionName = 'unknown';
+                for (let j = Math.max(0, i - 10); j < i; j++) {
+                    const funcMatch = lines[j].match(/^\s*def\s+([a-zA-Z0-9_]+)\(/);
+                    if (funcMatch) {
+                        functionName = funcMatch[1];
+                    }
+                }
+
+                return {
+                    className: fileName,
+                    methodName: functionName,
+                    location: `${fileName}.${functionName}:${lineNum}`
+                };
+            }
+
+            // Alternative: look for "in function_name" lines in Python tracebacks
+            const inMatch = line.match(/^\s*in\s+([a-zA-Z0-9_]+)$/);
+            if (inMatch) {
+                const functionName = inMatch[1];
+                // Try to find file info nearby
+                if (i > 0) {
+                    const prevLine = lines[i - 1];
+                    const fileMatch = prevLine.match(/File\s+"(.+?)\/([^/]+\.py)",\s+line\s+(\d+)/);
+                    if (fileMatch) {
+                        const fileName = fileMatch[2].replace('.py', '');
+                        const lineNum = fileMatch[3];
+                        return {
+                            className: fileName,
+                            methodName: functionName,
+                            location: `${fileName}.${functionName}:${lineNum}`
+                        };
+                    }
+                }
+            }
+        }
+
+        // Java format: at package.Class.method(File.java:line)
+        const javaMatch = stackTrace.match(/at\s+([a-zA-Z0-9_.]+)\.([a-zA-Z0-9_<>]+)\([^)]+\)/);
+        if (javaMatch) {
+            const fullClass = javaMatch[1];
+            const method = javaMatch[2];
             const parts = fullClass.split('.');
             const className = parts[parts.length - 1];
 
@@ -262,8 +359,11 @@ class StackTraceAnalyzer {
         // Timeout errors
         if (
             exceptionType === 'TimeoutException' ||
+            exceptionType === 'TimeoutError' ||
+            exceptionType.toLowerCase().includes('timeout') ||
             msgLower.includes('timeout') ||
-            msgLower.includes('timed out')
+            msgLower.includes('timed out') ||
+            traceLower.includes('timeout')
         ) {
             return 'Timeout Error';
         }
