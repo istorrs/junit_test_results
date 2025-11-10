@@ -3,6 +3,8 @@ class NavigationManager {
     constructor() {
         this.currentPage = this.getCurrentPage();
         this.mobileMenuActive = false;
+        this.selectedProject = localStorage.getItem('selectedProject') || 'all';
+        this.projects = [];
         this.init();
     }
 
@@ -38,9 +40,72 @@ class NavigationManager {
         return 'dashboard';
     }
 
-    init() {
+    async init() {
         this.renderNavigation();
+        await this.loadProjects();
         this.setupEventListeners();
+    }
+
+    async loadProjects() {
+        try {
+            const apiClient = new JUnitAPIClient();
+            const response = await apiClient.request('/runs/projects');
+            this.projects = response.data.projects || [];
+            this.populateProjectFilter();
+        } catch (error) {
+            console.error('Failed to load projects:', error);
+            // Don't show error - projects filter is optional
+        }
+    }
+
+    populateProjectFilter() {
+        const projectFilter = document.getElementById('project-filter');
+        if (!projectFilter) return;
+
+        // Clear and rebuild options
+        projectFilter.innerHTML = '<option value="all">All Projects</option>';
+
+        this.projects.forEach(project => {
+            const option = document.createElement('option');
+            option.value = project;
+            option.textContent = project;
+            if (project === this.selectedProject) {
+                option.selected = true;
+            }
+            projectFilter.appendChild(option);
+        });
+    }
+
+    handleProjectChange(event) {
+        this.selectedProject = event.target.value;
+
+        // Save to localStorage
+        if (this.selectedProject === 'all') {
+            localStorage.removeItem('selectedProject');
+        } else {
+            localStorage.setItem('selectedProject', this.selectedProject);
+        }
+
+        // Trigger custom event for pages to listen to
+        window.dispatchEvent(new CustomEvent('projectFilterChanged', {
+            detail: { project: this.selectedProject }
+        }));
+
+        // Show notification
+        const projectName = this.selectedProject === 'all' ? 'All Projects' : this.selectedProject;
+        this.showNotification(`Filtered to: ${projectName}`);
+    }
+
+    showNotification(message) {
+        const notification = document.createElement('div');
+        notification.className = 'fixed top-20 right-4 p-3 rounded-lg shadow-lg z-50 bg-blue-500 text-white text-sm';
+        notification.textContent = message;
+        document.body.appendChild(notification);
+        setTimeout(() => notification.remove(), 2000);
+    }
+
+    getSelectedProject() {
+        return this.selectedProject;
     }
 
     renderNavigation() {
@@ -85,6 +150,16 @@ class NavigationManager {
                         <a href="debug-console.html" class="nav-link ${this.currentPage === 'debug' ? 'active text-gray-900' : 'text-gray-600 hover:text-gray-900'} font-medium text-sm opacity-60 hover:opacity-100" title="Debug Console">
                             🔧
                         </a>
+
+                        <!-- Project Filter -->
+                        <div class="flex items-center gap-2 px-3 py-1 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                            <svg class="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
+                            </svg>
+                            <select id="project-filter" class="bg-transparent border-none text-sm font-medium text-gray-700 dark:text-gray-300 focus:ring-0 pr-8">
+                                <option value="all">All Projects</option>
+                            </select>
+                        </div>
 
                         <!-- Search Button -->
                         <button onclick="window.globalSearch?.open()" class="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 px-3 py-2 rounded-md text-sm font-medium flex items-center" title="Global Search">
@@ -140,6 +215,12 @@ class NavigationManager {
     }
 
     setupEventListeners() {
+        // Project filter
+        const projectFilter = document.getElementById('project-filter');
+        if (projectFilter) {
+            projectFilter.addEventListener('change', this.handleProjectChange.bind(this));
+        }
+
         // Mobile menu toggle
         const mobileMenuButton = document.getElementById('mobile-menu-button');
         const mobileMenu = document.getElementById('mobile-menu');
