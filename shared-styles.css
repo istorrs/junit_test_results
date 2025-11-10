@@ -227,41 +227,117 @@ tbody tr:hover {
 }
 
 /* Badges and tags */
-.bg-gray-50 {
+.bg-gray-50,
+.dark .bg-gray-50 {
     background-color: var(--bg-tertiary) !important;
 }
 
-.bg-gray-100 {
+.bg-gray-100,
+.dark .bg-gray-100 {
     background-color: var(--bg-tertiary) !important;
 }
 
-.text-gray-500 {
+.bg-white,
+.dark .bg-white {
+    background-color: var(--bg-secondary) !important;
+}
+
+.text-gray-400,
+.dark .text-gray-400 {
+    color: var(--text-tertiary) !important;
+}
+
+.text-gray-500,
+.dark .text-gray-500 {
     color: var(--text-secondary) !important;
 }
 
-.text-gray-600 {
+.text-gray-600,
+.dark .text-gray-600 {
     color: var(--text-secondary) !important;
 }
 
-.text-gray-700 {
+.text-gray-700,
+.dark .text-gray-700 {
     color: var(--text-primary) !important;
 }
 
-.text-gray-800 {
+.text-gray-800,
+.dark .text-gray-800 {
     color: var(--text-primary) !important;
 }
 
-.text-gray-900 {
+.text-gray-900,
+.dark .text-gray-900 {
     color: var(--text-primary) !important;
+}
+
+.text-white,
+.dark .text-white {
+    color: #ffffff !important;
 }
 
 /* Border colors */
-.border-gray-200 {
+.border-gray-200,
+.dark .border-gray-200 {
     border-color: var(--border-color) !important;
 }
 
-.border-gray-300 {
+.border-gray-300,
+.dark .border-gray-300 {
     border-color: var(--border-color) !important;
+}
+
+/* Background colors for cards */
+.bg-red-50,
+.dark .bg-red-50 {
+    background-color: rgba(239, 68, 68, 0.1) !important;
+}
+
+.bg-green-50,
+.dark .bg-green-50 {
+    background-color: rgba(16, 185, 129, 0.1) !important;
+}
+
+.bg-yellow-50,
+.dark .bg-yellow-50 {
+    background-color: rgba(245, 158, 11, 0.1) !important;
+}
+
+.bg-blue-50,
+.dark .bg-blue-50 {
+    background-color: rgba(59, 130, 246, 0.1) !important;
+}
+
+/* Text colors for colored badges */
+.text-red-700,
+.dark .text-red-700 {
+    color: #fca5a5 !important;
+}
+
+.text-red-900,
+.dark .text-red-900 {
+    color: #fecaca !important;
+}
+
+.text-green-700,
+.dark .text-green-700 {
+    color: #86efac !important;
+}
+
+.text-green-900,
+.dark .text-green-900 {
+    color: #bbf7d0 !important;
+}
+
+.text-yellow-700,
+.dark .text-yellow-700 {
+    color: #fde047 !important;
+}
+
+.text-blue-100,
+.dark .text-blue-100 {
+    color: #dbeafe !important;
 }
 
 /* Modals and overlays */
