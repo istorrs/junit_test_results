@@ -20,18 +20,40 @@ const parseJUnitXML = async (xmlContent, filename, ciMetadata = null, uploaderIn
         // Generate content hash for duplicate detection
         const contentHash = generateHash(xmlContent);
 
-        // Check for duplicate
+        // Check for duplicate - if found, delete existing data to allow re-import
         const existingUpload = await FileUpload.findOne({
             content_hash: contentHash,
             status: 'completed'
         });
         if (existingUpload) {
-            logger.warn('Duplicate test results detected', { filename, contentHash });
-            return {
-                success: false,
-                error: 'Duplicate test results',
-                run_id: existingUpload.run_id
-            };
+            logger.warn('Duplicate test results detected - deleting existing data for re-import', {
+                filename,
+                contentHash,
+                existing_run_id: existingUpload.run_id
+            });
+
+            // Delete all related data in cascade
+            const runId = existingUpload.run_id;
+
+            // Delete test results
+            await TestResult.deleteMany({ run_id: runId });
+            logger.info('Deleted test results for re-import', { run_id: runId });
+
+            // Delete test cases
+            await TestCase.deleteMany({ run_id: runId });
+            logger.info('Deleted test cases for re-import', { run_id: runId });
+
+            // Delete test suites
+            await TestSuite.deleteMany({ run_id: runId });
+            logger.info('Deleted test suites for re-import', { run_id: runId });
+
+            // Delete test run
+            await TestRun.findByIdAndDelete(runId);
+            logger.info('Deleted test run for re-import', { run_id: runId });
+
+            // Delete file upload record
+            await FileUpload.findByIdAndDelete(existingUpload._id);
+            logger.info('Deleted file upload record for re-import', { file_upload_id: existingUpload._id });
         }
 
         // Create file upload record

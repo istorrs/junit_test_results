@@ -310,11 +310,14 @@ def uploadJUnitXMLFile(String xmlFilePath, String apiUrl, int buildNumber, Strin
             job_name: jobName
         ])
 
+        // Escape the JSON for shell - replace internal double quotes with escaped quotes
+        def escapedJson = ciMetadataJson.replace('"', '\\"')
+
         def response = sh(
             script: """
                 curl -s -w '\\n%{http_code}' -X POST \\
                     -F "file=@${xmlFilePath}" \\
-                    -F "ci_metadata=${ciMetadataJson}" \\
+                    -F "ci_metadata=\\"${escapedJson}\\"" \\
                     ${apiUrl}/upload
             """,
             returnStdout: true
