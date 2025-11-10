@@ -58,10 +58,23 @@ const parseJUnitXML = async (xmlContent, filename, ciMetadata = null, uploaderIn
 
         for (const suiteElement of testsuites) {
             if (!testRun) {
+                // Determine the correct timestamp (priority: CI metadata > XML timestamp > current time)
+                let timestamp;
+                if (ciMetadata && ciMetadata.build_time) {
+                    // Use build time from CI metadata (Jenkins import)
+                    timestamp = new Date(ciMetadata.build_time);
+                } else if (suiteElement.timestamp) {
+                    // Use timestamp from JUnit XML
+                    timestamp = new Date(suiteElement.timestamp);
+                } else {
+                    // Fallback to current time (only for manual uploads without timestamp)
+                    timestamp = new Date();
+                }
+
                 // Create test run
                 testRun = await TestRun.create({
                     name: suiteElement.name || filename,
-                    timestamp: suiteElement.timestamp || new Date(),
+                    timestamp,
                     time: parseFloat(suiteElement.time || 0),
                     total_tests: parseInt(suiteElement.tests || 0),
                     total_failures: parseInt(suiteElement.failures || 0),
@@ -83,7 +96,7 @@ const parseJUnitXML = async (xmlContent, filename, ciMetadata = null, uploaderIn
             }
 
             for (const suite of suites) {
-                await processTestSuite(suite, testRun._id, fileUpload._id);
+                await processTestSuite(suite, testRun._id, fileUpload._id, testRun.timestamp);
             }
         }
 
@@ -140,12 +153,12 @@ const parseJUnitXML = async (xmlContent, filename, ciMetadata = null, uploaderIn
     }
 };
 
-const processTestSuite = async (suiteData, runId, fileUploadId) => {
+const processTestSuite = async (suiteData, runId, fileUploadId, testRunTimestamp) => {
     const testSuite = await TestSuite.create({
         run_id: runId,
         name: suiteData.name || 'Unnamed Suite',
         classname: suiteData.classname || '',
-        timestamp: suiteData.timestamp || new Date(),
+        timestamp: suiteData.timestamp ? new Date(suiteData.timestamp) : testRunTimestamp,
         time: parseFloat(suiteData.time || 0),
         tests: parseInt(suiteData.tests || 0),
         failures: parseInt(suiteData.failures || 0),
