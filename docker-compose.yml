@@ -94,6 +94,7 @@ services:
             - ./theme.js:/usr/share/nginx/html/theme.js:ro
             - ./navigation.js:/usr/share/nginx/html/navigation.js:ro
             - ./global-search.js:/usr/share/nginx/html/global-search.js:ro
+            - ./shared-utils.js:/usr/share/nginx/html/shared-utils.js:ro
             - ./data-management.js:/usr/share/nginx/html/data-management.js:ro
             - ./debug-console.js:/usr/share/nginx/html/debug-console.js:ro
             # Resources
