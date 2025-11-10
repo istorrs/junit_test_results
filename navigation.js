@@ -26,7 +26,7 @@ class NavigationManager {
         if (path.includes('data-management.html')) {
             return 'data';
         }
-        if (path.includes('debug-trace.html')) {
+        if (path.includes('debug-trace.html') || path.includes('debug-console.html')) {
             return 'debug';
         }
         return 'dashboard';
@@ -70,7 +70,7 @@ class NavigationManager {
                         <a href="data-management.html" class="nav-link ${this.currentPage === 'data' ? 'active text-gray-900' : 'text-gray-600 hover:text-gray-900'} font-medium">
                             Data Management
                         </a>
-                        <a href="debug-trace.html" class="nav-link ${this.currentPage === 'debug' ? 'active text-gray-900' : 'text-gray-600 hover:text-gray-900'} font-medium text-sm opacity-60 hover:opacity-100" title="Debug Tools">
+                        <a href="debug-console.html" class="nav-link ${this.currentPage === 'debug' ? 'active text-gray-900' : 'text-gray-600 hover:text-gray-900'} font-medium text-sm opacity-60 hover:opacity-100" title="Debug Console">
                             🔧
                         </a>
 
@@ -111,7 +111,7 @@ class NavigationManager {
                     <a href="flaky-tests.html" class="${this.currentPage === 'flaky' ? 'active' : ''}">Flaky Tests</a>
                     <a href="reports.html" class="${this.currentPage === 'reports' ? 'active' : ''}">Reports</a>
                     <a href="data-management.html" class="${this.currentPage === 'data' ? 'active' : ''}">Data Management</a>
-                    <a href="debug-trace.html" class="${this.currentPage === 'debug' ? 'active' : ''}">🔧 Debug Tools</a>
+                    <a href="debug-console.html" class="${this.currentPage === 'debug' ? 'active' : ''}">🔧 Debug Console</a>
                 </div>
             </div>
         `;

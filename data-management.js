@@ -404,12 +404,16 @@ class DataManagement {
 
     async confirmDelete() {
         if (!this.deleteRunId) {
+            console.warn('confirmDelete called but no deleteRunId set');
             return;
         }
+
+        console.log('Starting delete for run ID:', this.deleteRunId);
 
         // Disable the buttons while deleting
         const confirmBtn = document.getElementById('confirm-delete');
         const cancelBtn = document.getElementById('cancel-delete');
+
         if (confirmBtn) {
             confirmBtn.disabled = true;
             confirmBtn.textContent = 'Deleting...';
@@ -419,12 +423,24 @@ class DataManagement {
         }
 
         try {
-            await this.db.deleteTestRun(this.deleteRunId);
+            console.log('Calling API to delete test run...');
+            const result = await this.db.deleteTestRun(this.deleteRunId);
+            console.log('Delete API response:', result);
+
             this.showNotification('Test run deleted successfully', 'success');
             this.hideDeleteModal();
+
+            console.log('Reloading uploads list...');
             await this.loadUploads();
+            console.log('Upload list reloaded');
         } catch (error) {
             console.error('Failed to delete test run:', error);
+            console.error('Error details:', {
+                message: error.message,
+                stack: error.stack,
+                response: error.response
+            });
+
             this.showNotification(`Failed to delete test run: ${error.message}`, 'error');
 
             // Re-enable buttons on error
@@ -435,6 +451,8 @@ class DataManagement {
             if (cancelBtn) {
                 cancelBtn.disabled = false;
             }
+
+            // Don't hide modal on error so user can try again
         }
     }
 
