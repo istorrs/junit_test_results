@@ -140,6 +140,8 @@ class JUnitAPIClient {
 
     // Get test cases (replaces getTestCases)
     async getTestCases(filters = {}) {
+        console.log('[JUnitAPIClient.getTestCases] Called with filters:', filters);
+
         const params = new URLSearchParams();
 
         if (filters.status) {
@@ -155,10 +157,27 @@ class JUnitAPIClient {
             params.append('search', filters.search);
         }
 
-        const response = await this.request(`/cases?${params.toString()}`);
+        const queryString = params.toString();
+        const endpoint = `/cases?${queryString}`;
+        console.log('[JUnitAPIClient.getTestCases] API endpoint:', endpoint);
+        console.log('[JUnitAPIClient.getTestCases] Full URL:', `${this.baseURL}${endpoint}`);
+
+        const response = await this.request(endpoint);
+        console.log('[JUnitAPIClient.getTestCases] Raw API response:', response);
+        console.log('[JUnitAPIClient.getTestCases] response.data:', response.data);
+        console.log('[JUnitAPIClient.getTestCases] response.data.cases:', response.data?.cases);
+        console.log('[JUnitAPIClient.getTestCases] Cases count:', response.data?.cases?.length || 0);
+
+        // Check if response has the expected structure
+        if (!response.data || !response.data.cases) {
+            console.error('[JUnitAPIClient.getTestCases] Unexpected response structure!');
+            console.error('[JUnitAPIClient.getTestCases] Expected: { data: { cases: [...] } }');
+            console.error('[JUnitAPIClient.getTestCases] Got:', response);
+            return [];
+        }
 
         // Transform API response to match frontend expectations
-        return response.data.cases.map(testCase => ({
+        const transformedCases = response.data.cases.map(testCase => ({
             id: testCase._id,
             suite_id: testCase.suite_id,
             run_id: testCase.run_id,
@@ -176,6 +195,13 @@ class JUnitAPIClient {
             system_err: testCase.system_err
             // Note: Filtered out - __v, file_upload_id, created_at, updated_at
         }));
+
+        console.log('[JUnitAPIClient.getTestCases] Transformed cases count:', transformedCases.length);
+        if (transformedCases.length > 0) {
+            console.log('[JUnitAPIClient.getTestCases] Sample transformed case:', transformedCases[0]);
+        }
+
+        return transformedCases;
     }
 
     // Get test statistics (replaces getTestStatistics)
