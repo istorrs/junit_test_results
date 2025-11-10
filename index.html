@@ -14,6 +14,7 @@
             href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
             rel="stylesheet"
         />
+        <link rel="stylesheet" href="shared-styles.css" />
         <style>
             body {
                 font-family: 'Inter', sans-serif;
@@ -192,37 +193,7 @@
     </head>
     <body>
         <!-- Navigation -->
-        <nav class="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-40">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div class="flex justify-between items-center h-16">
-                    <div class="flex items-center">
-                        <div class="flex-shrink-0">
-                            <h1 class="text-xl font-bold text-gray-900">JUnit Dashboard</h1>
-                        </div>
-                    </div>
-                    <div class="flex items-center space-x-8">
-                        <a href="index.html" class="nav-link active text-gray-900 font-medium"
-                            >Dashboard</a
-                        >
-                        <a
-                            href="details.html"
-                            class="nav-link text-gray-600 hover:text-gray-900 font-medium"
-                            >Details</a
-                        >
-                        <a
-                            href="flaky-tests.html"
-                            class="nav-link text-gray-600 hover:text-gray-900 font-medium"
-                            >Flaky Tests</a
-                        >
-                        <a
-                            href="reports.html"
-                            class="nav-link text-gray-600 hover:text-gray-900 font-medium"
-                            >Reports</a
-                        >
-                    </div>
-                </div>
-            </div>
-        </nav>
+        <nav class="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-40"></nav>
 
         <!-- Hero Section -->
         <div class="hero-gradient">
@@ -237,47 +208,25 @@
                         data-typed="Comprehensive test result analysis and visualization for your JUnit test suites"
                     ></p>
 
-                    <!-- Upload Zone -->
-                    <div class="max-w-2xl mx-auto">
+                    <!-- Call to Action -->
+                    <div class="max-w-2xl mx-auto text-center">
                         <div
-                            id="upload-zone"
-                            class="upload-zone rounded-lg p-8 cursor-pointer mb-6"
+                            class="bg-white/10 backdrop-blur-sm rounded-lg p-8 border border-white/20"
                         >
-                            <div class="floating-animation">
-                                <svg
-                                    class="mx-auto h-12 w-12 text-blue-400 mb-4"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    stroke="currentColor"
-                                >
-                                    <path
-                                        stroke-linecap="round"
-                                        stroke-linejoin="round"
-                                        stroke-width="2"
-                                        d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-                                    />
-                                </svg>
-                            </div>
-                            <h3 class="text-lg font-semibold text-white mb-2">
-                                Upload JUnit XML Files
+                            <h3 class="text-2xl font-bold text-white mb-4">
+                                Ready to Upload Test Results?
                             </h3>
-                            <p class="text-gray-300 mb-4">
-                                Drag and drop your JUnit XML files here, or click to browse
+                            <p class="text-gray-300 mb-6">
+                                Upload your JUnit XML files and manage your test data from the Data
+                                Management page.
                             </p>
-                            <button
-                                class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors duration-200"
+                            <a
+                                href="data-management.html"
+                                class="inline-block bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-semibold transition-colors duration-200 shadow-lg hover:shadow-xl"
                             >
-                                Choose Files
-                            </button>
-                            <input
-                                type="file"
-                                id="file-input"
-                                multiple
-                                accept=".xml"
-                                class="hidden"
-                            />
+                                Go to Data Management →
+                            </a>
                         </div>
-                        <div id="upload-progress" class="hidden"></div>
                     </div>
                 </div>
             </div>
@@ -534,6 +483,8 @@
         </footer>
 
         <!-- Load Scripts -->
+        <script src="theme.js"></script>
+        <script src="navigation.js"></script>
         <script src="api-client.js"></script>
         <script src="test-details-modal.js"></script>
         <script src="insights.js"></script>

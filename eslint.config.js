@@ -41,7 +41,8 @@ export default [
                 testDetailsModal: 'writable',
                 dashboardDebugger: 'writable',
                 navigator: 'readonly',
-                screen: 'readonly'
+                screen: 'readonly',
+                localStorage: 'readonly'
             }
         },
         rules: {

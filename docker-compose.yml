@@ -76,6 +76,9 @@ services:
             - ./reports.html:/usr/share/nginx/html/reports.html:ro
             - ./test-case-history.html:/usr/share/nginx/html/test-case-history.html:ro
             - ./flaky-tests.html:/usr/share/nginx/html/flaky-tests.html:ro
+            - ./data-management.html:/usr/share/nginx/html/data-management.html:ro
+            # CSS files
+            - ./shared-styles.css:/usr/share/nginx/html/shared-styles.css:ro
             # JavaScript files
             - ./api-client.js:/usr/share/nginx/html/api-client.js:ro
             - ./main.js:/usr/share/nginx/html/main.js:ro
@@ -83,6 +86,9 @@ services:
             - ./test-case-history.js:/usr/share/nginx/html/test-case-history.js:ro
             - ./insights.js:/usr/share/nginx/html/insights.js:ro
             - ./debug.js:/usr/share/nginx/html/debug.js:ro
+            - ./theme.js:/usr/share/nginx/html/theme.js:ro
+            - ./navigation.js:/usr/share/nginx/html/navigation.js:ro
+            - ./data-management.js:/usr/share/nginx/html/data-management.js:ro
             # Resources
             - ./resources:/usr/share/nginx/html/resources:ro
             # Add SSL certificates here when ready:
