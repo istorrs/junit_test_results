@@ -300,37 +300,39 @@ class JUnitAPIClient {
         const response = await this.request(`/runs/${runId}`);
         const data = response.data;
 
-        // Transform API response
-        if (data.run) {
-            data.run = {
-                id: data.run._id,
-                name: data.run.name,
-                timestamp: data.run.timestamp || data.run.created_at,
-                time: data.run.time || 0,
-                total_tests: data.run.total_tests || 0,
-                total_failures: data.run.total_failures || 0,
-                total_errors: data.run.total_errors || 0,
-                total_skipped: data.run.total_skipped || 0,
-                source: data.run.source,
-                ci_metadata: data.run.ci_metadata
-            };
-        }
+        // API returns {...run, suites}, not {run, suites}
+        // Transform the run properties and suites separately
+        const transformedRun = {
+            id: data._id,
+            name: data.name,
+            timestamp: data.timestamp || data.created_at,
+            time: data.time || 0,
+            total_tests: data.total_tests || 0,
+            total_failures: data.total_failures || 0,
+            total_errors: data.total_errors || 0,
+            total_skipped: data.total_skipped || 0,
+            source: data.source,
+            ci_metadata: data.ci_metadata
+        };
 
         // Transform suites if present
-        if (data.suites) {
-            data.suites = data.suites.map(suite => ({
-                id: suite._id,
-                name: suite.name,
-                tests: suite.tests || 0,
-                failures: suite.failures || 0,
-                errors: suite.errors || 0,
-                skipped: suite.skipped || 0,
-                time: suite.time || 0,
-                timestamp: suite.timestamp || suite.created_at
-            }));
-        }
+        const transformedSuites = data.suites
+            ? data.suites.map(suite => ({
+                  id: suite._id,
+                  name: suite.name,
+                  tests: suite.tests || 0,
+                  failures: suite.failures || 0,
+                  errors: suite.errors || 0,
+                  skipped: suite.skipped || 0,
+                  time: suite.time || 0,
+                  timestamp: suite.timestamp || suite.created_at
+              }))
+            : [];
 
-        return data;
+        return {
+            run: transformedRun,
+            suites: transformedSuites
+        };
     }
 
     // Health check
