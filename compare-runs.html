@@ -1,5 +1,6 @@
 <!doctype html>
 <html lang="en">
+    <!-- Updated: 2025-11-10 - Fixed error logging and API client -->
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -202,6 +203,18 @@
             const db = new JUnitAPIClient();
             let allRuns = [];
 
+            // Utility function to log errors with full details
+            function logError(context, error) {
+                console.error(`[ERROR] ${context}`);
+                console.error('Error message:', error.message || 'No message');
+                console.error('Error stack:', error.stack || 'No stack trace');
+                if (error.response) {
+                    console.error('Response status:', error.response.status);
+                    console.error('Response data:', error.response.data);
+                }
+                console.error('Full error object:', JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
+            }
+
             // Initialize
             async function init() {
                 try {
@@ -218,7 +231,7 @@
                         await compareRuns();
                     }
                 } catch (error) {
-                    console.error('Failed to initialize:', error);
+                    logError('Failed to initialize Compare Runs page', error);
                 }
             }
 
@@ -238,7 +251,7 @@
                         run2Select.add(option2);
                     });
                 } catch (error) {
-                    console.error('Failed to load runs:', error);
+                    logError('Failed to load test runs list', error);
                 }
             }
 
@@ -278,7 +291,7 @@
                     window.history.pushState({}, '', url);
 
                 } catch (error) {
-                    console.error('Failed to compare runs:', error);
+                    logError('Failed to compare runs (API call failed)', error);
                     document.getElementById('loadingState').classList.add('hidden');
                     document.getElementById('emptyState').classList.remove('hidden');
                     alert('Failed to compare runs. Please try again.');
