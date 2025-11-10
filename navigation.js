@@ -17,6 +17,12 @@ class NavigationManager {
         if (path.includes('flaky-tests.html')) {
             return 'flaky';
         }
+        if (path.includes('performance-analysis.html')) {
+            return 'performance';
+        }
+        if (path.includes('compare-runs.html')) {
+            return 'compare';
+        }
         if (path.includes('test-case-history.html')) {
             return 'history';
         }
@@ -64,6 +70,12 @@ class NavigationManager {
                         <a href="flaky-tests.html" class="nav-link ${this.currentPage === 'flaky' ? 'active text-gray-900' : 'text-gray-600 hover:text-gray-900'} font-medium">
                             Flaky Tests
                         </a>
+                        <a href="performance-analysis.html" class="nav-link ${this.currentPage === 'performance' ? 'active text-gray-900' : 'text-gray-600 hover:text-gray-900'} font-medium">
+                            Performance
+                        </a>
+                        <a href="compare-runs.html" class="nav-link ${this.currentPage === 'compare' ? 'active text-gray-900' : 'text-gray-600 hover:text-gray-900'} font-medium">
+                            Compare Runs
+                        </a>
                         <a href="reports.html" class="nav-link ${this.currentPage === 'reports' ? 'active text-gray-900' : 'text-gray-600 hover:text-gray-900'} font-medium">
                             Reports
                         </a>
@@ -73,6 +85,14 @@ class NavigationManager {
                         <a href="debug-console.html" class="nav-link ${this.currentPage === 'debug' ? 'active text-gray-900' : 'text-gray-600 hover:text-gray-900'} font-medium text-sm opacity-60 hover:opacity-100" title="Debug Console">
                             🔧
                         </a>
+
+                        <!-- Search Button -->
+                        <button onclick="window.globalSearch?.open()" class="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 px-3 py-2 rounded-md text-sm font-medium flex items-center" title="Global Search">
+                            <svg class="w-5 h-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                            </svg>
+                            <span class="hidden lg:inline">Search</span> <kbd class="ml-1 px-2 py-1 text-xs bg-gray-100 dark:bg-gray-700 rounded hidden lg:inline">Ctrl+/</kbd>
+                        </button>
 
                         <!-- Theme Toggle -->
                         <button data-theme-toggle class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" title="Toggle theme">
@@ -109,6 +129,8 @@ class NavigationManager {
                     <a href="index.html" class="${this.currentPage === 'dashboard' ? 'active' : ''}">Dashboard</a>
                     <a href="details.html" class="${this.currentPage === 'details' ? 'active' : ''}">Details</a>
                     <a href="flaky-tests.html" class="${this.currentPage === 'flaky' ? 'active' : ''}">Flaky Tests</a>
+                    <a href="performance-analysis.html" class="${this.currentPage === 'performance' ? 'active' : ''}">Performance</a>
+                    <a href="compare-runs.html" class="${this.currentPage === 'compare' ? 'active' : ''}">Compare Runs</a>
                     <a href="reports.html" class="${this.currentPage === 'reports' ? 'active' : ''}">Reports</a>
                     <a href="data-management.html" class="${this.currentPage === 'data' ? 'active' : ''}">Data Management</a>
                     <a href="debug-console.html" class="${this.currentPage === 'debug' ? 'active' : ''}">🔧 Debug Console</a>
