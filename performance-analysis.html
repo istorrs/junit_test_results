@@ -1,0 +1,451 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <script src="console-capture.js"></script>
+        <title>Performance Analysis - JUnit Dashboard</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.4.3/echarts.min.js"></script>
+        <link
+            href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+            rel="stylesheet"
+        />
+        <link rel="stylesheet" href="shared-styles.css" />
+        <script src="global-search.js" defer></script>
+        <style>
+            body {
+                font-family: 'Inter', sans-serif;
+            }
+
+            .code-font {
+                font-family: 'JetBrains Mono', monospace;
+            }
+
+            .nav-link {
+                position: relative;
+                transition: all 0.3s ease;
+            }
+
+            .nav-link:hover {
+                color: #3b82f6;
+            }
+
+            .nav-link.active::after {
+                content: '';
+                position: absolute;
+                bottom: -2px;
+                left: 0;
+                right: 0;
+                height: 2px;
+                background: #3b82f6;
+                border-radius: 1px;
+            }
+
+            .metric-card {
+                transition: all 0.3s ease;
+            }
+
+            .metric-card:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            }
+        </style>
+    </head>
+    <body class="bg-gray-50 dark:bg-gray-900">
+        <!-- Navigation -->
+        <nav class="bg-white dark:bg-gray-800 shadow-lg border-b border-gray-200 dark:border-gray-700">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between h-16">
+                    <div class="flex space-x-8">
+                        <a
+                            href="index.html"
+                            class="nav-link inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400"
+                        >
+                            Dashboard
+                        </a>
+                        <a
+                            href="details.html"
+                            class="nav-link inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400"
+                        >
+                            Test Details
+                        </a>
+                        <a
+                            href="flaky-tests.html"
+                            class="nav-link inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400"
+                        >
+                            Flaky Tests
+                        </a>
+                        <a
+                            href="performance-analysis.html"
+                            class="nav-link active inline-flex items-center px-1 pt-1 text-sm font-medium text-blue-600 dark:text-blue-400"
+                        >
+                            Performance
+                        </a>
+                        <a
+                            href="reports.html"
+                            class="nav-link inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400"
+                        >
+                            Reports
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <!-- Header -->
+            <div class="mb-8">
+                <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Performance Analysis</h1>
+                <p class="mt-2 text-gray-600 dark:text-gray-400">
+                    Identify slow tests and performance regressions
+                </p>
+            </div>
+
+            <!-- Summary Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                <div class="metric-card bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                    <div class="text-gray-600 dark:text-gray-400 text-sm font-medium">Slowest Test</div>
+                    <div id="slowestTest" class="text-2xl font-bold text-gray-900 dark:text-white mt-2">-</div>
+                    <div id="slowestTestName" class="text-xs text-gray-500 dark:text-gray-500 mt-1 truncate">Loading...</div>
+                </div>
+
+                <div class="metric-card bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                    <div class="text-gray-600 dark:text-gray-400 text-sm font-medium">Avg Test Time</div>
+                    <div id="avgTestTime" class="text-2xl font-bold text-gray-900 dark:text-white mt-2">-</div>
+                    <div class="text-xs text-gray-500 dark:text-gray-500 mt-1">Across all tests</div>
+                </div>
+
+                <div class="metric-card bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                    <div class="text-gray-600 dark:text-gray-400 text-sm font-medium">Performance Issues</div>
+                    <div id="regressionCount" class="text-2xl font-bold text-orange-600 dark:text-orange-400 mt-2">-</div>
+                    <div class="text-xs text-gray-500 dark:text-gray-500 mt-1">Tests >20% slower</div>
+                </div>
+
+                <div class="metric-card bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                    <div class="text-gray-600 dark:text-gray-400 text-sm font-medium">Suite Performance</div>
+                    <div id="suiteCount" class="text-2xl font-bold text-gray-900 dark:text-white mt-2">-</div>
+                    <div class="text-xs text-gray-500 dark:text-gray-500 mt-1">Total suites tracked</div>
+                </div>
+            </div>
+
+            <!-- Slowest Tests Chart -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-8">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                    🐌 Top 20 Slowest Tests
+                </h3>
+                <div id="slowestChart" style="height: 400px"></div>
+            </div>
+
+            <!-- Performance Regressions -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-8">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+                        ⚠️ Performance Regressions
+                    </h3>
+                    <div class="flex items-center space-x-2">
+                        <label class="text-sm text-gray-600 dark:text-gray-400">Threshold:</label>
+                        <select
+                            id="thresholdSelect"
+                            onchange="loadRegressions()"
+                            class="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded dark:bg-gray-700 dark:text-white"
+                        >
+                            <option value="10">10% slower</option>
+                            <option value="20" selected>20% slower</option>
+                            <option value="30">30% slower</option>
+                            <option value="50">50% slower</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="regressionsList"></div>
+            </div>
+
+            <!-- Suite Performance Breakdown -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                        📊 Suite Time Distribution
+                    </h3>
+                    <div id="suitePieChart" style="height: 350px"></div>
+                </div>
+
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                        🎯 Suite Success Rates
+                    </h3>
+                    <div id="suiteSuccessChart" style="height: 350px"></div>
+                </div>
+            </div>
+
+            <!-- Detailed Suite Table -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                    📋 Suite Performance Details
+                </h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead class="bg-gray-50 dark:bg-gray-700">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                                    Suite Name
+                                </th>
+                                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                                    Total Time
+                                </th>
+                                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                                    Avg Time
+                                </th>
+                                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                                    Tests
+                                </th>
+                                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                                    Success Rate
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody id="suiteTableBody" class="divide-y divide-gray-200 dark:divide-gray-700">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <script src="db.js"></script>
+        <script>
+            const db = new TestResultsDB();
+            let slowestChart, suitePieChart, suiteSuccessChart;
+
+            // Initialize
+            async function init() {
+                try {
+                    await db.connect();
+                    await Promise.all([
+                        loadSlowestTests(),
+                        loadRegressions(),
+                        loadSuitePerformance()
+                    ]);
+                } catch (error) {
+                    console.error('Failed to initialize:', error);
+                }
+            }
+
+            async function loadSlowestTests() {
+                try {
+                    const response = await db.fetchWithAuth('/stats/slowest-tests?limit=20');
+                    const tests = response.data;
+
+                    if (tests.length === 0) {
+                        document.getElementById('slowestChart').innerHTML = '<div class="text-center text-gray-500 dark:text-gray-400 py-12">No test data available</div>';
+                        return;
+                    }
+
+                    // Update summary cards
+                    const slowest = tests[0];
+                    document.getElementById('slowestTest').textContent = `${slowest.avg_time}s`;
+                    document.getElementById('slowestTestName').textContent = slowest.name;
+
+                    const avgTime = tests.reduce((sum, t) => sum + t.avg_time, 0) / tests.length;
+                    document.getElementById('avgTestTime').textContent = `${avgTime.toFixed(3)}s`;
+
+                    // Create chart
+                    slowestChart = echarts.init(document.getElementById('slowestChart'));
+
+                    const option = {
+                        tooltip: {
+                            trigger: 'axis',
+                            axisPointer: { type: 'shadow' },
+                            formatter: function(params) {
+                                const data = params[0];
+                                const test = tests[data.dataIndex];
+                                return `
+                                    <strong>${test.name}</strong><br/>
+                                    Class: ${test.classname}<br/>
+                                    Avg Time: <strong>${test.avg_time}s</strong><br/>
+                                    Min: ${test.min_time}s | Max: ${test.max_time}s<br/>
+                                    Total Runs: ${test.total_runs}
+                                `;
+                            }
+                        },
+                        grid: { left: '3%', right: '4%', bottom: '15%', containLabel: true },
+                        xAxis: {
+                            type: 'category',
+                            data: tests.map(t => t.name.length > 20 ? t.name.substring(0, 20) + '...' : t.name),
+                            axisLabel: {
+                                rotate: 45,
+                                fontSize: 10
+                            }
+                        },
+                        yAxis: {
+                            type: 'value',
+                            name: 'Time (seconds)'
+                        },
+                        series: [{
+                            type: 'bar',
+                            data: tests.map(t => ({
+                                value: t.avg_time,
+                                itemStyle: {
+                                    color: t.avg_time > 5 ? '#ef4444' : t.avg_time > 2 ? '#f59e0b' : '#3b82f6'
+                                }
+                            })),
+                            barMaxWidth: 50
+                        }]
+                    };
+
+                    slowestChart.setOption(option);
+                    window.addEventListener('resize', () => slowestChart.resize());
+
+                } catch (error) {
+                    console.error('Failed to load slowest tests:', error);
+                }
+            }
+
+            async function loadRegressions() {
+                try {
+                    const threshold = document.getElementById('thresholdSelect').value;
+                    const response = await db.fetchWithAuth(`/stats/performance-regressions?threshold=${threshold}`);
+                    const regressions = response.data;
+
+                    document.getElementById('regressionCount').textContent = regressions.length;
+
+                    const container = document.getElementById('regressionsList');
+
+                    if (regressions.length === 0) {
+                        container.innerHTML = '<div class="text-center text-green-600 dark:text-green-400 py-8">🎉 No performance regressions detected!</div>';
+                        return;
+                    }
+
+                    const html = regressions.map(test => `
+                        <div class="border-l-4 border-orange-500 bg-orange-50 dark:bg-orange-900/20 p-4 mb-3 rounded">
+                            <div class="flex justify-between items-start">
+                                <div class="flex-1">
+                                    <div class="font-semibold text-gray-900 dark:text-white">${test.name}</div>
+                                    <div class="text-sm code-font text-gray-600 dark:text-gray-400">${test.classname}</div>
+                                    <div class="mt-2 flex items-center space-x-4 text-sm">
+                                        <span class="text-gray-600 dark:text-gray-400">Baseline: <span class="font-medium">${test.baseline_avg}s</span></span>
+                                        <span class="text-2xl">→</span>
+                                        <span class="text-orange-600 dark:text-orange-400">Recent: <span class="font-bold">${test.recent_avg}s</span></span>
+                                        <span class="px-2 py-1 bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200 rounded-full font-semibold">
+                                            +${test.percent_change}% slower
+                                        </span>
+                                    </div>
+                                </div>
+                                <button onclick="viewTestHistory('${test.name}', '${test.classname}')"
+                                    class="ml-4 px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700">
+                                    View History
+                                </button>
+                            </div>
+                        </div>
+                    `).join('');
+
+                    container.innerHTML = html;
+
+                } catch (error) {
+                    console.error('Failed to load regressions:', error);
+                }
+            }
+
+            async function loadSuitePerformance() {
+                try {
+                    const response = await db.fetchWithAuth('/stats/suite-performance');
+                    const suites = response.data;
+
+                    if (suites.length === 0) return;
+
+                    document.getElementById('suiteCount').textContent = suites.length;
+
+                    // Pie chart for time distribution
+                    suitePieChart = echarts.init(document.getElementById('suitePieChart'));
+
+                    const pieOption = {
+                        tooltip: {
+                            trigger: 'item',
+                            formatter: '{b}: {c}s ({d}%)'
+                        },
+                        series: [{
+                            type: 'pie',
+                            radius: ['40%', '70%'],
+                            data: suites.slice(0, 10).map(s => ({
+                                name: s.suite_name.length > 30 ? s.suite_name.substring(0, 30) + '...' : s.suite_name,
+                                value: s.total_time
+                            })),
+                            label: {
+                                fontSize: 11
+                            }
+                        }]
+                    };
+
+                    suitePieChart.setOption(pieOption);
+                    window.addEventListener('resize', () => suitePieChart.resize());
+
+                    // Bar chart for success rates
+                    suiteSuccessChart = echarts.init(document.getElementById('suiteSuccessChart'));
+
+                    const barOption = {
+                        tooltip: {
+                            trigger: 'axis',
+                            axisPointer: { type: 'shadow' }
+                        },
+                        grid: { left: '3%', right: '4%', bottom: '10%', containLabel: true },
+                        xAxis: {
+                            type: 'value',
+                            max: 100,
+                            name: 'Success Rate (%)'
+                        },
+                        yAxis: {
+                            type: 'category',
+                            data: suites.slice(0, 10).map(s => s.suite_name.length > 20 ? s.suite_name.substring(0, 20) + '...' : s.suite_name)
+                        },
+                        series: [{
+                            type: 'bar',
+                            data: suites.slice(0, 10).map(s => ({
+                                value: s.success_rate,
+                                itemStyle: {
+                                    color: s.success_rate >= 90 ? '#10b981' : s.success_rate >= 70 ? '#f59e0b' : '#ef4444'
+                                }
+                            })),
+                            barMaxWidth: 30
+                        }]
+                    };
+
+                    suiteSuccessChart.setOption(barOption);
+                    window.addEventListener('resize', () => suiteSuccessChart.resize());
+
+                    // Table
+                    const tbody = document.getElementById('suiteTableBody');
+                    tbody.innerHTML = suites.map(suite => `
+                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                            <td class="px-4 py-3 text-sm">
+                                <div class="font-medium text-gray-900 dark:text-white code-font">${suite.suite_name}</div>
+                            </td>
+                            <td class="px-4 py-3 text-sm text-right">
+                                <span class="font-bold ${suite.total_time > 60 ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-white'}">${suite.total_time}s</span>
+                            </td>
+                            <td class="px-4 py-3 text-sm text-right text-gray-900 dark:text-white">${suite.avg_time}s</td>
+                            <td class="px-4 py-3 text-sm text-right text-gray-900 dark:text-white">${suite.total_tests}</td>
+                            <td class="px-4 py-3 text-sm text-right">
+                                <span class="px-2 py-1 rounded-full text-xs font-semibold ${
+                                    suite.success_rate >= 90 ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200' :
+                                    suite.success_rate >= 70 ? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200' :
+                                    'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200'
+                                }">
+                                    ${suite.success_rate.toFixed(1)}%
+                                </span>
+                            </td>
+                        </tr>
+                    `).join('');
+
+                } catch (error) {
+                    console.error('Failed to load suite performance:', error);
+                }
+            }
+
+            function viewTestHistory(testName, className) {
+                window.location.href = `test-case-history.html?name=${encodeURIComponent(testName)}&class=${encodeURIComponent(className)}`;
+            }
+
+            // Initialize on load
+            init();
+        </script>
+    </body>
+</html>
