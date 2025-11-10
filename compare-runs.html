@@ -198,22 +198,11 @@
         <script src="theme.js"></script>
         <script src="navigation.js"></script>
         <script src="api-client.js"></script>
+        <script src="shared-utils.js"></script>
 
         <script>
             const db = new JUnitAPIClient();
             let allRuns = [];
-
-            // Utility function to log errors with full details
-            function logError(context, error) {
-                console.error(`[ERROR] ${context}`);
-                console.error('Error message:', error.message || 'No message');
-                console.error('Error stack:', error.stack || 'No stack trace');
-                if (error.response) {
-                    console.error('Response status:', error.response.status);
-                    console.error('Response data:', error.response.data);
-                }
-                console.error('Full error object:', JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
-            }
 
             // Initialize
             async function init() {
@@ -237,7 +226,7 @@
 
             async function loadRuns() {
                 try {
-                    const response = await db.fetchWithAuth('/runs?limit=100');
+                    const response = await db.request('/runs?limit=100');
                     allRuns = response.data.runs;
 
                     const run1Select = document.getElementById('run1Select');
@@ -275,7 +264,7 @@
                 document.getElementById('loadingState').classList.remove('hidden');
 
                 try {
-                    const response = await db.fetchWithAuth(`/runs/${run1Id}/compare/${run2Id}`);
+                    const response = await db.request(`/runs/${run1Id}/compare/${run2Id}`);
                     const data = response.data;
 
                     displayResults(data);
@@ -531,16 +520,6 @@
                 `).join('');
 
                 document.getElementById('removedTestsList').innerHTML = html;
-            }
-
-            function viewTestHistory(testName, className) {
-                window.location.href = `test-case-history.html?name=${encodeURIComponent(testName)}&class=${encodeURIComponent(className)}`;
-            }
-
-            function escapeHtml(text) {
-                const div = document.createElement('div');
-                div.textContent = text;
-                return div.innerHTML;
             }
 
             // Initialize on load

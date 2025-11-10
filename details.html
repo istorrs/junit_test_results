@@ -315,70 +315,125 @@
         <script src="theme.js"></script>
         <script src="navigation.js"></script>
         <script src="api-client.js"></script>
+        <script src="shared-utils.js"></script>
         <script src="test-details-modal.js"></script>
         <script>
             class TestDetailsPage {
                 constructor() {
+                    console.log('[TestDetailsPage] Constructor started');
                     this.db = new JUnitAPIClient();
+                    console.log('[TestDetailsPage] JUnitAPIClient initialized:', this.db);
                     this.runId = null;
                     this.testSuites = [];
                     this.testCases = [];
+                    console.log('[TestDetailsPage] Calling init()');
                     this.init();
                 }
 
                 async init() {
+                    console.log('[TestDetailsPage.init] Starting initialization');
                     try {
                         this.runId = this.getRunIdFromUrl();
+                        console.log('[TestDetailsPage.init] Run ID from URL:', this.runId);
+
                         if (this.runId) {
+                            console.log('[TestDetailsPage.init] Loading test run details for ID:', this.runId);
                             await this.loadTestRunDetails();
+                            console.log('[TestDetailsPage.init] Test run details loaded successfully');
                         } else {
+                            console.warn('[TestDetailsPage.init] No run ID in URL');
                             this.showError('No test run specified');
                         }
+
+                        console.log('[TestDetailsPage.init] Setting up event listeners');
                         this.setupEventListeners();
+                        console.log('[TestDetailsPage.init] Initialization complete');
                     } catch (error) {
-                        console.error('Failed to initialize details page:', error);
+                        logError('Failed to initialize Test Details page', error);
                         this.showError('Failed to load test details');
                     }
                 }
 
                 getRunIdFromUrl() {
                     const urlParams = new URLSearchParams(window.location.search);
-                    return urlParams.get('run') || null;
+                    const runId = urlParams.get('run') || null;
+                    console.log('[TestDetailsPage.getRunIdFromUrl] URL search params:', window.location.search);
+                    console.log('[TestDetailsPage.getRunIdFromUrl] Extracted run ID:', runId);
+                    return runId;
                 }
 
                 async loadTestRunDetails() {
-                    const [testRun, testSuites, testCases, statistics] = await Promise.all([
-                        this.getTestRun(this.runId),
-                        this.db.getTestSuites(this.runId),
-                        this.db.getTestCases({ run_id: this.runId }),
-                        this.db.getTestStatistics(this.runId)
-                    ]);
+                    console.log('[TestDetailsPage.loadTestRunDetails] Starting to load test run details');
+                    console.log('[TestDetailsPage.loadTestRunDetails] Run ID:', this.runId);
 
-                    this.testSuites = testSuites;
-                    this.testCases = testCases;
+                    try {
+                        console.log('[TestDetailsPage.loadTestRunDetails] Fetching data from API...');
+                        const [testRun, testSuites, testCases, statistics] = await Promise.all([
+                            this.getTestRun(this.runId),
+                            this.db.getTestSuites(this.runId),
+                            this.db.getTestCases({ run_id: this.runId }),
+                            this.db.getTestStatistics(this.runId)
+                        ]);
 
-                    this.updateRunInfo(testRun);
-                    this.updateSummaryCards(statistics);
-                    this.renderTestSuites();
-                    this.renderTestCases();
-                    this.initializePerformanceChart();
-                    this.renderFailurePatterns();
+                        console.log('[TestDetailsPage.loadTestRunDetails] API responses received:');
+                        console.log('  - testRun:', testRun);
+                        console.log('  - testSuites count:', testSuites?.length || 0);
+                        console.log('  - testCases count:', testCases?.length || 0);
+                        console.log('  - statistics:', statistics);
+
+                        this.testSuites = testSuites;
+                        this.testCases = testCases;
+
+                        console.log('[TestDetailsPage.loadTestRunDetails] Updating UI components...');
+                        this.updateRunInfo(testRun);
+                        console.log('[TestDetailsPage.loadTestRunDetails] - Run info updated');
+
+                        this.updateSummaryCards(statistics);
+                        console.log('[TestDetailsPage.loadTestRunDetails] - Summary cards updated');
+
+                        this.renderTestSuites();
+                        console.log('[TestDetailsPage.loadTestRunDetails] - Test suites rendered');
+
+                        this.renderTestCases();
+                        console.log('[TestDetailsPage.loadTestRunDetails] - Test cases rendered');
+
+                        this.initializePerformanceChart();
+                        console.log('[TestDetailsPage.loadTestRunDetails] - Performance chart initialized');
+
+                        this.renderFailurePatterns();
+                        console.log('[TestDetailsPage.loadTestRunDetails] - Failure patterns rendered');
+
+                        console.log('[TestDetailsPage.loadTestRunDetails] All data loaded and rendered successfully');
+                    } catch (error) {
+                        logError('Failed to load test run details from API', error);
+                        throw error;
+                    }
                 }
 
                 async getTestRun(runId) {
+                    console.log('[TestDetailsPage.getTestRun] Fetching test run:', runId);
                     const response = await this.db.getTestRun(runId);
+                    console.log('[TestDetailsPage.getTestRun] Response:', response);
                     return response.run;
                 }
 
                 updateRunInfo(testRun) {
+                    console.log('[TestDetailsPage.updateRunInfo] Updating run info with:', testRun);
                     const runInfoElement = document.getElementById('run-info');
+                    console.log('[TestDetailsPage.updateRunInfo] Run info element:', runInfoElement);
+
                     if (runInfoElement && testRun) {
                         const date = new Date(testRun.timestamp).toLocaleString();
-                        runInfoElement.textContent = `${testRun.name} • ${date} • ${testRun.total_tests} tests`;
+                        const text = `${testRun.name} • ${date} • ${testRun.total_tests} tests`;
+                        runInfoElement.textContent = text;
+                        console.log('[TestDetailsPage.updateRunInfo] Set text to:', text);
+                    } else {
+                        console.warn('[TestDetailsPage.updateRunInfo] Element or data missing');
                     }
                 }
 
                 updateSummaryCards(stats) {
+                    console.log('[TestDetailsPage.updateSummaryCards] Updating summary cards with:', stats);
                     const elements = {
                         total: document.getElementById('total-tests-summary'),
                         passed: document.getElementById('passed-tests-summary'),
@@ -386,21 +441,51 @@
                         time: document.getElementById('total-time-summary')
                     };
 
-                    if (elements.total) elements.total.textContent = stats.total;
-                    if (elements.passed) elements.passed.textContent = stats.passed;
-                    if (elements.failed) elements.failed.textContent = stats.failed + stats.error;
-                    if (elements.time)
-                        elements.time.textContent = `${stats.total_time.toFixed(2)}s`;
+                    console.log('[TestDetailsPage.updateSummaryCards] Elements found:', {
+                        total: !!elements.total,
+                        passed: !!elements.passed,
+                        failed: !!elements.failed,
+                        time: !!elements.time
+                    });
+
+                    if (elements.total) {
+                        elements.total.textContent = stats.total;
+                        console.log('[TestDetailsPage.updateSummaryCards] Total set to:', stats.total);
+                    }
+                    if (elements.passed) {
+                        elements.passed.textContent = stats.passed;
+                        console.log('[TestDetailsPage.updateSummaryCards] Passed set to:', stats.passed);
+                    }
+                    if (elements.failed) {
+                        const failedCount = stats.failed + stats.error;
+                        elements.failed.textContent = failedCount;
+                        console.log('[TestDetailsPage.updateSummaryCards] Failed set to:', failedCount);
+                    }
+                    if (elements.time) {
+                        const timeText = `${stats.total_time.toFixed(2)}s`;
+                        elements.time.textContent = timeText;
+                        console.log('[TestDetailsPage.updateSummaryCards] Time set to:', timeText);
+                    }
                 }
 
                 renderTestSuites() {
+                    console.log('[TestDetailsPage.renderTestSuites] Starting to render test suites');
+                    console.log('[TestDetailsPage.renderTestSuites] Number of suites:', this.testSuites.length);
+
                     const container = document.getElementById('test-suites-container');
                     const filter = document.getElementById('suite-filter');
 
-                    if (!container) return;
+                    console.log('[TestDetailsPage.renderTestSuites] Container element:', container);
+                    console.log('[TestDetailsPage.renderTestSuites] Filter element:', filter);
+
+                    if (!container) {
+                        console.warn('[TestDetailsPage.renderTestSuites] Container not found, aborting');
+                        return;
+                    }
 
                     // Populate suite filter
                     if (filter) {
+                        console.log('[TestDetailsPage.renderTestSuites] Populating suite filter');
                         filter.innerHTML = '<option value="all">All Suites</option>';
                         this.testSuites.forEach(suite => {
                             const option = document.createElement('option');
@@ -408,8 +493,10 @@
                             option.textContent = suite.name;
                             filter.appendChild(option);
                         });
+                        console.log('[TestDetailsPage.renderTestSuites] Suite filter populated with', this.testSuites.length, 'options');
                     }
 
+                    console.log('[TestDetailsPage.renderTestSuites] Generating HTML for', this.testSuites.length, 'suites');
                     container.innerHTML = this.testSuites
                         .map(
                             suite => `
@@ -440,11 +527,19 @@
                 `
                         )
                         .join('');
+                    console.log('[TestDetailsPage.renderTestSuites] HTML rendered, length:', container.innerHTML.length);
                 }
 
                 renderTestCases() {
+                    console.log('[TestDetailsPage.renderTestCases] Starting to render test cases');
+                    console.log('[TestDetailsPage.renderTestCases] Number of test cases:', this.testCases.length);
                     const container = document.getElementById('test-cases-container');
-                    if (!container) return;
+                    console.log('[TestDetailsPage.renderTestCases] Container element:', container);
+
+                    if (!container) {
+                        console.warn('[TestDetailsPage.renderTestCases] Container not found, aborting');
+                        return;
+                    }
 
                     container.innerHTML = this.testCases
                         .map(
@@ -483,26 +578,54 @@
                 }
 
                 initializePerformanceChart() {
+                    console.log('[TestDetailsPage.initializePerformanceChart] Starting chart initialization');
+                    console.log('[TestDetailsPage.initializePerformanceChart] Number of test cases available:', this.testCases.length);
+
                     const chartContainer = document.getElementById('performance-chart');
-                    if (!chartContainer) return;
+                    console.log('[TestDetailsPage.initializePerformanceChart] Chart container element:', chartContainer);
+
+                    if (!chartContainer) {
+                        console.warn('[TestDetailsPage.initializePerformanceChart] Chart container not found, aborting');
+                        return;
+                    }
 
                     // Get current theme by checking if dark class is present on html element
                     const isDark = document.documentElement.classList.contains('dark');
+                    console.log('[TestDetailsPage.initializePerformanceChart] Dark mode:', isDark);
 
                     // Dispose existing chart if it exists
                     if (this.performanceChart) {
+                        console.log('[TestDetailsPage.initializePerformanceChart] Disposing existing chart');
                         this.performanceChart.dispose();
                     }
 
                     // Initialize chart with theme-aware colors
+                    console.log('[TestDetailsPage.initializePerformanceChart] Initializing ECharts instance');
                     this.performanceChart = echarts.init(chartContainer);
+                    console.log('[TestDetailsPage.initializePerformanceChart] ECharts instance created:', this.performanceChart);
 
                     // Prepare data - sort by execution time descending to show slowest tests first
                     const sortedTests = [...this.testCases]
                         .sort((a, b) => b.time - a.time)
                         .slice(0, 20);
+
+                    console.log('[TestDetailsPage.initializePerformanceChart] Top 20 slowest tests:', sortedTests.length);
+                    if (sortedTests.length > 0) {
+                        console.log('[TestDetailsPage.initializePerformanceChart] Slowest test:', {
+                            name: sortedTests[0].name,
+                            time: sortedTests[0].time
+                        });
+                        console.log('[TestDetailsPage.initializePerformanceChart] Fastest test:', {
+                            name: sortedTests[sortedTests.length - 1].name,
+                            time: sortedTests[sortedTests.length - 1].time
+                        });
+                    }
+
                     const testNames = sortedTests.map(test => test.name.substring(0, 20) + '...');
                     const executionTimes = sortedTests.map(test => test.time);
+
+                    console.log('[TestDetailsPage.initializePerformanceChart] Test names array length:', testNames.length);
+                    console.log('[TestDetailsPage.initializePerformanceChart] Execution times array length:', executionTimes.length);
 
                     // Color bars based on performance (execution time) - fast = green, slow = red
                     const maxTime = Math.max(...executionTimes);
@@ -589,10 +712,17 @@
                         ]
                     };
 
+                    console.log('[TestDetailsPage.initializePerformanceChart] Setting chart options');
+                    console.log('[TestDetailsPage.initializePerformanceChart] Chart option series data length:', option.series[0].data.length);
+                    console.log('[TestDetailsPage.initializePerformanceChart] Sample data points:', option.series[0].data.slice(0, 3));
+
                     this.performanceChart.setOption(option);
+                    console.log('[TestDetailsPage.initializePerformanceChart] Chart options set successfully');
+                    console.log('[TestDetailsPage.initializePerformanceChart] Chart should now be visible with', executionTimes.length, 'bars');
 
                     // Set up resize handler (only once)
                     if (!this.resizeHandler) {
+                        console.log('[TestDetailsPage.initializePerformanceChart] Setting up resize handler');
                         this.resizeHandler = () => {
                             if (this.performanceChart) {
                                 this.performanceChart.resize();
@@ -602,7 +732,10 @@
                     }
 
                     // Re-render chart on theme change
+                    console.log('[TestDetailsPage.initializePerformanceChart] Setting up theme change listener');
                     this.setupThemeChangeListener();
+
+                    console.log('[TestDetailsPage.initializePerformanceChart] Chart initialization complete');
                 }
 
                 setupThemeChangeListener() {
@@ -970,8 +1103,13 @@
             }
 
             // Initialize details page
+            console.log('[details.html] Script loaded, waiting for DOMContentLoaded');
             document.addEventListener('DOMContentLoaded', () => {
+                console.log('[details.html] DOMContentLoaded fired, initializing TestDetailsPage');
+                console.log('[details.html] Current URL:', window.location.href);
+                console.log('[details.html] URL params:', window.location.search);
                 window.detailsPage = new TestDetailsPage();
+                console.log('[details.html] TestDetailsPage instance created and assigned to window.detailsPage');
             });
         </script>
     </body>
