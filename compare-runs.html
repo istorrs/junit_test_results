@@ -226,7 +226,7 @@
 
             async function loadRuns() {
                 try {
-                    const response = await db.fetchWithAuth('/runs?limit=100');
+                    const response = await db.request('/runs?limit=100');
                     allRuns = response.data.runs;
 
                     const run1Select = document.getElementById('run1Select');
@@ -264,7 +264,7 @@
                 document.getElementById('loadingState').classList.remove('hidden');
 
                 try {
-                    const response = await db.fetchWithAuth(`/runs/${run1Id}/compare/${run2Id}`);
+                    const response = await db.request(`/runs/${run1Id}/compare/${run2Id}`);
                     const data = response.data;
 
                     displayResults(data);

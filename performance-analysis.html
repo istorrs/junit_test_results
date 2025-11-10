@@ -205,7 +205,7 @@
 
             async function loadSlowestTests() {
                 try {
-                    const response = await db.fetchWithAuth('/stats/slowest-tests?limit=20');
+                    const response = await db.request('/stats/slowest-tests?limit=20');
                     const tests = response.data;
 
                     if (tests.length === 0) {
@@ -276,7 +276,7 @@
             async function loadRegressions() {
                 try {
                     const threshold = document.getElementById('thresholdSelect').value;
-                    const response = await db.fetchWithAuth(`/stats/performance-regressions?threshold=${threshold}`);
+                    const response = await db.request(`/stats/performance-regressions?threshold=${threshold}`);
                     const regressions = response.data;
 
                     document.getElementById('regressionCount').textContent = regressions.length;
@@ -320,7 +320,7 @@
 
             async function loadSuitePerformance() {
                 try {
-                    const response = await db.fetchWithAuth('/stats/suite-performance');
+                    const response = await db.request('/stats/suite-performance');
                     const suites = response.data;
 
                     if (suites.length === 0) return;
