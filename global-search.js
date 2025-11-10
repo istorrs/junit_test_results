@@ -101,8 +101,8 @@ class GlobalSearch {
 
     setupKeyboardShortcut() {
         document.addEventListener('keydown', (e) => {
-            // Ctrl+K or Cmd+K to open search
-            if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+            // Ctrl+/ or Cmd+/ to open search
+            if ((e.ctrlKey || e.metaKey) && e.key === '/') {
                 e.preventDefault();
                 this.open();
             }
