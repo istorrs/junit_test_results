@@ -31,22 +31,17 @@ router.post('/', upload.single('file'), validateUpload, async (req, res, next) =
         // Parse CI metadata from request body
         let ciMetadata = null;
         if (req.body.ci_metadata) {
-            logger.info('Raw CI metadata received', {
-                ci_metadata_raw: req.body.ci_metadata,
-                ci_metadata_type: typeof req.body.ci_metadata,
-                filename
-            });
+            logger.info(`Raw CI metadata type: ${typeof req.body.ci_metadata}`);
+            logger.info(`Raw CI metadata value: ${JSON.stringify(req.body.ci_metadata)}`);
             try {
                 ciMetadata =
                     typeof req.body.ci_metadata === 'string'
                         ? JSON.parse(req.body.ci_metadata)
                         : req.body.ci_metadata;
-                logger.info('Received CI metadata', { ci_metadata: ciMetadata, filename });
+                logger.info(`Parsed CI metadata successfully: ${JSON.stringify(ciMetadata)}`);
             } catch (e) {
-                logger.warn('Invalid CI metadata format', {
-                    error: e.message,
-                    raw_value: req.body.ci_metadata
-                });
+                logger.warn(`Invalid CI metadata format - Error: ${e.message}`);
+                logger.warn(`Raw value was: ${req.body.ci_metadata}`);
             }
         } else {
             logger.info('No CI metadata in request', { filename });
