@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const mongoose = require('mongoose');
 const TestCase = require('../models/TestCase');
 const TestResult = require('../models/TestResult');
 
@@ -14,10 +15,10 @@ router.get('/', async (req, res, next) => {
 
         // Filters
         if (req.query.run_id) {
-            matchQuery.run_id = req.query.run_id;
+            matchQuery.run_id = new mongoose.Types.ObjectId(req.query.run_id);
         }
         if (req.query.suite_id) {
-            matchQuery.suite_id = req.query.suite_id;
+            matchQuery.suite_id = new mongoose.Types.ObjectId(req.query.suite_id);
         }
         if (req.query.status) {
             matchQuery.status = req.query.status;
