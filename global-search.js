@@ -266,7 +266,7 @@ class GlobalSearch {
         const testClass = selectedItem.getAttribute('data-test-class');
 
         // Navigate to test history page
-        window.location.href = `test-case-history.html?name=${encodeURIComponent(testName)}&class=${encodeURIComponent(testClass)}`;
+        window.location.href = `test-case-history.html?name=${encodeURIComponent(testName)}&classname=${encodeURIComponent(testClass)}`;
         this.close();
     }
 

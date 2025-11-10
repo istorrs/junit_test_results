@@ -79,7 +79,7 @@ class TestDetailsModal {
         // View full history button
         document.getElementById('view-full-history').addEventListener('click', () => {
             if (this.currentTestCase) {
-                window.location.href = `test-case-history.html?name=${encodeURIComponent(this.currentTestCase.name)}&class=${encodeURIComponent(this.currentTestCase.classname)}`;
+                window.location.href = `test-case-history.html?name=${encodeURIComponent(this.currentTestCase.name)}&classname=${encodeURIComponent(this.currentTestCase.classname)}`;
             }
         });
 
