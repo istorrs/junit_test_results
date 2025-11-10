@@ -84,6 +84,7 @@ services:
             # CSS files
             - ./shared-styles.css:/usr/share/nginx/html/shared-styles.css:ro
             # JavaScript files
+            - ./error-boundary.js:/usr/share/nginx/html/error-boundary.js:ro
             - ./api-client.js:/usr/share/nginx/html/api-client.js:ro
             - ./main.js:/usr/share/nginx/html/main.js:ro
             - ./test-details-modal.js:/usr/share/nginx/html/test-details-modal.js:ro
