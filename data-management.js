@@ -106,7 +106,7 @@ class DataManagement {
             this.totalRuns = this.allRuns.length;
             this.filterAndRenderUploads();
         } catch (error) {
-            console.error('Failed to load uploads:', error);
+            logError('Failed to load uploads', error);
             this.showNotification('Failed to load test runs', 'error');
         }
     }
@@ -434,12 +434,7 @@ class DataManagement {
             await this.loadUploads();
             console.log('Upload list reloaded');
         } catch (error) {
-            console.error('Failed to delete test run:', error);
-            console.error('Error details:', {
-                message: error.message,
-                stack: error.stack,
-                response: error.response
-            });
+            logError('Failed to delete test run', error);
 
             this.showNotification(`Failed to delete test run: ${error.message}`, 'error');
 
