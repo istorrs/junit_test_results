@@ -6,7 +6,8 @@ class JUnitDashboard {
             status: 'all',
             search: '',
             dateRange: null,
-            run_id: null
+            run_id: null,
+            classname: null
         };
         this.charts = {};
         this.init();
@@ -38,6 +39,7 @@ class JUnitDashboard {
 
         // Filter handlers
         const runFilter = document.getElementById('run-filter');
+        const suiteFilter = document.getElementById('suite-filter');
         const statusFilter = document.getElementById('status-filter');
         const searchInput = document.getElementById('search-input');
         const dateFilter = document.getElementById('date-filter');
@@ -45,6 +47,9 @@ class JUnitDashboard {
 
         if (runFilter) {
             runFilter.addEventListener('change', this.handleRunFilter.bind(this));
+        }
+        if (suiteFilter) {
+            suiteFilter.addEventListener('change', this.handleSuiteFilter.bind(this));
         }
         if (statusFilter) {
             statusFilter.addEventListener('change', this.handleStatusFilter.bind(this));
@@ -165,6 +170,7 @@ class JUnitDashboard {
             this.renderTestRuns(testRuns);
             this.renderRecentUploads(recentUploads);
             this.populateRunFilter(testRuns);
+            await this.populateSuiteFilter();
             this.initializeCharts(statistics);
             await this.loadInsights();
         } catch (error) {
@@ -212,6 +218,35 @@ class JUnitDashboard {
             option.textContent = `${run.name} (${new Date(run.timestamp).toLocaleDateString()})`;
             runFilter.appendChild(option);
         });
+    }
+
+    async populateSuiteFilter() {
+        const suiteFilter = document.getElementById('suite-filter');
+        if (!suiteFilter) {
+            return;
+        }
+
+        try {
+            // Fetch test cases to extract unique suites
+            const testCases = await this.db.getTestCases({ limit: 1000 });
+
+            // Extract unique suite names (classnames)
+            const uniqueSuites = [...new Set(testCases.map(tc => tc.classname))]
+                .filter(Boolean)
+                .sort();
+
+            // Clear existing options except "All"
+            suiteFilter.innerHTML = '<option value="all">All Test Suites</option>';
+
+            uniqueSuites.forEach(suite => {
+                const option = document.createElement('option');
+                option.value = suite;
+                option.textContent = suite;
+                suiteFilter.appendChild(option);
+            });
+        } catch (error) {
+            logError('Error populating suite filter', error);
+        }
     }
 
     updateDashboardStats(stats) {
@@ -674,6 +709,11 @@ class JUnitDashboard {
         this.applyFilters();
     }
 
+    handleSuiteFilter(event) {
+        this.currentFilters.classname = event.target.value === 'all' ? null : event.target.value;
+        this.applyFilters();
+    }
+
     handleStatusFilter(event) {
         this.currentFilters.status = event.target.value;
         this.applyFilters();
@@ -759,16 +799,21 @@ class JUnitDashboard {
             status: 'all',
             search: '',
             dateRange: null,
-            run_id: null
+            run_id: null,
+            classname: null
         };
 
         const runFilter = document.getElementById('run-filter');
+        const suiteFilter = document.getElementById('suite-filter');
         const statusFilter = document.getElementById('status-filter');
         const searchInput = document.getElementById('search-input');
         const dateFilter = document.getElementById('date-filter');
 
         if (runFilter) {
             runFilter.value = 'all';
+        }
+        if (suiteFilter) {
+            suiteFilter.value = 'all';
         }
         if (statusFilter) {
             statusFilter.value = 'all';
