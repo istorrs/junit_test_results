@@ -1,5 +1,6 @@
 <!doctype html>
 <html lang="en">
+    <!-- Updated: 2025-11-10 - Fixed error logging and API client -->
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -188,6 +189,18 @@
             const db = new JUnitAPIClient();
             let slowestChart, suitePieChart, suiteSuccessChart;
 
+            // Utility function to log errors with full details
+            function logError(context, error) {
+                console.error(`[ERROR] ${context}`);
+                console.error('Error message:', error.message || 'No message');
+                console.error('Error stack:', error.stack || 'No stack trace');
+                if (error.response) {
+                    console.error('Response status:', error.response.status);
+                    console.error('Response data:', error.response.data);
+                }
+                console.error('Full error object:', JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
+            }
+
             // Initialize
             async function init() {
                 try {
@@ -197,7 +210,7 @@
                         loadSuitePerformance()
                     ]);
                 } catch (error) {
-                    console.error('Failed to initialize:', error);
+                    logError('Failed to initialize Performance Analysis page', error);
                 }
             }
 
@@ -267,7 +280,7 @@
                     window.addEventListener('resize', () => slowestChart.resize());
 
                 } catch (error) {
-                    console.error('Failed to load slowest tests:', error);
+                    logError('Failed to load slowest tests from API', error);
                 }
             }
 
@@ -312,7 +325,7 @@
                     container.innerHTML = html;
 
                 } catch (error) {
-                    console.error('Failed to load regressions:', error);
+                    logError('Failed to load performance regressions from API', error);
                 }
             }
 
@@ -407,7 +420,7 @@
                     `).join('');
 
                 } catch (error) {
-                    console.error('Failed to load suite performance:', error);
+                    logError('Failed to load suite performance metrics from API', error);
                 }
             }
 
