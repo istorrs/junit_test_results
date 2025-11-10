@@ -597,9 +597,7 @@
                     }
 
                     if (suiteFilter !== 'all') {
-                        filteredCases = filteredCases.filter(
-                            test => test.suite_id === parseInt(suiteFilter)
-                        );
+                        filteredCases = filteredCases.filter(test => test.suite_id === suiteFilter);
                     }
 
                     this.renderFilteredTestCases(filteredCases);
