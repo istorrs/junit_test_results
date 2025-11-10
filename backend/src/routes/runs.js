@@ -102,4 +102,125 @@ router.delete('/:id', async (req, res, next) => {
     }
 });
 
+// GET /api/v1/runs/:id1/compare/:id2 - Compare two test runs
+router.get('/:id1/compare/:id2', async (req, res, next) => {
+    try {
+        const [run1, run2] = await Promise.all([
+            TestRun.findById(req.params.id1).lean(),
+            TestRun.findById(req.params.id2).lean()
+        ]);
+
+        if (!run1 || !run2) {
+            return res.status(404).json({
+                success: false,
+                error: 'One or both test runs not found'
+            });
+        }
+
+        const [cases1, cases2] = await Promise.all([
+            TestCase.find({ run_id: req.params.id1 }).lean(),
+            TestCase.find({ run_id: req.params.id2 }).lean()
+        ]);
+
+        // Create maps for easier lookup
+        const cases1Map = new Map();
+        cases1.forEach(c => cases1Map.set(`${c.name}|${c.classname}`, c));
+
+        const cases2Map = new Map();
+        cases2.forEach(c => cases2Map.set(`${c.name}|${c.classname}`, c));
+
+        // Analysis
+        const newFailures = [];
+        const newPasses = [];
+        const regressions = [];
+        const newTests = [];
+        const removedTests = [];
+
+        // Check tests in run2
+        for (const [key, test2] of cases2Map) {
+            const test1 = cases1Map.get(key);
+
+            if (!test1) {
+                newTests.push(test2);
+            } else {
+                // Test exists in both runs
+                if (test1.status === 'passed' && (test2.status === 'failed' || test2.status === 'error')) {
+                    newFailures.push({
+                        name: test2.name,
+                        classname: test2.classname,
+                        status: test2.status,
+                        message: test2.failure_message
+                    });
+                } else if ((test1.status === 'failed' || test1.status === 'error') && test2.status === 'passed') {
+                    newPasses.push({
+                        name: test2.name,
+                        classname: test2.classname
+                    });
+                }
+
+                // Check for performance regression (>20% slower)
+                if (test1.status === 'passed' && test2.status === 'passed' && test1.time > 0) {
+                    const percentChange = ((test2.time - test1.time) / test1.time) * 100;
+                    if (percentChange > 20) {
+                        regressions.push({
+                            name: test2.name,
+                            classname: test2.classname,
+                            old_time: test1.time,
+                            new_time: test2.time,
+                            percent_change: percentChange.toFixed(1)
+                        });
+                    }
+                }
+            }
+        }
+
+        // Check for removed tests
+        for (const [key, test1] of cases1Map) {
+            if (!cases2Map.has(key)) {
+                removedTests.push({
+                    name: test1.name,
+                    classname: test1.classname
+                });
+            }
+        }
+
+        // Summary stats
+        const summary = {
+            run1: {
+                id: run1._id,
+                timestamp: run1.timestamp,
+                total_tests: cases1.length,
+                passed: cases1.filter(c => c.status === 'passed').length,
+                failed: cases1.filter(c => c.status === 'failed').length,
+                errors: cases1.filter(c => c.status === 'error').length,
+                skipped: cases1.filter(c => c.status === 'skipped').length
+            },
+            run2: {
+                id: run2._id,
+                timestamp: run2.timestamp,
+                total_tests: cases2.length,
+                passed: cases2.filter(c => c.status === 'passed').length,
+                failed: cases2.filter(c => c.status === 'failed').length,
+                errors: cases2.filter(c => c.status === 'error').length,
+                skipped: cases2.filter(c => c.status === 'skipped').length
+            }
+        };
+
+        res.json({
+            success: true,
+            data: {
+                summary,
+                new_failures: newFailures,
+                new_passes: newPasses,
+                performance_regressions: regressions,
+                new_tests: newTests,
+                removed_tests: removedTests
+            }
+        });
+
+    } catch (error) {
+        next(error);
+    }
+});
+
 module.exports = router;

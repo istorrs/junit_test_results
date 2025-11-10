@@ -1,0 +1,566 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <script src="console-capture.js"></script>
+        <title>Compare Test Runs - JUnit Dashboard</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link
+            href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+            rel="stylesheet"
+        />
+        <link rel="stylesheet" href="shared-styles.css" />
+        <script src="global-search.js" defer></script>
+        <style>
+            body {
+                font-family: 'Inter', sans-serif;
+            }
+
+            .code-font {
+                font-family: 'JetBrains Mono', monospace;
+            }
+
+            .nav-link {
+                position: relative;
+                transition: all 0.3s ease;
+            }
+
+            .nav-link:hover {
+                color: #3b82f6;
+            }
+
+            .comparison-card {
+                transition: all 0.3s ease;
+                border: 1px solid #e5e7eb;
+            }
+
+            .comparison-card:hover {
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+                transform: translateY(-2px);
+            }
+        </style>
+    </head>
+    <body class="bg-gray-50 dark:bg-gray-900">
+        <!-- Navigation -->
+        <nav class="bg-white dark:bg-gray-800 shadow-lg border-b border-gray-200 dark:border-gray-700">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between h-16">
+                    <div class="flex space-x-8">
+                        <a
+                            href="index.html"
+                            class="nav-link inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400"
+                        >
+                            Dashboard
+                        </a>
+                        <a
+                            href="details.html"
+                            class="nav-link inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400"
+                        >
+                            Test Details
+                        </a>
+                        <a
+                            href="flaky-tests.html"
+                            class="nav-link inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400"
+                        >
+                            Flaky Tests
+                        </a>
+                        <a
+                            href="performance-analysis.html"
+                            class="nav-link inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400"
+                        >
+                            Performance
+                        </a>
+                        <a
+                            href="reports.html"
+                            class="nav-link inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400"
+                        >
+                            Reports
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <!-- Header -->
+            <div class="mb-8">
+                <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Compare Test Runs</h1>
+                <p class="mt-2 text-gray-600 dark:text-gray-400">
+                    Analyze differences between two test runs
+                </p>
+            </div>
+
+            <!-- Run Selection -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Baseline Run (Earlier)
+                    </label>
+                    <select
+                        id="run1Select"
+                        class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                    >
+                        <option value="">Select a test run...</option>
+                    </select>
+                </div>
+
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Current Run (Later)
+                    </label>
+                    <select
+                        id="run2Select"
+                        class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                    >
+                        <option value="">Select a test run...</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="flex justify-center mb-8">
+                <button
+                    id="compareBtn"
+                    onclick="compareRuns()"
+                    class="px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+                >
+                    Compare Runs
+                </button>
+            </div>
+
+            <!-- Results Container -->
+            <div id="resultsContainer" class="hidden">
+                <!-- Summary Comparison -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                            Baseline Run
+                        </h3>
+                        <div id="run1Summary"></div>
+                    </div>
+
+                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                            Current Run
+                        </h3>
+                        <div id="run2Summary"></div>
+                    </div>
+                </div>
+
+                <!-- Delta Summary -->
+                <div class="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-700 rounded-lg shadow-lg p-6 mb-8">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                        📊 Summary of Changes
+                    </h3>
+                    <div id="deltaSummary" class="grid grid-cols-2 md:grid-cols-4 gap-4"></div>
+                </div>
+
+                <!-- New Failures -->
+                <div id="newFailuresSection" class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-6 hidden">
+                    <h3 class="text-lg font-semibold text-red-600 dark:text-red-400 mb-4 flex items-center">
+                        <span class="text-2xl mr-2">🔴</span>
+                        New Failures
+                        <span id="newFailuresCount" class="ml-2 px-2 py-1 bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 text-sm rounded-full"></span>
+                    </h3>
+                    <div id="newFailuresList"></div>
+                </div>
+
+                <!-- New Passes -->
+                <div id="newPassesSection" class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-6 hidden">
+                    <h3 class="text-lg font-semibold text-green-600 dark:text-green-400 mb-4 flex items-center">
+                        <span class="text-2xl mr-2">✅</span>
+                        New Passes
+                        <span id="newPassesCount" class="ml-2 px-2 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 text-sm rounded-full"></span>
+                    </h3>
+                    <div id="newPassesList"></div>
+                </div>
+
+                <!-- Performance Regressions -->
+                <div id="regressionsSection" class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-6 hidden">
+                    <h3 class="text-lg font-semibold text-orange-600 dark:text-orange-400 mb-4 flex items-center">
+                        <span class="text-2xl mr-2">🐌</span>
+                        Performance Regressions
+                        <span id="regressionsCount" class="ml-2 px-2 py-1 bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200 text-sm rounded-full"></span>
+                    </h3>
+                    <div id="regressionsList"></div>
+                </div>
+
+                <!-- New Tests -->
+                <div id="newTestsSection" class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-6 hidden">
+                    <h3 class="text-lg font-semibold text-blue-600 dark:text-blue-400 mb-4 flex items-center">
+                        <span class="text-2xl mr-2">🆕</span>
+                        New Tests
+                        <span id="newTestsCount" class="ml-2 px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-sm rounded-full"></span>
+                    </h3>
+                    <div id="newTestsList"></div>
+                </div>
+
+                <!-- Removed Tests -->
+                <div id="removedTestsSection" class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-6 hidden">
+                    <h3 class="text-lg font-semibold text-gray-600 dark:text-gray-400 mb-4 flex items-center">
+                        <span class="text-2xl mr-2">🗑️</span>
+                        Removed Tests
+                        <span id="removedTestsCount" class="ml-2 px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-sm rounded-full"></span>
+                    </h3>
+                    <div id="removedTestsList"></div>
+                </div>
+            </div>
+
+            <!-- Loading State -->
+            <div id="loadingState" class="hidden text-center py-12">
+                <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                <p class="mt-4 text-gray-600 dark:text-gray-400">Comparing test runs...</p>
+            </div>
+
+            <!-- Empty State -->
+            <div id="emptyState" class="text-center py-12">
+                <div class="text-6xl mb-4">🔍</div>
+                <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                    Select Two Runs to Compare
+                </h3>
+                <p class="text-gray-600 dark:text-gray-400">
+                    Choose a baseline run and a current run from the dropdowns above
+                </p>
+            </div>
+        </div>
+
+        <script src="db.js"></script>
+        <script>
+            const db = new TestResultsDB();
+            let allRuns = [];
+
+            // Initialize
+            async function init() {
+                try {
+                    await db.connect();
+                    await loadRuns();
+
+                    // Check for URL parameters
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const run1 = urlParams.get('run1');
+                    const run2 = urlParams.get('run2');
+
+                    if (run1 && run2) {
+                        document.getElementById('run1Select').value = run1;
+                        document.getElementById('run2Select').value = run2;
+                        await compareRuns();
+                    }
+                } catch (error) {
+                    console.error('Failed to initialize:', error);
+                }
+            }
+
+            async function loadRuns() {
+                try {
+                    const response = await db.fetchWithAuth('/runs?limit=100');
+                    allRuns = response.data.runs;
+
+                    const run1Select = document.getElementById('run1Select');
+                    const run2Select = document.getElementById('run2Select');
+
+                    allRuns.forEach((run, index) => {
+                        const date = new Date(run.timestamp).toLocaleString();
+                        const option1 = new Option(`Run #${allRuns.length - index} - ${date}`, run._id);
+                        const option2 = new Option(`Run #${allRuns.length - index} - ${date}`, run._id);
+                        run1Select.add(option1);
+                        run2Select.add(option2);
+                    });
+                } catch (error) {
+                    console.error('Failed to load runs:', error);
+                }
+            }
+
+            async function compareRuns() {
+                const run1Id = document.getElementById('run1Select').value;
+                const run2Id = document.getElementById('run2Select').value;
+
+                if (!run1Id || !run2Id) {
+                    alert('Please select both runs to compare');
+                    return;
+                }
+
+                if (run1Id === run2Id) {
+                    alert('Please select different runs to compare');
+                    return;
+                }
+
+                // Show loading state
+                document.getElementById('emptyState').classList.add('hidden');
+                document.getElementById('resultsContainer').classList.add('hidden');
+                document.getElementById('loadingState').classList.remove('hidden');
+
+                try {
+                    const response = await db.fetchWithAuth(`/runs/${run1Id}/compare/${run2Id}`);
+                    const data = response.data;
+
+                    displayResults(data);
+
+                    // Hide loading, show results
+                    document.getElementById('loadingState').classList.add('hidden');
+                    document.getElementById('resultsContainer').classList.remove('hidden');
+
+                    // Update URL
+                    const url = new URL(window.location);
+                    url.searchParams.set('run1', run1Id);
+                    url.searchParams.set('run2', run2Id);
+                    window.history.pushState({}, '', url);
+
+                } catch (error) {
+                    console.error('Failed to compare runs:', error);
+                    document.getElementById('loadingState').classList.add('hidden');
+                    document.getElementById('emptyState').classList.remove('hidden');
+                    alert('Failed to compare runs. Please try again.');
+                }
+            }
+
+            function displayResults(data) {
+                // Display summaries
+                displayRunSummary('run1Summary', data.summary.run1);
+                displayRunSummary('run2Summary', data.summary.run2);
+
+                // Display delta summary
+                displayDeltaSummary(data.summary);
+
+                // Display sections
+                displayNewFailures(data.new_failures);
+                displayNewPasses(data.new_passes);
+                displayRegressions(data.performance_regressions);
+                displayNewTests(data.new_tests);
+                displayRemovedTests(data.removed_tests);
+            }
+
+            function displayRunSummary(elementId, run) {
+                const successRate = run.total_tests > 0
+                    ? ((run.passed / run.total_tests) * 100).toFixed(1)
+                    : 0;
+
+                document.getElementById(elementId).innerHTML = `
+                    <div class="space-y-3">
+                        <div class="flex justify-between">
+                            <span class="text-gray-600 dark:text-gray-400">Date:</span>
+                            <span class="font-medium dark:text-white">${new Date(run.timestamp).toLocaleString()}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600 dark:text-gray-400">Total Tests:</span>
+                            <span class="font-bold text-lg dark:text-white">${run.total_tests}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-green-600 dark:text-green-400">Passed:</span>
+                            <span class="font-semibold text-green-600 dark:text-green-400">${run.passed}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-red-600 dark:text-red-400">Failed:</span>
+                            <span class="font-semibold text-red-600 dark:text-red-400">${run.failed}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-orange-600 dark:text-orange-400">Errors:</span>
+                            <span class="font-semibold text-orange-600 dark:text-orange-400">${run.errors}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600 dark:text-gray-400">Skipped:</span>
+                            <span class="font-semibold dark:text-white">${run.skipped}</span>
+                        </div>
+                        <div class="pt-3 border-t border-gray-200 dark:border-gray-700">
+                            <div class="flex justify-between">
+                                <span class="text-gray-600 dark:text-gray-400">Success Rate:</span>
+                                <span class="font-bold text-lg ${successRate >= 90 ? 'text-green-600 dark:text-green-400' : successRate >= 70 ? 'text-yellow-600 dark:text-yellow-400' : 'text-red-600 dark:text-red-400'}">${successRate}%</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            function displayDeltaSummary(summary) {
+                const testsDelta = summary.run2.total_tests - summary.run1.total_tests;
+                const passedDelta = summary.run2.passed - summary.run1.passed;
+                const failedDelta = summary.run2.failed - summary.run1.failed;
+                const successRate1 = summary.run1.total_tests > 0
+                    ? (summary.run1.passed / summary.run1.total_tests) * 100
+                    : 0;
+                const successRate2 = summary.run2.total_tests > 0
+                    ? (summary.run2.passed / summary.run2.total_tests) * 100
+                    : 0;
+                const successRateDelta = successRate2 - successRate1;
+
+                document.getElementById('deltaSummary').innerHTML = `
+                    <div class="text-center">
+                        <div class="text-gray-600 dark:text-gray-400 text-sm">Total Tests</div>
+                        <div class="text-2xl font-bold dark:text-white">${formatDelta(testsDelta)}</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-gray-600 dark:text-gray-400 text-sm">Passed</div>
+                        <div class="text-2xl font-bold ${passedDelta >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}">${formatDelta(passedDelta)}</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-gray-600 dark:text-gray-400 text-sm">Failed</div>
+                        <div class="text-2xl font-bold ${failedDelta <= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}">${formatDelta(failedDelta)}</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-gray-600 dark:text-gray-400 text-sm">Success Rate</div>
+                        <div class="text-2xl font-bold ${successRateDelta >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}">${formatDelta(successRateDelta, '%', 1)}</div>
+                    </div>
+                `;
+            }
+
+            function formatDelta(value, suffix = '', decimals = 0) {
+                const formattedValue = decimals > 0 ? value.toFixed(decimals) : Math.round(value);
+                if (value > 0) return `+${formattedValue}${suffix}`;
+                if (value < 0) return `${formattedValue}${suffix}`;
+                return `${formattedValue}${suffix}`;
+            }
+
+            function displayNewFailures(failures) {
+                const section = document.getElementById('newFailuresSection');
+                if (failures.length === 0) {
+                    section.classList.add('hidden');
+                    return;
+                }
+
+                section.classList.remove('hidden');
+                document.getElementById('newFailuresCount').textContent = failures.length;
+
+                const html = failures.map(test => `
+                    <div class="comparison-card bg-red-50 dark:bg-red-900/20 border-l-4 border-red-500 p-4 mb-3 rounded">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <div class="font-semibold text-gray-900 dark:text-white">${test.name}</div>
+                                <div class="text-sm code-font text-gray-600 dark:text-gray-400">${test.classname}</div>
+                                ${test.message ? `<div class="mt-2 text-sm text-red-700 dark:text-red-300">${escapeHtml(test.message.substring(0, 200))}${test.message.length > 200 ? '...' : ''}</div>` : ''}
+                            </div>
+                            <button onclick="viewTestHistory('${test.name}', '${test.classname}')"
+                                class="ml-4 px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700">
+                                View History
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+
+                document.getElementById('newFailuresList').innerHTML = html;
+            }
+
+            function displayNewPasses(passes) {
+                const section = document.getElementById('newPassesSection');
+                if (passes.length === 0) {
+                    section.classList.add('hidden');
+                    return;
+                }
+
+                section.classList.remove('hidden');
+                document.getElementById('newPassesCount').textContent = passes.length;
+
+                const html = passes.map(test => `
+                    <div class="comparison-card bg-green-50 dark:bg-green-900/20 border-l-4 border-green-500 p-4 mb-3 rounded">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <div class="font-semibold text-gray-900 dark:text-white">${test.name}</div>
+                                <div class="text-sm code-font text-gray-600 dark:text-gray-400">${test.classname}</div>
+                            </div>
+                            <button onclick="viewTestHistory('${test.name}', '${test.classname}')"
+                                class="ml-4 px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700">
+                                View History
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+
+                document.getElementById('newPassesList').innerHTML = html;
+            }
+
+            function displayRegressions(regressions) {
+                const section = document.getElementById('regressionsSection');
+                if (regressions.length === 0) {
+                    section.classList.add('hidden');
+                    return;
+                }
+
+                section.classList.remove('hidden');
+                document.getElementById('regressionsCount').textContent = regressions.length;
+
+                const html = regressions.map(test => `
+                    <div class="comparison-card bg-orange-50 dark:bg-orange-900/20 border-l-4 border-orange-500 p-4 mb-3 rounded">
+                        <div class="flex justify-between items-start">
+                            <div class="flex-1">
+                                <div class="font-semibold text-gray-900 dark:text-white">${test.name}</div>
+                                <div class="text-sm code-font text-gray-600 dark:text-gray-400">${test.classname}</div>
+                                <div class="mt-2 flex items-center space-x-4 text-sm">
+                                    <span class="text-gray-600 dark:text-gray-400">Baseline: <span class="font-medium">${test.old_time}s</span></span>
+                                    <span class="text-2xl">→</span>
+                                    <span class="text-orange-600 dark:text-orange-400">Current: <span class="font-bold">${test.new_time}s</span></span>
+                                    <span class="px-2 py-1 bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200 rounded-full font-semibold">
+                                        +${test.percent_change}% slower
+                                    </span>
+                                </div>
+                            </div>
+                            <button onclick="viewTestHistory('${test.name}', '${test.classname}')"
+                                class="ml-4 px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700">
+                                View History
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+
+                document.getElementById('regressionsList').innerHTML = html;
+            }
+
+            function displayNewTests(tests) {
+                const section = document.getElementById('newTestsSection');
+                if (tests.length === 0) {
+                    section.classList.add('hidden');
+                    return;
+                }
+
+                section.classList.remove('hidden');
+                document.getElementById('newTestsCount').textContent = tests.length;
+
+                const html = tests.map(test => `
+                    <div class="comparison-card bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500 p-4 mb-3 rounded">
+                        <div class="font-semibold text-gray-900 dark:text-white">${test.name}</div>
+                        <div class="text-sm code-font text-gray-600 dark:text-gray-400">${test.classname}</div>
+                        <span class="inline-block mt-2 px-2 py-1 text-xs rounded ${
+                            test.status === 'passed' ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200' :
+                            test.status === 'failed' ? 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200' :
+                            test.status === 'error' ? 'bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200' :
+                            'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200'
+                        }">${test.status.toUpperCase()}</span>
+                    </div>
+                `).join('');
+
+                document.getElementById('newTestsList').innerHTML = html;
+            }
+
+            function displayRemovedTests(tests) {
+                const section = document.getElementById('removedTestsSection');
+                if (tests.length === 0) {
+                    section.classList.add('hidden');
+                    return;
+                }
+
+                section.classList.remove('hidden');
+                document.getElementById('removedTestsCount').textContent = tests.length;
+
+                const html = tests.map(test => `
+                    <div class="comparison-card bg-gray-50 dark:bg-gray-800 border-l-4 border-gray-400 p-4 mb-3 rounded">
+                        <div class="font-semibold text-gray-900 dark:text-white">${test.name}</div>
+                        <div class="text-sm code-font text-gray-600 dark:text-gray-400">${test.classname}</div>
+                    </div>
+                `).join('');
+
+                document.getElementById('removedTestsList').innerHTML = html;
+            }
+
+            function viewTestHistory(testName, className) {
+                window.location.href = `test-case-history.html?name=${encodeURIComponent(testName)}&class=${encodeURIComponent(className)}`;
+            }
+
+            function escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+
+            // Initialize on load
+            init();
+        </script>
+    </body>
+</html>
