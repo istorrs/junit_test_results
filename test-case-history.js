@@ -29,7 +29,7 @@ class TestCaseHistoryPage {
             await this.loadTestHistory();
             this.setupEventListeners();
         } catch (error) {
-            console.error('Failed to initialize history page:', error);
+            logError('Failed to initialize history page', error);
             this.showError('Failed to load test history');
         }
     }
@@ -51,7 +51,7 @@ class TestCaseHistoryPage {
             this.renderFailureAnalysis();
             this.renderHistoryTable();
         } catch (error) {
-            console.error('Error loading test history:', error);
+            logError('Error loading test history', error);
             this.showError('Failed to load test history: ' + error.message);
         }
     }

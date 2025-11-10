@@ -113,19 +113,19 @@ class TestDetailsModal {
             this.modal.classList.remove('hidden');
             document.body.style.overflow = 'hidden';
         } catch (error) {
-            console.error('Error showing test details:', error);
+            logError('Error showing test details', error);
             alert('Error loading test details: ' + error.message);
         }
     }
 
     async loadTestHistory(database) {
         try {
-            const response = await database.fetchWithAuth(
+            const response = await database.request(
                 `/cases?name=${encodeURIComponent(this.currentTestCase.name)}&classname=${encodeURIComponent(this.currentTestCase.classname)}&limit=10`
             );
             this.testHistory = response.data.cases || [];
         } catch (error) {
-            console.error('Error loading test history:', error);
+            logError('Error loading test history', error);
             this.testHistory = [];
         }
     }
@@ -180,7 +180,7 @@ class TestDetailsModal {
             console.log('API response:', testCase);
 
             if (!testCase || !testCase.case) {
-                console.error('Test case not found or invalid response:', testCase);
+                logError('Test case not found or invalid response', { testCase });
                 return null;
             }
 
@@ -192,7 +192,7 @@ class TestDetailsModal {
 
             return caseData;
         } catch (error) {
-            console.error('Error fetching test case details:', error);
+            logError('Error fetching test case details', error);
             throw error;
         }
     }

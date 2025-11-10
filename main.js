@@ -19,13 +19,7 @@ class JUnitDashboard {
             this.loadDashboard();
             this.initializeAnimations();
         } catch (error) {
-            console.error('Failed to initialize dashboard:', error);
-            console.error('Error details:', {
-                message: error.message,
-                stack: error.stack,
-                name: error.name,
-                cause: error.cause
-            });
+            logError('Failed to initialize dashboard', error);
             this.showError('Failed to initialize application. Please refresh the page.');
         }
     }
@@ -124,7 +118,7 @@ class JUnitDashboard {
             this.hideUploadProgress();
             await this.loadDashboard();
         } catch (error) {
-            console.error('Error processing files:', error);
+            logError('Error processing files', error);
             this.showError('Error processing files: ' + error.message);
             this.hideUploadProgress();
         }
@@ -174,12 +168,7 @@ class JUnitDashboard {
             this.initializeCharts(statistics);
             await this.loadInsights();
         } catch (error) {
-            console.error('Error loading dashboard:', error);
-            console.error('Error details:', {
-                message: error.message,
-                stack: error.stack,
-                name: error.name
-            });
+            logError('Error loading dashboard', error);
             this.showError('Failed to load dashboard data: ' + error.message);
 
             // Log detailed error for debugging
@@ -203,7 +192,7 @@ class JUnitDashboard {
             await insightsPanel.loadInsights();
             insightsPanel.render('insights-panel');
         } catch (error) {
-            console.error('Error loading insights:', error);
+            logError('Error loading insights', error);
             // Don't show error to user, just log it
         }
     }
@@ -375,7 +364,7 @@ class JUnitDashboard {
                 status: 'completed'
             }));
         } catch (error) {
-            console.error('Error fetching recent uploads:', error);
+            logError('Error fetching recent uploads', error);
             return [];
         }
     }
@@ -672,7 +661,7 @@ class JUnitDashboard {
                 chart.resize();
             });
         } catch (error) {
-            console.error('Error loading trend data:', error);
+            logError('Error loading trend data', error);
             // Fallback to empty chart
             chartContainer.innerHTML =
                 '<div class="flex items-center justify-center h-full text-gray-500">Unable to load trend data</div>';
@@ -714,7 +703,7 @@ class JUnitDashboard {
             const testCases = await this.db.getTestCases(this.currentFilters);
             this.renderFilteredResults(testCases);
         } catch (error) {
-            console.error('Error applying filters:', error);
+            logError('Error applying filters', error);
         }
     }
 
