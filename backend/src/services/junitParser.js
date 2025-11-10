@@ -80,25 +80,28 @@ const parseJUnitXML = async (xmlContent, filename, ciMetadata = null, uploaderIn
 
         for (const suiteElement of testsuites) {
             if (!testRun) {
-                // Log suite element structure for debugging
-                logger.info('Suite element attributes', {
-                    attributes: Object.keys(suiteElement),
-                    timestamp: suiteElement.timestamp,
-                    name: suiteElement.name,
-                    filename
-                });
-
                 // Determine the correct timestamp
                 // Priority: XML timestamp (most accurate) > CI metadata build_time > current time
                 let timestamp;
                 let timestampSource;
 
-                if (suiteElement.timestamp) {
+                // Check for timestamp in nested testsuite first (common structure with <testsuites> wrapper)
+                // Then check direct testsuite element
+                let timestampValue = null;
+                if (suiteElement.testsuite && suiteElement.testsuite.timestamp) {
+                    timestampValue = suiteElement.testsuite.timestamp;
+                    logger.info(`Found timestamp in nested testsuite: ${timestampValue}`);
+                } else if (suiteElement.timestamp) {
+                    timestampValue = suiteElement.timestamp;
+                    logger.info(`Found timestamp in suite element: ${timestampValue}`);
+                }
+
+                if (timestampValue) {
                     // Use timestamp from JUnit XML (most accurate - from test execution)
-                    timestamp = new Date(suiteElement.timestamp);
+                    timestamp = new Date(timestampValue);
                     timestampSource = 'junit_xml';
                     logger.info('Using JUnit XML timestamp', {
-                        xml_timestamp: suiteElement.timestamp,
+                        xml_timestamp: timestampValue,
                         parsed_timestamp: timestamp.toISOString()
                     });
                 } else if (ciMetadata && ciMetadata.build_time) {
