@@ -578,26 +578,54 @@
                 }
 
                 initializePerformanceChart() {
+                    console.log('[TestDetailsPage.initializePerformanceChart] Starting chart initialization');
+                    console.log('[TestDetailsPage.initializePerformanceChart] Number of test cases available:', this.testCases.length);
+
                     const chartContainer = document.getElementById('performance-chart');
-                    if (!chartContainer) return;
+                    console.log('[TestDetailsPage.initializePerformanceChart] Chart container element:', chartContainer);
+
+                    if (!chartContainer) {
+                        console.warn('[TestDetailsPage.initializePerformanceChart] Chart container not found, aborting');
+                        return;
+                    }
 
                     // Get current theme by checking if dark class is present on html element
                     const isDark = document.documentElement.classList.contains('dark');
+                    console.log('[TestDetailsPage.initializePerformanceChart] Dark mode:', isDark);
 
                     // Dispose existing chart if it exists
                     if (this.performanceChart) {
+                        console.log('[TestDetailsPage.initializePerformanceChart] Disposing existing chart');
                         this.performanceChart.dispose();
                     }
 
                     // Initialize chart with theme-aware colors
+                    console.log('[TestDetailsPage.initializePerformanceChart] Initializing ECharts instance');
                     this.performanceChart = echarts.init(chartContainer);
+                    console.log('[TestDetailsPage.initializePerformanceChart] ECharts instance created:', this.performanceChart);
 
                     // Prepare data - sort by execution time descending to show slowest tests first
                     const sortedTests = [...this.testCases]
                         .sort((a, b) => b.time - a.time)
                         .slice(0, 20);
+
+                    console.log('[TestDetailsPage.initializePerformanceChart] Top 20 slowest tests:', sortedTests.length);
+                    if (sortedTests.length > 0) {
+                        console.log('[TestDetailsPage.initializePerformanceChart] Slowest test:', {
+                            name: sortedTests[0].name,
+                            time: sortedTests[0].time
+                        });
+                        console.log('[TestDetailsPage.initializePerformanceChart] Fastest test:', {
+                            name: sortedTests[sortedTests.length - 1].name,
+                            time: sortedTests[sortedTests.length - 1].time
+                        });
+                    }
+
                     const testNames = sortedTests.map(test => test.name.substring(0, 20) + '...');
                     const executionTimes = sortedTests.map(test => test.time);
+
+                    console.log('[TestDetailsPage.initializePerformanceChart] Test names array length:', testNames.length);
+                    console.log('[TestDetailsPage.initializePerformanceChart] Execution times array length:', executionTimes.length);
 
                     // Color bars based on performance (execution time) - fast = green, slow = red
                     const maxTime = Math.max(...executionTimes);
@@ -684,10 +712,17 @@
                         ]
                     };
 
+                    console.log('[TestDetailsPage.initializePerformanceChart] Setting chart options');
+                    console.log('[TestDetailsPage.initializePerformanceChart] Chart option series data length:', option.series[0].data.length);
+                    console.log('[TestDetailsPage.initializePerformanceChart] Sample data points:', option.series[0].data.slice(0, 3));
+
                     this.performanceChart.setOption(option);
+                    console.log('[TestDetailsPage.initializePerformanceChart] Chart options set successfully');
+                    console.log('[TestDetailsPage.initializePerformanceChart] Chart should now be visible with', executionTimes.length, 'bars');
 
                     // Set up resize handler (only once)
                     if (!this.resizeHandler) {
+                        console.log('[TestDetailsPage.initializePerformanceChart] Setting up resize handler');
                         this.resizeHandler = () => {
                             if (this.performanceChart) {
                                 this.performanceChart.resize();
@@ -697,7 +732,10 @@
                     }
 
                     // Re-render chart on theme change
+                    console.log('[TestDetailsPage.initializePerformanceChart] Setting up theme change listener');
                     this.setupThemeChangeListener();
+
+                    console.log('[TestDetailsPage.initializePerformanceChart] Chart initialization complete');
                 }
 
                 setupThemeChangeListener() {
