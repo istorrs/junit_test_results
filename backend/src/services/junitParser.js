@@ -21,7 +21,10 @@ const parseJUnitXML = async (xmlContent, filename, ciMetadata = null, uploaderIn
         const contentHash = generateHash(xmlContent);
 
         // Check for duplicate
-        const existingUpload = await FileUpload.findOne({ content_hash: contentHash, status: 'completed' });
+        const existingUpload = await FileUpload.findOne({
+            content_hash: contentHash,
+            status: 'completed'
+        });
         if (existingUpload) {
             logger.warn('Duplicate test results detected', { filename, contentHash });
             return {
@@ -85,15 +88,21 @@ const parseJUnitXML = async (xmlContent, filename, ciMetadata = null, uploaderIn
         }
 
         // Update test run name based on test case classnames if name is generic
-        if (testRun.name === 'pytest tests' || testRun.name === 'pytest' || !testRun.name || testRun.name === filename) {
+        if (
+            testRun.name === 'pytest tests' ||
+            testRun.name === 'pytest' ||
+            !testRun.name ||
+            testRun.name === filename
+        ) {
             const testCases = await TestCase.find({ run_id: testRun._id }).limit(100);
             const classnames = [...new Set(testCases.map(tc => tc.classname).filter(c => c))];
 
             if (classnames.length > 0) {
                 // Use the most common classname or combine first few unique ones
-                const newName = classnames.length === 1
-                    ? classnames[0]
-                    : classnames.slice(0, 3).join(', ') + (classnames.length > 3 ? '...' : '');
+                const newName =
+                    classnames.length === 1
+                        ? classnames[0]
+                        : classnames.slice(0, 3).join(', ') + (classnames.length > 3 ? '...' : '');
 
                 await TestRun.findByIdAndUpdate(testRun._id, { name: newName });
                 testRun.name = newName;
@@ -125,7 +134,6 @@ const parseJUnitXML = async (xmlContent, filename, ciMetadata = null, uploaderIn
             file_upload_id: fileUpload._id,
             stats
         };
-
     } catch (error) {
         logger.error('Error parsing JUnit XML', { error: error.message });
         throw error;
@@ -169,23 +177,63 @@ const processTestCase = async (caseData, suiteId, runId, fileUploadId) => {
     let skippedMessage = null;
     let stackTrace = null;
 
+    // Helper function to extract error message from stack trace
+    const extractErrorMessage = (trace, existingMessage) => {
+        if (existingMessage) return existingMessage;
+        if (!trace) return null;
+
+        // For pytest-style failures, extract the error type and message from stack trace
+        // Common formats:
+        // "Failed: ExceptionType: message"
+        // "ExceptionType: message"
+        // "AssertionError: message"
+        const lines = trace.split('\n');
+        for (const line of lines) {
+            const trimmed = line.trim();
+            // Look for lines starting with "Failed:" or containing exception patterns
+            if (
+                trimmed.startsWith('Failed:') ||
+                trimmed.match(/^[A-Z][a-zA-Z.]+(?:Error|Exception):/)
+            ) {
+                // Extract the error message (everything after "Failed:" or the exception type)
+                const cleaned = trimmed.replace(/^Failed:\s*/, '');
+                // Limit length to avoid storing entire stack traces as messages
+                return cleaned.length > 500 ? cleaned.substring(0, 500) + '...' : cleaned;
+            }
+        }
+
+        // Fallback: use first non-empty line (up to 500 chars)
+        for (const line of lines) {
+            const trimmed = line.trim();
+            if (trimmed && !trimmed.startsWith('at ') && !trimmed.startsWith('File ')) {
+                return trimmed.length > 500 ? trimmed.substring(0, 500) + '...' : trimmed;
+            }
+        }
+
+        return null;
+    };
+
     // Determine status
     if (caseData.failure) {
         status = 'failed';
         const failure = caseData.failure;
-        failureMessage = failure.message || failure._ || '';
+        const traceContent = failure._ || '';
+        failureMessage = extractErrorMessage(traceContent, failure.message);
         failureType = failure.type || '';
-        stackTrace = failure._ || failure.message || '';
+        stackTrace = traceContent || failure.message || '';
     } else if (caseData.error) {
         status = 'error';
         const error = caseData.error;
-        errorMessage = error.message || error._ || '';
+        const traceContent = error._ || '';
+        errorMessage = extractErrorMessage(traceContent, error.message);
         errorType = error.type || '';
-        stackTrace = error._ || error.message || '';
+        stackTrace = traceContent || error.message || '';
     } else if (caseData.skipped !== undefined) {
         status = 'skipped';
-        skippedMessage = typeof caseData.skipped === 'string' ? caseData.skipped :
-                         (caseData.skipped.message || '');
+        skippedMessage =
+            typeof caseData.skipped === 'string'
+                ? caseData.skipped
+                : caseData.skipped.message || '';
     }
 
     // Create test case
@@ -223,7 +271,7 @@ const processTestCase = async (caseData, suiteId, runId, fileUploadId) => {
     });
 };
 
-const calculateStats = async (runId) => {
+const calculateStats = async runId => {
     const cases = await TestCase.find({ run_id: runId });
 
     return {

@@ -96,8 +96,9 @@ class StackTraceAnalyzer {
      * @returns {string} Exception type
      */
     static extractExceptionType(stackTrace, errorMessage) {
-        // Common Java exception patterns
-        const javaExceptions = [
+        // Common exception patterns (Java, Python, JavaScript)
+        const commonExceptions = [
+            // Java
             'NullPointerException',
             'AssertionError',
             'IllegalArgumentException',
@@ -107,30 +108,61 @@ class StackTraceAnalyzer {
             'RuntimeException',
             'TimeoutException',
             'InterruptedException',
-            'ConcurrentModificationException'
+            'ConcurrentModificationException',
+            // Python
+            'AssertionError',
+            'AttributeError',
+            'ImportError',
+            'IndexError',
+            'KeyError',
+            'NameError',
+            'TypeError',
+            'ValueError',
+            'RuntimeError',
+            'TimeoutError',
+            'ConnectionError',
+            'OSError',
+            'Exception'
         ];
 
         // Check stack trace first
         if (stackTrace) {
-            for (const exception of javaExceptions) {
+            for (const exception of commonExceptions) {
                 if (stackTrace.includes(exception)) {
                     return exception;
                 }
             }
-            // Try to extract any exception type
-            const match = stackTrace.match(/([a-zA-Z.]+Exception|[a-zA-Z.]+Error)/);
+            // Try to extract any exception type (handles custom exceptions)
+            // Python: libraries.module.CustomException
+            // Java: com.package.CustomException
+            const match = stackTrace.match(
+                /(?:^|\s)(?:[a-zA-Z_][\w.]*\.)?([A-Z][\w]*(?:Exception|Error))/
+            );
             if (match) {
-                const parts = match[1].split('.');
-                return parts[parts.length - 1];
+                return match[1];
+            }
+            // Also try matching at start of lines for "Failed: ExceptionType"
+            const failedMatch = stackTrace.match(
+                /(?:^|\n)Failed:\s*([A-Z][\w]*(?:Exception|Error))/
+            );
+            if (failedMatch) {
+                return failedMatch[1];
             }
         }
 
         // Check error message
         if (errorMessage) {
-            for (const exception of javaExceptions) {
+            for (const exception of commonExceptions) {
                 if (errorMessage.includes(exception)) {
                     return exception;
                 }
+            }
+            // Try to extract from error message
+            const match = errorMessage.match(
+                /(?:^|\s)(?:[a-zA-Z_][\w.]*\.)?([A-Z][\w]*(?:Exception|Error))/
+            );
+            if (match) {
+                return match[1];
             }
         }
 
@@ -262,8 +294,11 @@ class StackTraceAnalyzer {
         // Timeout errors
         if (
             exceptionType === 'TimeoutException' ||
+            exceptionType === 'TimeoutError' ||
+            exceptionType.toLowerCase().includes('timeout') ||
             msgLower.includes('timeout') ||
-            msgLower.includes('timed out')
+            msgLower.includes('timed out') ||
+            traceLower.includes('timeout')
         ) {
             return 'Timeout Error';
         }

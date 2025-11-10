@@ -10,25 +10,50 @@ router.get('/', async (req, res, next) => {
         const limit = parseInt(req.query.limit) || 50;
         const skip = (page - 1) * limit;
 
-        const query = {};
+        const matchQuery = {};
 
         // Filters
-        if (req.query.run_id) query.run_id = req.query.run_id;
-        if (req.query.suite_id) query.suite_id = req.query.suite_id;
-        if (req.query.status) query.status = req.query.status;
-        if (req.query.is_flaky) query.is_flaky = req.query.is_flaky === 'true';
+        if (req.query.run_id) {
+            matchQuery.run_id = req.query.run_id;
+        }
+        if (req.query.suite_id) {
+            matchQuery.suite_id = req.query.suite_id;
+        }
+        if (req.query.status) {
+            matchQuery.status = req.query.status;
+        }
+        if (req.query.is_flaky) {
+            matchQuery.is_flaky = req.query.is_flaky === 'true';
+        }
 
         // Text search
         if (req.query.search) {
-            query.$text = { $search: req.query.search };
+            matchQuery.$text = { $search: req.query.search };
         }
 
-        const total = await TestCase.countDocuments(query);
-        const cases = await TestCase.find(query)
-            .sort({ created_at: -1 })
-            .skip(skip)
-            .limit(limit)
-            .lean();
+        const total = await TestCase.countDocuments(matchQuery);
+
+        // Use aggregation to join with TestResult
+        const cases = await TestCase.aggregate([
+            { $match: matchQuery },
+            { $sort: { created_at: -1 } },
+            { $skip: skip },
+            { $limit: limit },
+            {
+                $lookup: {
+                    from: 'testresults',
+                    localField: '_id',
+                    foreignField: 'case_id',
+                    as: 'result'
+                }
+            },
+            {
+                $unwind: {
+                    path: '$result',
+                    preserveNullAndEmptyArrays: true
+                }
+            }
+        ]);
 
         res.json({
             success: true,
@@ -42,7 +67,6 @@ router.get('/', async (req, res, next) => {
                 }
             }
         });
-
     } catch (error) {
         next(error);
     }
@@ -69,7 +93,6 @@ router.get('/:id', async (req, res, next) => {
                 result
             }
         });
-
     } catch (error) {
         next(error);
     }
@@ -91,15 +114,14 @@ router.get('/:id/history', async (req, res, next) => {
             name: testCase.name,
             classname: testCase.classname
         })
-        .sort({ created_at: -1 })
-        .limit(20)
-        .lean();
+            .sort({ created_at: -1 })
+            .limit(20)
+            .lean();
 
         res.json({
             success: true,
             data: history
         });
-
     } catch (error) {
         next(error);
     }
