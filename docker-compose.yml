@@ -88,6 +88,7 @@ services:
             - ./test-case-history.js:/usr/share/nginx/html/test-case-history.js:ro
             - ./insights.js:/usr/share/nginx/html/insights.js:ro
             - ./debug.js:/usr/share/nginx/html/debug.js:ro
+            - ./console-capture.js:/usr/share/nginx/html/console-capture.js:ro
             - ./theme.js:/usr/share/nginx/html/theme.js:ro
             - ./navigation.js:/usr/share/nginx/html/navigation.js:ro
             - ./data-management.js:/usr/share/nginx/html/data-management.js:ro

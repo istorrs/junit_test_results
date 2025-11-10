@@ -44,12 +44,44 @@
 }
 
 /* Apply theme colors */
+html,
 body {
-    background: var(--bg-primary);
-    color: var(--text-primary);
+    background: var(--bg-primary) !important;
+    color: var(--text-primary) !important;
     transition:
         background-color 0.3s ease,
         color 0.3s ease;
+}
+
+/* Ensure all major containers use theme background */
+.dark,
+.dark body,
+.dark #app,
+.dark main,
+.dark .container,
+.dark .max-w-7xl,
+.dark section {
+    background-color: var(--bg-primary) !important;
+}
+
+/* Override any hardcoded white backgrounds */
+.dark [style*='background: white'],
+.dark [style*='background:white'],
+.dark [style*='background-color: white'],
+.dark [style*='background-color:white'],
+.dark [style*='background: #fff'],
+.dark [style*='background:#fff'],
+.dark [style*='background-color: #fff'],
+.dark [style*='background-color:#fff'],
+.dark [style*='background: #FFF'],
+.dark [style*='background:#FFF'],
+.dark [style*='background-color: #FFF'],
+.dark [style*='background-color:#FFF'],
+.dark [style*='background: #ffffff'],
+.dark [style*='background:#ffffff'],
+.dark [style*='background-color: #ffffff'],
+.dark [style*='background-color:#ffffff'] {
+    background-color: var(--bg-secondary) !important;
 }
 
 /* Navigation styles */
