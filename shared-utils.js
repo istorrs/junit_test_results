@@ -27,7 +27,7 @@ function logError(context, error) {
  * @param {string} className - Class name of the test
  */
 function viewTestHistory(testName, className) {
-    window.location.href = `test-case-history.html?name=${encodeURIComponent(testName)}&class=${encodeURIComponent(className)}`;
+    window.location.href = `test-case-history.html?name=${encodeURIComponent(testName)}&classname=${encodeURIComponent(className)}`;
 }
 
 /**
