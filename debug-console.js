@@ -1,4 +1,4 @@
-// Debug Console Logic
+// Debug Console Logic - Displays logs captured by console-capture.js
 class DebugConsole {
     constructor() {
         this.logs = [];
@@ -16,97 +16,61 @@ class DebugConsole {
     }
 
     init() {
-        this.interceptConsole();
+        // Load existing logs from global capture
+        this.loadExistingLogs();
+
+        // Listen for new logs
+        this.listenForNewLogs();
+
+        // Setup UI
         this.setupEventListeners();
         this.updateDisplay();
 
-        // Add initial log
-        console.info('Debug console initialized and ready');
+        console.info('Debug console ready - showing captured logs');
     }
 
-    interceptConsole() {
-        const self = this;
+    loadExistingLogs() {
+        if (window.JUnitConsoleCapture) {
+            const existingLogs = window.JUnitConsoleCapture.getLogs();
+            console.log(`Loading ${existingLogs.length} existing console logs`);
 
-        // Save original console methods
-        const originalLog = console.log;
-        const originalInfo = console.info;
-        const originalWarn = console.warn;
-        const originalError = console.error;
-
-        // Override console.log
-        console.log = function (...args) {
-            originalLog.apply(console, args);
-            self.addLog('log', args);
-        };
-
-        // Override console.info
-        console.info = function (...args) {
-            originalInfo.apply(console, args);
-            self.addLog('info', args);
-        };
-
-        // Override console.warn
-        console.warn = function (...args) {
-            originalWarn.apply(console, args);
-            self.addLog('warn', args);
-        };
-
-        // Override console.error
-        console.error = function (...args) {
-            originalError.apply(console, args);
-            self.addLog('error', args);
-        };
-
-        // Intercept window errors
-        window.addEventListener('error', e => {
-            self.addLog('error', [
-                `Uncaught Error: ${e.message}`,
-                `at ${e.filename}:${e.lineno}:${e.colno}`
-            ]);
-        });
-
-        // Intercept unhandled promise rejections
-        window.addEventListener('unhandledrejection', e => {
-            self.addLog('error', [`Unhandled Promise Rejection: ${e.reason}`]);
-        });
+            existingLogs.forEach(log => {
+                this.logs.push({
+                    type: log.type,
+                    message: log.message,
+                    timestamp: new Date(log.timestamp),
+                    page: log.page,
+                    id: log.id
+                });
+                this.counts[log.type]++;
+            });
+        }
     }
 
-    addLog(type, args) {
-        if (this.paused) {
-            return;
-        }
+    listenForNewLogs() {
+        window.addEventListener('junit-console-log', e => {
+            if (this.paused) {
+                return;
+            }
 
-        const timestamp = new Date();
-        const message = args
-            .map(arg => {
-                if (typeof arg === 'object') {
-                    try {
-                        return JSON.stringify(arg, null, 2);
-                    } catch {
-                        return String(arg);
-                    }
-                }
-                return String(arg);
-            })
-            .join(' ');
+            const log = e.detail;
+            this.logs.push({
+                type: log.type,
+                message: log.message,
+                timestamp: new Date(log.timestamp),
+                page: log.page,
+                id: log.id
+            });
+            this.counts[log.type]++;
 
-        const logEntry = {
-            type,
-            message,
-            timestamp,
-            id: Date.now() + Math.random()
-        };
+            // Keep only last 1000 logs in memory
+            if (this.logs.length > 1000) {
+                const removed = this.logs.shift();
+                this.counts[removed.type]--;
+            }
 
-        this.logs.push(logEntry);
-        this.counts[type]++;
-
-        // Keep only last 1000 logs
-        if (this.logs.length > 1000) {
-            const removed = this.logs.shift();
-            this.counts[removed.type]--;
-        }
-
-        this.updateDisplay();
+            this.updateDisplay();
+        });
     }
 
     setupEventListeners() {
@@ -122,9 +86,13 @@ class DebugConsole {
 
         // Clear logs
         document.getElementById('clear-logs').addEventListener('click', () => {
+            if (window.JUnitConsoleCapture) {
+                window.JUnitConsoleCapture.clearLogs();
+            }
             this.logs = [];
             this.counts = { log: 0, info: 0, warn: 0, error: 0 };
             this.updateDisplay();
+            console.info('Console logs cleared');
         });
 
         // Pause logs
@@ -163,7 +131,8 @@ class DebugConsole {
             filteredLogs = filteredLogs.filter(
                 log =>
                     log.message.toLowerCase().includes(this.searchTerm) ||
-                    log.type.toLowerCase().includes(this.searchTerm)
+                    log.type.toLowerCase().includes(this.searchTerm) ||
+                    (log.page && log.page.toLowerCase().includes(this.searchTerm))
             );
         }
 
@@ -174,7 +143,8 @@ class DebugConsole {
         // Render logs
         const container = document.getElementById('log-container');
         if (filteredLogs.length === 0) {
-            container.innerHTML = '<div class="text-gray-400 text-sm">No logs to display</div>';
+            container.innerHTML =
+                '<div class="text-gray-400 text-sm">No logs to display. Logs are captured from all pages.</div>';
             return;
         }
 
@@ -192,6 +162,7 @@ class DebugConsole {
                     <span class="font-semibold uppercase text-xs ${this.getTypeColor(log.type)}">
                         [${log.type}]
                     </span>
+                    ${log.page ? `<span class="text-gray-500 text-xs">${this.escapeHtml(log.page)}</span>` : ''}
                     <pre class="flex-1 whitespace-pre-wrap break-words text-sm">${this.escapeHtml(log.message)}</pre>
                 </div>
             </div>
@@ -199,7 +170,7 @@ class DebugConsole {
             )
             .join('');
 
-        // Auto-scroll to bottom
+        // Auto-scroll to bottom if not paused
         if (!this.paused) {
             container.scrollTop = container.scrollHeight;
         }
