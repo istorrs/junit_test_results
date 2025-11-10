@@ -6,7 +6,7 @@ class JUnitDashboard {
             status: 'all',
             search: '',
             dateRange: null,
-            runId: null
+            run_id: null
         };
         this.charts = {};
         this.init();
@@ -591,7 +591,7 @@ class JUnitDashboard {
     }
 
     handleRunFilter(event) {
-        this.currentFilters.runId =
+        this.currentFilters.run_id =
             event.target.value === 'all' ? null : parseInt(event.target.value);
         this.applyFilters();
     }
@@ -681,7 +681,7 @@ class JUnitDashboard {
             status: 'all',
             search: '',
             dateRange: null,
-            runId: null
+            run_id: null
         };
 
         const runFilter = document.getElementById('run-filter');

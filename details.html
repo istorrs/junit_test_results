@@ -241,20 +241,6 @@
                 </div>
             </div>
 
-            <!-- Failed Tests Analysis -->
-            <div
-                id="failed-tests-section"
-                class="bg-white rounded-lg shadow-sm border border-gray-200 mb-8"
-                style="display: none"
-            >
-                <div class="px-6 py-4 border-b border-gray-200">
-                    <h3 class="text-lg font-semibold text-gray-900">Failed Tests Analysis</h3>
-                </div>
-                <div id="failed-tests-container" class="p-6">
-                    <!-- Failed tests will be populated here -->
-                </div>
-            </div>
-
             <!-- Test Case List -->
             <div class="bg-white rounded-lg shadow-sm border border-gray-200">
                 <div class="px-6 py-4 border-b border-gray-200">
@@ -349,7 +335,6 @@
                     this.renderTestSuites();
                     this.renderTestCases();
                     this.initializePerformanceChart();
-                    this.renderFailedTestsAnalysis();
                 }
 
                 async getTestRun(runId) {
@@ -462,53 +447,6 @@
                                     Details →
                                 </button>
                             </div>
-                        </div>
-                    </div>
-                `
-                        )
-                        .join('');
-                }
-
-                renderFailedTestsAnalysis() {
-                    const failedTests = this.testCases.filter(
-                        test => test.status === 'failed' || test.status === 'error'
-                    );
-                    const section = document.getElementById('failed-tests-section');
-                    const container = document.getElementById('failed-tests-container');
-
-                    if (!section || !container) return;
-
-                    if (failedTests.length === 0) {
-                        section.style.display = 'none';
-                        return;
-                    }
-
-                    section.style.display = 'block';
-                    container.innerHTML = failedTests
-                        .map(
-                            test => `
-                    <div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
-                        <div class="flex items-start justify-between mb-3">
-                            <div class="flex-1">
-                                <h5 class="text-sm font-semibold text-red-900">${test.name}</h5>
-                                <p class="text-xs text-red-700 mt-1">${test.classname}</p>
-                            </div>
-                            <span class="px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800 uppercase">
-                                ${test.status}
-                            </span>
-                        </div>
-                        ${
-                            test.failure_message
-                                ? `
-                            <div class="mb-3">
-                                <p class="text-sm text-red-800 font-medium mb-2">Error Message:</p>
-                                <p class="text-sm text-red-700 bg-red-100 p-3 rounded">${test.failure_message}</p>
-                            </div>
-                        `
-                                : ''
-                        }
-                        <div class="text-xs text-red-600">
-                            Execution Time: ${test.time.toFixed(3)}s
                         </div>
                     </div>
                 `
