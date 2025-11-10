@@ -167,8 +167,54 @@
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <!-- Report Builder -->
                 <div class="lg:col-span-2">
+                    <!-- Info Box -->
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                        <div class="flex items-start">
+                            <svg class="w-5 h-5 text-blue-600 mt-0.5 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                            </svg>
+                            <div>
+                                <p class="text-sm text-blue-800">
+                                    <strong>Tip:</strong> Select specific test suites and runs for more focused and actionable reports.
+                                    Reports that mix different test suites can be misleading since they test different systems.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="report-builder p-6 mb-8">
                         <h3 class="text-lg font-semibold text-gray-900 mb-6">Report Builder</h3>
+
+                        <!-- Data Source -->
+                        <div class="mb-6">
+                            <h4 class="text-sm font-medium text-gray-700 mb-3">Data Source</h4>
+                            <div class="space-y-3">
+                                <div>
+                                    <label for="suite-selector" class="block text-sm text-gray-600 mb-1">Test Suite (optional)</label>
+                                    <select
+                                        id="suite-selector"
+                                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    >
+                                        <option value="all">All Suites</option>
+                                    </select>
+                                    <p class="text-xs text-gray-500 mt-1">Filter report data to a specific test suite</p>
+                                </div>
+                                <div>
+                                    <label for="run-selector" class="block text-sm text-gray-600 mb-1">Test Run (optional)</label>
+                                    <select
+                                        id="run-selector"
+                                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    >
+                                        <option value="all">All Recent Runs</option>
+                                    </select>
+                                    <p class="text-xs text-gray-500 mt-1">Generate report for a specific test run</p>
+                                </div>
+                                <div id="selection-badge" class="px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg text-sm" style="display: none;">
+                                    <span class="font-medium text-blue-900">Report Scope:</span>
+                                    <span id="selection-badge-text" class="text-blue-800"></span>
+                                </div>
+                            </div>
+                        </div>
 
                         <!-- Report Templates -->
                         <div class="mb-6">
@@ -458,25 +504,84 @@
         <script>
             class ReportsPage {
                 constructor() {
-                    this.db = new JUnitDatabase();
+                    this.db = new JUnitAPIClient();
                     this.selectedTemplate = 'summary';
                     this.selectedFormat = 'json';
+                    this.selectedSuite = 'all';
+                    this.selectedRun = 'all';
                     this.reports = [];
+                    this.allSuites = [];
+                    this.allRuns = [];
                     this.init();
                 }
 
                 async init() {
                     try {
-                        await this.db.initializeDatabase();
+                        await this.loadSuitesAndRuns();
                         this.setupEventListeners();
                         this.loadReports();
                         this.updatePreview();
                     } catch (error) {
                         console.error('Failed to initialize reports page:', error);
+                        this.showNotification('Failed to initialize page', 'error');
+                    }
+                }
+
+                async loadSuitesAndRuns() {
+                    try {
+                        // Load all test cases to extract unique suites
+                        const casesResponse = await this.db.request('/cases?limit=1000');
+                        const cases = casesResponse.data.cases;
+
+                        // Extract unique suites
+                        this.allSuites = [...new Set(cases.map(c => c.classname))]
+                            .filter(Boolean)
+                            .sort();
+
+                        // Populate suite selector
+                        const suiteSelector = document.getElementById('suite-selector');
+                        if (suiteSelector) {
+                            this.allSuites.forEach(suite => {
+                                const option = document.createElement('option');
+                                option.value = suite;
+                                option.textContent = suite;
+                                suiteSelector.appendChild(option);
+                            });
+                        }
+
+                        // Load test runs
+                        const runsResponse = await this.db.request('/runs?limit=20');
+                        this.allRuns = runsResponse.data.runs;
+
+                        // Populate run selector
+                        const runSelector = document.getElementById('run-selector');
+                        if (runSelector) {
+                            this.allRuns.forEach(run => {
+                                const option = document.createElement('option');
+                                option.value = run._id;
+                                option.textContent = `${run.name} - ${new Date(run.timestamp).toLocaleString()}`;
+                                runSelector.appendChild(option);
+                            });
+                        }
+                    } catch (error) {
+                        console.error('Error loading suites and runs:', error);
+                        this.showNotification('Failed to load data sources', 'error');
                     }
                 }
 
                 setupEventListeners() {
+                    // Data source selection
+                    const suiteSelector = document.getElementById('suite-selector');
+                    const runSelector = document.getElementById('run-selector');
+
+                    if (suiteSelector) {
+                        suiteSelector.addEventListener('change', this.handleSourceChange.bind(this));
+                    }
+
+                    if (runSelector) {
+                        runSelector.addEventListener('change', this.handleSourceChange.bind(this));
+                    }
+
                     // Template selection
                     document.querySelectorAll('.template-card').forEach(card => {
                         card.addEventListener('click', this.selectTemplate.bind(this));
@@ -497,6 +602,44 @@
                     document
                         .getElementById('download-report')
                         .addEventListener('click', this.downloadReport.bind(this));
+                }
+
+                handleSourceChange() {
+                    const suiteSelector = document.getElementById('suite-selector');
+                    const runSelector = document.getElementById('run-selector');
+
+                    this.selectedSuite = suiteSelector?.value || 'all';
+                    this.selectedRun = runSelector?.value || 'all';
+
+                    // Update badge
+                    const badge = document.getElementById('selection-badge');
+                    const badgeText = document.getElementById('selection-badge-text');
+
+                    if (this.selectedSuite === 'all' && this.selectedRun === 'all') {
+                        badge.style.display = 'none';
+                    } else {
+                        badge.style.display = 'block';
+                        const parts = [];
+
+                        if (this.selectedSuite !== 'all') {
+                            parts.push(`Suite: ${this.selectedSuite}`);
+                        }
+
+                        if (this.selectedRun !== 'all') {
+                            const run = this.allRuns.find(r => r._id === this.selectedRun);
+                            if (run) {
+                                parts.push(`Run: ${run.name}`);
+                            }
+                        }
+
+                        if (parts.length === 0) {
+                            parts.push('All data');
+                        }
+
+                        badgeText.textContent = parts.join(', ');
+                    }
+
+                    this.updatePreview();
                 }
 
                 selectTemplate(event) {
@@ -594,8 +737,43 @@
                     if (!preview) return;
 
                     try {
-                        const stats = await this.db.getTestStatistics();
-                        const testRuns = await this.db.getTestRuns(5);
+                        // Build query parameters based on selection
+                        let queryParams = '?limit=1000';
+                        if (this.selectedRun !== 'all') {
+                            queryParams += `&run_id=${this.selectedRun}`;
+                        }
+
+                        // Fetch test cases
+                        const casesResponse = await this.db.request(`/cases${queryParams}`);
+                        let cases = casesResponse.data.cases;
+
+                        // Filter by suite if selected
+                        if (this.selectedSuite !== 'all') {
+                            cases = cases.filter(c => c.classname === this.selectedSuite);
+                        }
+
+                        // Calculate statistics from filtered cases
+                        const stats = {
+                            total: cases.length,
+                            passed: cases.filter(c => c.status === 'passed').length,
+                            failed: cases.filter(c => c.status === 'failed').length,
+                            error: cases.filter(c => c.status === 'error').length,
+                            skipped: cases.filter(c => c.status === 'skipped').length,
+                            total_time: cases.reduce((sum, c) => sum + (c.time || 0), 0)
+                        };
+
+                        // Build report scope text
+                        const scopeParts = [];
+                        if (this.selectedSuite !== 'all') {
+                            scopeParts.push(`Suite: ${this.selectedSuite}`);
+                        }
+                        if (this.selectedRun !== 'all') {
+                            const run = this.allRuns.find(r => r._id === this.selectedRun);
+                            if (run) {
+                                scopeParts.push(`Run: ${run.name}`);
+                            }
+                        }
+                        const scopeText = scopeParts.length > 0 ? scopeParts.join(', ') : 'All data';
 
                         let previewContent = '';
 
@@ -603,42 +781,63 @@
                             const reportData = {
                                 template: this.selectedTemplate,
                                 generatedAt: new Date().toISOString(),
+                                scope: {
+                                    suite: this.selectedSuite,
+                                    run: this.selectedRun,
+                                    description: scopeText
+                                },
                                 summary: {
                                     totalTests: stats.total,
                                     passed: stats.passed,
                                     failed: stats.failed,
                                     errors: stats.error,
                                     skipped: stats.skipped,
-                                    totalTime: stats.total_time
-                                },
-                                recentRuns: testRuns.map(run => ({
-                                    name: run.name,
-                                    timestamp: run.timestamp,
-                                    tests: run.total_tests,
-                                    failures: run.total_failures,
-                                    time: run.time
-                                }))
+                                    totalTime: stats.total_time,
+                                    passRate: stats.total > 0 ? ((stats.passed / stats.total) * 100).toFixed(2) : 0
+                                }
                             };
+
+                            if (this.selectedTemplate === 'detailed') {
+                                reportData.failedTests = cases
+                                    .filter(c => c.status === 'failed' || c.status === 'error')
+                                    .slice(0, 10)
+                                    .map(c => ({
+                                        name: c.name,
+                                        classname: c.classname,
+                                        status: c.status,
+                                        time: c.time
+                                    }));
+                            }
 
                             previewContent = JSON.stringify(reportData, null, 2);
                         } else if (this.selectedFormat === 'csv') {
-                            previewContent =
-                                'Template,Generated At,Total Tests,Passed,Failed,Errors,Skipped,Total Time\n';
-                            previewContent += `${this.selectedTemplate},${new Date().toISOString()},${stats.total},${stats.passed},${stats.failed},${stats.error},${stats.skipped},${stats.total_time}`;
+                            previewContent = 'Template,Generated At,Scope,Total Tests,Passed,Failed,Errors,Skipped,Total Time,Pass Rate\n';
+                            const passRate = stats.total > 0 ? ((stats.passed / stats.total) * 100).toFixed(2) : 0;
+                            previewContent += `${this.selectedTemplate},${new Date().toISOString()},"${scopeText}",${stats.total},${stats.passed},${stats.failed},${stats.error},${stats.skipped},${stats.total_time.toFixed(2)},${passRate}%`;
                         } else if (this.selectedFormat === 'html') {
+                            const passRate = stats.total > 0 ? ((stats.passed / stats.total) * 100).toFixed(2) : 0;
                             previewContent = `<!DOCTYPE html>
 <html>
 <head>
     <title>JUnit Test Report</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .scope { background: #e3f2fd; padding: 10px; border-radius: 5px; margin-bottom: 20px; }
+        ul { line-height: 1.8; }
+    </style>
 </head>
 <body>
     <h1>JUnit Test Report - ${this.selectedTemplate}</h1>
     <p>Generated: ${new Date().toISOString()}</p>
-    
+
+    <div class="scope">
+        <strong>Report Scope:</strong> ${scopeText}
+    </div>
+
     <h2>Summary</h2>
     <ul>
         <li>Total Tests: ${stats.total}</li>
-        <li>Passed: ${stats.passed}</li>
+        <li>Passed: ${stats.passed} (${passRate}%)</li>
         <li>Failed: ${stats.failed}</li>
         <li>Errors: ${stats.error}</li>
         <li>Skipped: ${stats.skipped}</li>

@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en">
-    <!-- Updated: 2025-11-10 - Fixed error logging and API client -->
+    <!-- Updated: 2025-11-10 - Added suite filter for meaningful performance comparisons -->
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -69,8 +69,53 @@
             <div class="mb-8">
                 <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Performance Analysis</h1>
                 <p class="mt-2 text-gray-600 dark:text-gray-400">
-                    Identify slow tests and performance regressions
+                    Identify slow tests and performance regressions within specific test suites
                 </p>
+            </div>
+
+            <!-- Info Box -->
+            <div class="bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500 p-4 mb-6">
+                <div class="flex items-start">
+                    <div class="flex-shrink-0">
+                        <svg class="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                        </svg>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm text-blue-700 dark:text-blue-300">
+                            <strong>💡 Tip:</strong> Select a specific test suite to get meaningful performance insights.
+                            Comparing performance across different test suites (e.g., OTA vs Gateway tests) isn't meaningful
+                            as they test different systems with different performance characteristics.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Suite Filter -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-6">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center flex-1 max-w-md">
+                        <label class="text-sm font-medium text-gray-700 dark:text-gray-300 mr-3">
+                            Test Suite:
+                        </label>
+                        <select
+                            id="suiteFilter"
+                            onchange="onSuiteFilterChange()"
+                            class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                        >
+                            <option value="all">All Suites</option>
+                        </select>
+                    </div>
+                    <div id="selectedSuiteBadge" class="hidden ml-4">
+                        <div class="inline-flex items-center px-3 py-1 bg-blue-100 dark:bg-blue-900/30 rounded-full">
+                            <svg class="w-4 h-4 text-blue-600 dark:text-blue-400 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/>
+                                <path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"/>
+                            </svg>
+                            <span id="selectedSuiteName" class="text-xs font-medium text-blue-900 dark:text-blue-200 code-font"></span>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- Summary Cards -->
@@ -84,7 +129,7 @@
                 <div class="metric-card bg-white dark:bg-gray-800 rounded-lg shadow p-6">
                     <div class="text-gray-600 dark:text-gray-400 text-sm font-medium">Avg Test Time</div>
                     <div id="avgTestTime" class="text-2xl font-bold text-gray-900 dark:text-white mt-2">-</div>
-                    <div class="text-xs text-gray-500 dark:text-gray-500 mt-1">Across all tests</div>
+                    <div id="avgTestTimeDesc" class="text-xs text-gray-500 dark:text-gray-500 mt-1">Across all tests</div>
                 </div>
 
                 <div class="metric-card bg-white dark:bg-gray-800 rounded-lg shadow p-6">
@@ -94,9 +139,9 @@
                 </div>
 
                 <div class="metric-card bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-                    <div class="text-gray-600 dark:text-gray-400 text-sm font-medium">Suite Performance</div>
-                    <div id="suiteCount" class="text-2xl font-bold text-gray-900 dark:text-white mt-2">-</div>
-                    <div class="text-xs text-gray-500 dark:text-gray-500 mt-1">Total suites tracked</div>
+                    <div class="text-gray-600 dark:text-gray-400 text-sm font-medium">Tests Analyzed</div>
+                    <div id="totalTests" class="text-2xl font-bold text-gray-900 dark:text-white mt-2">-</div>
+                    <div id="totalTestsDesc" class="text-xs text-gray-500 dark:text-gray-500 mt-1">In selected suite</div>
                 </div>
             </div>
 
@@ -118,7 +163,7 @@
                         <label class="text-sm text-gray-600 dark:text-gray-400">Threshold:</label>
                         <select
                             id="thresholdSelect"
-                            onchange="loadRegressions()"
+                            onchange="loadPerformanceData()"
                             class="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded dark:bg-gray-700 dark:text-white"
                         >
                             <option value="10">10% slower</option>
@@ -131,28 +176,36 @@
                 <div id="regressionsList"></div>
             </div>
 
-            <!-- Suite Performance Breakdown -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-                <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                        📊 Suite Time Distribution
+            <!-- Suite Performance Breakdown (Always shows all suites) -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-6">
+                <div class="flex items-center mb-4">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+                        📊 All Suites Overview
                     </h3>
-                    <div id="suitePieChart" style="height: 350px"></div>
+                    <span class="ml-3 px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 text-xs rounded">
+                        Comparison across all test suites
+                    </span>
                 </div>
 
-                <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                        🎯 Suite Success Rates
-                    </h3>
-                    <div id="suiteSuccessChart" style="height: 350px"></div>
-                </div>
-            </div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-6">
+                    <div>
+                        <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                            Suite Time Distribution
+                        </h4>
+                        <div id="suitePieChart" style="height: 300px"></div>
+                    </div>
 
-            <!-- Detailed Suite Table -->
-            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                    📋 Suite Performance Details
-                </h3>
+                    <div>
+                        <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                            Suite Success Rates
+                        </h4>
+                        <div id="suiteSuccessChart" style="height: 300px"></div>
+                    </div>
+                </div>
+
+                <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                    Detailed Suite Metrics
+                </h4>
                 <div class="overflow-x-auto">
                     <table class="w-full">
                         <thead class="bg-gray-50 dark:bg-gray-700">
@@ -190,13 +243,31 @@
         <script>
             const db = new JUnitAPIClient();
             let slowestChart, suitePieChart, suiteSuccessChart;
+            let allSuites = [];
+            let selectedSuite = 'all';
+            let allTestCases = [];
 
             // Initialize
             async function init() {
                 try {
+                    // Load all test cases (we'll filter client-side)
+                    const response = await db.request('/cases?limit=2000');
+                    allTestCases = response.data.cases;
+
+                    // Get unique suites
+                    const uniqueSuites = [...new Set(allTestCases.map(c => c.classname))].filter(Boolean).sort();
+                    allSuites = uniqueSuites;
+
+                    // Populate suite filter
+                    const suiteFilter = document.getElementById('suiteFilter');
+                    uniqueSuites.forEach(suite => {
+                        const option = new Option(suite, suite);
+                        suiteFilter.add(option);
+                    });
+
+                    // Load initial data
                     await Promise.all([
-                        loadSlowestTests(),
-                        loadRegressions(),
+                        loadPerformanceData(),
                         loadSuitePerformance()
                     ]);
                 } catch (error) {
@@ -204,10 +275,70 @@
                 }
             }
 
+            function onSuiteFilterChange() {
+                selectedSuite = document.getElementById('suiteFilter').value;
+
+                // Update badge
+                if (selectedSuite === 'all') {
+                    document.getElementById('selectedSuiteBadge').classList.add('hidden');
+                    document.getElementById('avgTestTimeDesc').textContent = 'Across all tests';
+                    document.getElementById('totalTestsDesc').textContent = 'Total tests';
+                } else {
+                    document.getElementById('selectedSuiteBadge').classList.remove('hidden');
+                    document.getElementById('selectedSuiteName').textContent = selectedSuite;
+                    document.getElementById('avgTestTimeDesc').textContent = `In ${selectedSuite}`;
+                    document.getElementById('totalTestsDesc').textContent = `In ${selectedSuite}`;
+                }
+
+                // Reload performance data
+                loadPerformanceData();
+            }
+
+            async function loadPerformanceData() {
+                await Promise.all([
+                    loadSlowestTests(),
+                    loadRegressions()
+                ]);
+            }
+
             async function loadSlowestTests() {
                 try {
-                    const response = await db.request('/stats/slowest-tests?limit=20');
-                    const tests = response.data;
+                    // Filter test cases by selected suite
+                    let filteredCases = allTestCases;
+                    if (selectedSuite !== 'all') {
+                        filteredCases = allTestCases.filter(c => c.classname === selectedSuite);
+                    }
+
+                    if (filteredCases.length === 0) {
+                        document.getElementById('slowestChart').innerHTML = '<div class="text-center text-gray-500 dark:text-gray-400 py-12">No test data available for this suite</div>';
+                        return;
+                    }
+
+                    // Group by test name and calculate averages
+                    const testStats = {};
+                    filteredCases.forEach(test => {
+                        const key = `${test.name}|${test.classname}`;
+                        if (!testStats[key]) {
+                            testStats[key] = {
+                                name: test.name,
+                                classname: test.classname,
+                                times: [],
+                                total_runs: 0
+                            };
+                        }
+                        testStats[key].times.push(test.time);
+                        testStats[key].total_runs++;
+                    });
+
+                    // Calculate averages and sort
+                    const tests = Object.values(testStats).map(test => ({
+                        name: test.name,
+                        classname: test.classname,
+                        avg_time: test.times.reduce((a, b) => a + b, 0) / test.times.length,
+                        min_time: Math.min(...test.times),
+                        max_time: Math.max(...test.times),
+                        total_runs: test.total_runs
+                    })).sort((a, b) => b.avg_time - a.avg_time).slice(0, 20);
 
                     if (tests.length === 0) {
                         document.getElementById('slowestChart').innerHTML = '<div class="text-center text-gray-500 dark:text-gray-400 py-12">No test data available</div>';
@@ -216,13 +347,17 @@
 
                     // Update summary cards
                     const slowest = tests[0];
-                    document.getElementById('slowestTest').textContent = `${slowest.avg_time}s`;
+                    document.getElementById('slowestTest').textContent = `${slowest.avg_time.toFixed(3)}s`;
                     document.getElementById('slowestTestName').textContent = slowest.name;
 
                     const avgTime = tests.reduce((sum, t) => sum + t.avg_time, 0) / tests.length;
                     document.getElementById('avgTestTime').textContent = `${avgTime.toFixed(3)}s`;
+                    document.getElementById('totalTests').textContent = Object.keys(testStats).length;
 
                     // Create chart
+                    if (slowestChart) {
+                        slowestChart.dispose();
+                    }
                     slowestChart = echarts.init(document.getElementById('slowestChart'));
 
                     const option = {
@@ -235,8 +370,8 @@
                                 return `
                                     <strong>${test.name}</strong><br/>
                                     Class: ${test.classname}<br/>
-                                    Avg Time: <strong>${test.avg_time}s</strong><br/>
-                                    Min: ${test.min_time}s | Max: ${test.max_time}s<br/>
+                                    Avg Time: <strong>${test.avg_time.toFixed(3)}s</strong><br/>
+                                    Min: ${test.min_time.toFixed(3)}s | Max: ${test.max_time.toFixed(3)}s<br/>
                                     Total Runs: ${test.total_runs}
                                 `;
                             }
@@ -267,18 +402,71 @@
                     };
 
                     slowestChart.setOption(option);
-                    window.addEventListener('resize', () => slowestChart.resize());
+                    window.addEventListener('resize', () => slowestChart && slowestChart.resize());
 
                 } catch (error) {
-                    logError('Failed to load slowest tests from API', error);
+                    logError('Failed to load slowest tests', error);
                 }
             }
 
             async function loadRegressions() {
                 try {
-                    const threshold = document.getElementById('thresholdSelect').value;
-                    const response = await db.request(`/stats/performance-regressions?threshold=${threshold}`);
-                    const regressions = response.data;
+                    const threshold = parseInt(document.getElementById('thresholdSelect').value);
+
+                    // Filter by suite
+                    let filteredCases = allTestCases;
+                    if (selectedSuite !== 'all') {
+                        filteredCases = allTestCases.filter(c => c.classname === selectedSuite);
+                    }
+
+                    // Group by test and calculate baseline vs recent
+                    const testGroups = {};
+                    filteredCases.forEach(test => {
+                        const key = `${test.name}|${test.classname}`;
+                        if (!testGroups[key]) {
+                            testGroups[key] = {
+                                name: test.name,
+                                classname: test.classname,
+                                runs: []
+                            };
+                        }
+                        testGroups[key].runs.push({
+                            time: test.time,
+                            timestamp: test.timestamp
+                        });
+                    });
+
+                    // Find regressions
+                    const regressions = [];
+                    Object.values(testGroups).forEach(test => {
+                        if (test.runs.length < 4) return; // Need at least 4 runs
+
+                        // Sort by timestamp
+                        test.runs.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+                        // Compare recent 2 runs vs baseline (earliest 2 runs)
+                        const baseline = test.runs.slice(0, 2);
+                        const recent = test.runs.slice(-2);
+
+                        const baselineAvg = baseline.reduce((sum, r) => sum + r.time, 0) / baseline.length;
+                        const recentAvg = recent.reduce((sum, r) => sum + r.time, 0) / recent.length;
+
+                        if (baselineAvg > 0) {
+                            const percentChange = ((recentAvg - baselineAvg) / baselineAvg) * 100;
+                            if (percentChange > threshold) {
+                                regressions.push({
+                                    name: test.name,
+                                    classname: test.classname,
+                                    baseline_avg: baselineAvg.toFixed(3),
+                                    recent_avg: recentAvg.toFixed(3),
+                                    percent_change: percentChange.toFixed(1)
+                                });
+                            }
+                        }
+                    });
+
+                    // Sort by percent change
+                    regressions.sort((a, b) => parseFloat(b.percent_change) - parseFloat(a.percent_change));
 
                     document.getElementById('regressionCount').textContent = regressions.length;
 
@@ -315,7 +503,7 @@
                     container.innerHTML = html;
 
                 } catch (error) {
-                    logError('Failed to load performance regressions from API', error);
+                    logError('Failed to load performance regressions', error);
                 }
             }
 
@@ -326,9 +514,10 @@
 
                     if (suites.length === 0) return;
 
-                    document.getElementById('suiteCount').textContent = suites.length;
-
                     // Pie chart for time distribution
+                    if (suitePieChart) {
+                        suitePieChart.dispose();
+                    }
                     suitePieChart = echarts.init(document.getElementById('suitePieChart'));
 
                     const pieOption = {
@@ -350,9 +539,12 @@
                     };
 
                     suitePieChart.setOption(pieOption);
-                    window.addEventListener('resize', () => suitePieChart.resize());
+                    window.addEventListener('resize', () => suitePieChart && suitePieChart.resize());
 
                     // Bar chart for success rates
+                    if (suiteSuccessChart) {
+                        suiteSuccessChart.dispose();
+                    }
                     suiteSuccessChart = echarts.init(document.getElementById('suiteSuccessChart'));
 
                     const barOption = {
@@ -383,12 +575,12 @@
                     };
 
                     suiteSuccessChart.setOption(barOption);
-                    window.addEventListener('resize', () => suiteSuccessChart.resize());
+                    window.addEventListener('resize', () => suiteSuccessChart && suiteSuccessChart.resize());
 
                     // Table
                     const tbody = document.getElementById('suiteTableBody');
                     tbody.innerHTML = suites.map(suite => `
-                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer" onclick="document.getElementById('suiteFilter').value='${suite.suite_name}'; onSuiteFilterChange();">
                             <td class="px-4 py-3 text-sm">
                                 <div class="font-medium text-gray-900 dark:text-white code-font">${suite.suite_name}</div>
                             </td>
@@ -410,7 +602,7 @@
                     `).join('');
 
                 } catch (error) {
-                    logError('Failed to load suite performance metrics from API', error);
+                    logError('Failed to load suite performance metrics', error);
                 }
             }
 
