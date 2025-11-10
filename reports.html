@@ -145,9 +145,9 @@
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
                 <div class="flex items-center justify-between">
                     <div>
-                        <h1 class="text-2xl font-bold text-gray-900">Reports & Export</h1>
+                        <h1 class="text-2xl font-bold text-gray-900">Release Test Reports</h1>
                         <p class="text-gray-600 mt-1">
-                            Generate comprehensive reports and export your test results
+                            Generate comprehensive release test reports for product sign-off and documentation
                         </p>
                     </div>
                     <div class="flex items-center space-x-4">
@@ -163,324 +163,217 @@
         </div>
 
         <!-- Main Content -->
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <!-- Report Builder -->
-                <div class="lg:col-span-2">
-                    <!-- Info Box -->
-                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-                        <div class="flex items-start">
-                            <svg class="w-5 h-5 text-blue-600 mt-0.5 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
-                            </svg>
-                            <div>
-                                <p class="text-sm text-blue-800">
-                                    <strong>Tip:</strong> Select specific test suites and runs for more focused and actionable reports.
-                                    Reports that mix different test suites can be misleading since they test different systems.
-                                </p>
-                            </div>
-                        </div>
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <!-- Info Box -->
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                <div class="flex items-start">
+                    <svg class="w-5 h-5 text-blue-600 mt-0.5 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                    </svg>
+                    <div>
+                        <p class="text-sm text-blue-800">
+                            <strong>Release Test Reports:</strong> Generate professional test reports for product releases, QA sign-off, and stakeholder communication.
+                            Select the test run, choose which test suites to include, and generate a comprehensive report.
+                        </p>
                     </div>
+                </div>
+            </div>
 
-                    <div class="report-builder p-6 mb-8">
-                        <h3 class="text-lg font-semibold text-gray-900 mb-6">Report Builder</h3>
+            <div class="report-builder p-6 mb-8">
+                <h3 class="text-lg font-semibold text-gray-900 mb-6">Report Configuration</h3>
 
-                        <!-- Data Source -->
-                        <div class="mb-6">
-                            <h4 class="text-sm font-medium text-gray-700 mb-3">Data Source</h4>
-                            <div class="space-y-3">
-                                <div>
-                                    <label for="suite-selector" class="block text-sm text-gray-600 mb-1">Test Suite (optional)</label>
-                                    <select
-                                        id="suite-selector"
-                                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                    >
-                                        <option value="all">All Suites</option>
-                                    </select>
-                                    <p class="text-xs text-gray-500 mt-1">Filter report data to a specific test suite</p>
-                                </div>
-                                <div>
-                                    <label for="run-selector" class="block text-sm text-gray-600 mb-1">Test Run (optional)</label>
-                                    <select
-                                        id="run-selector"
-                                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                    >
-                                        <option value="all">All Recent Runs</option>
-                                    </select>
-                                    <p class="text-xs text-gray-500 mt-1">Generate report for a specific test run</p>
-                                </div>
-                                <div id="selection-badge" class="px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg text-sm" style="display: none;">
-                                    <span class="font-medium text-blue-900">Report Scope:</span>
-                                    <span id="selection-badge-text" class="text-blue-800"></span>
-                                </div>
-                            </div>
+                <!-- Release Information -->
+                <div class="mb-6">
+                    <h4 class="text-sm font-medium text-gray-700 mb-3">Release Information</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label for="release-version" class="block text-sm text-gray-600 mb-1">Release Version</label>
+                            <input
+                                type="text"
+                                id="release-version"
+                                placeholder="e.g., v2.4.1"
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            />
                         </div>
-
-                        <!-- Report Templates -->
-                        <div class="mb-6">
-                            <h4 class="text-sm font-medium text-gray-700 mb-3">Report Templates</h4>
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div
-                                    class="template-card border-2 border-gray-200 rounded-lg p-4 selected"
-                                    data-template="summary"
-                                >
-                                    <div class="flex items-center mb-2">
-                                        <svg
-                                            class="w-5 h-5 text-blue-600 mr-2"
-                                            fill="none"
-                                            viewBox="0 0 24 24"
-                                            stroke="currentColor"
-                                        >
-                                            <path
-                                                stroke-linecap="round"
-                                                stroke-linejoin="round"
-                                                stroke-width="2"
-                                                d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-                                            />
-                                        </svg>
-                                        <h5 class="font-medium text-gray-900">Summary Report</h5>
-                                    </div>
-                                    <p class="text-sm text-gray-600">
-                                        High-level overview of test results and key metrics
-                                    </p>
-                                </div>
-                                <div
-                                    class="template-card border-2 border-gray-200 rounded-lg p-4"
-                                    data-template="detailed"
-                                >
-                                    <div class="flex items-center mb-2">
-                                        <svg
-                                            class="w-5 h-5 text-gray-400 mr-2"
-                                            fill="none"
-                                            viewBox="0 0 24 24"
-                                            stroke="currentColor"
-                                        >
-                                            <path
-                                                stroke-linecap="round"
-                                                stroke-linejoin="round"
-                                                stroke-width="2"
-                                                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                                            />
-                                        </svg>
-                                        <h5 class="font-medium text-gray-900">Detailed Report</h5>
-                                    </div>
-                                    <p class="text-sm text-gray-600">
-                                        Comprehensive analysis with test case details
-                                    </p>
-                                </div>
-                            </div>
+                        <div>
+                            <label for="build-number" class="block text-sm text-gray-600 mb-1">Build Number</label>
+                            <input
+                                type="text"
+                                id="build-number"
+                                placeholder="e.g., Build-2024-1234"
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            />
                         </div>
-
-                        <!-- Export Formats -->
-                        <div class="mb-6">
-                            <h4 class="text-sm font-medium text-gray-700 mb-3">Export Format</h4>
-                            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-                                <div
-                                    class="export-format border-2 border-gray-200 rounded-lg p-3 text-center selected"
-                                    data-format="json"
-                                >
-                                    <svg
-                                        class="w-6 h-6 mx-auto mb-2 text-blue-600"
-                                        fill="none"
-                                        viewBox="0 0 24 24"
-                                        stroke="currentColor"
-                                    >
-                                        <path
-                                            stroke-linecap="round"
-                                            stroke-linejoin="round"
-                                            stroke-width="2"
-                                            d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
-                                        />
-                                    </svg>
-                                    <span class="text-sm font-medium">JSON</span>
-                                </div>
-                                <div
-                                    class="export-format border-2 border-gray-200 rounded-lg p-3 text-center"
-                                    data-format="csv"
-                                >
-                                    <svg
-                                        class="w-6 h-6 mx-auto mb-2 text-green-600"
-                                        fill="none"
-                                        viewBox="0 0 24 24"
-                                        stroke="currentColor"
-                                    >
-                                        <path
-                                            stroke-linecap="round"
-                                            stroke-linejoin="round"
-                                            stroke-width="2"
-                                            d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                                        />
-                                    </svg>
-                                    <span class="text-sm font-medium">CSV</span>
-                                </div>
-                                <div
-                                    class="export-format border-2 border-gray-200 rounded-lg p-3 text-center"
-                                    data-format="html"
-                                >
-                                    <svg
-                                        class="w-6 h-6 mx-auto mb-2 text-orange-600"
-                                        fill="none"
-                                        viewBox="0 0 24 24"
-                                        stroke="currentColor"
-                                    >
-                                        <path
-                                            stroke-linecap="round"
-                                            stroke-linejoin="round"
-                                            stroke-width="2"
-                                            d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"
-                                        />
-                                    </svg>
-                                    <span class="text-sm font-medium">HTML</span>
-                                </div>
-                                <div
-                                    class="export-format border-2 border-gray-200 rounded-lg p-3 text-center"
-                                    data-format="pdf"
-                                >
-                                    <svg
-                                        class="w-6 h-6 mx-auto mb-2 text-red-600"
-                                        fill="none"
-                                        viewBox="0 0 24 24"
-                                        stroke="currentColor"
-                                    >
-                                        <path
-                                            stroke-linecap="round"
-                                            stroke-linejoin="round"
-                                            stroke-width="2"
-                                            d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                                        />
-                                    </svg>
-                                    <span class="text-sm font-medium">PDF</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Data Selection -->
-                        <div class="mb-6">
-                            <h4 class="text-sm font-medium text-gray-700 mb-3">
-                                Include in Report
-                            </h4>
-                            <div class="space-y-2">
-                                <label class="flex items-center">
-                                    <input
-                                        type="checkbox"
-                                        class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                                        checked
-                                    />
-                                    <span class="ml-2 text-sm text-gray-700">Test run summary</span>
-                                </label>
-                                <label class="flex items-center">
-                                    <input
-                                        type="checkbox"
-                                        class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                                        checked
-                                    />
-                                    <span class="ml-2 text-sm text-gray-700"
-                                        >Test suite breakdown</span
-                                    >
-                                </label>
-                                <label class="flex items-center">
-                                    <input
-                                        type="checkbox"
-                                        class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                                        checked
-                                    />
-                                    <span class="ml-2 text-sm text-gray-700"
-                                        >Failed test details</span
-                                    >
-                                </label>
-                                <label class="flex items-center">
-                                    <input
-                                        type="checkbox"
-                                        class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                                    />
-                                    <span class="ml-2 text-sm text-gray-700"
-                                        >Performance metrics</span
-                                    >
-                                </label>
-                                <label class="flex items-center">
-                                    <input
-                                        type="checkbox"
-                                        class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                                    />
-                                    <span class="ml-2 text-sm text-gray-700"
-                                        >System information</span
-                                    >
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Preview -->
-                    <div class="report-builder p-6">
-                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Preview</h3>
-                        <div class="preview-container" id="report-preview">
-                            <!-- Preview content will be populated here -->
-                        </div>
-                        <div class="flex items-center justify-between mt-4">
-                            <button
-                                id="update-preview"
-                                class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-medium transition-colors duration-200"
-                            >
-                                Update Preview
-                            </button>
-                            <button
-                                id="download-report"
-                                class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200"
-                            >
-                                Download Report
-                            </button>
+                        <div>
+                            <label for="report-date" class="block text-sm text-gray-600 mb-1">Report Date</label>
+                            <input
+                                type="date"
+                                id="report-date"
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            />
                         </div>
                     </div>
                 </div>
 
-                <!-- Sidebar -->
-                <div class="lg:col-span-1">
-                    <!-- Recent Reports -->
-                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
-                        <div class="px-6 py-4 border-b border-gray-200">
-                            <h3 class="text-lg font-semibold text-gray-900">Recent Reports</h3>
-                        </div>
-                        <div class="p-6">
-                            <div id="recent-reports" class="space-y-4">
-                                <!-- Recent reports will be populated here -->
-                            </div>
-                        </div>
-                    </div>
+                <!-- Test Run Selection -->
+                <div class="mb-6">
+                    <h4 class="text-sm font-medium text-gray-700 mb-3">Test Run</h4>
+                    <select
+                        id="run-selector"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    >
+                        <option value="">Select test run for this release...</option>
+                    </select>
+                    <p class="text-xs text-gray-500 mt-1">Choose the test run that represents this release's testing</p>
+                </div>
 
-                    <!-- Quick Stats -->
-                    <div class="bg-white rounded-lg shadow-sm border border-gray-200">
-                        <div class="px-6 py-4 border-b border-gray-200">
-                            <h3 class="text-lg font-semibold text-gray-900">Quick Stats</h3>
-                        </div>
-                        <div class="p-6">
-                            <div class="space-y-4">
-                                <div class="flex items-center justify-between">
-                                    <span class="text-sm text-gray-600">Total Reports</span>
-                                    <span
-                                        class="text-lg font-semibold text-gray-900"
-                                        id="total-reports"
-                                        >0</span
-                                    >
-                                </div>
-                                <div class="flex items-center justify-between">
-                                    <span class="text-sm text-gray-600">This Week</span>
-                                    <span
-                                        class="text-lg font-semibold text-blue-600"
-                                        id="reports-this-week"
-                                        >0</span
-                                    >
-                                </div>
-                                <div class="flex items-center justify-between">
-                                    <span class="text-sm text-gray-600">Most Used Format</span>
-                                    <span
-                                        class="text-sm font-medium text-gray-900"
-                                        id="most-used-format"
-                                        >JSON</span
-                                    >
-                                </div>
+                <!-- Test Suite Selection -->
+                <div class="mb-6">
+                    <h4 class="text-sm font-medium text-gray-700 mb-3">Test Suites to Include</h4>
+                    <p class="text-xs text-gray-500 mb-3">Select which test suites should be included in this release report</p>
+                    <div id="suite-checkboxes" class="space-y-2 border border-gray-200 rounded-lg p-4 max-h-64 overflow-y-auto">
+                        <!-- Suite checkboxes will be populated here -->
+                        <p class="text-gray-500 text-sm">Select a test run first to see available test suites</p>
+                    </div>
+                </div>
+
+                <!-- Report Style -->
+                <div class="mb-6">
+                    <h4 class="text-sm font-medium text-gray-700 mb-3">Report Style</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div
+                            class="template-card border-2 border-gray-200 rounded-lg p-4 selected"
+                            data-template="executive"
+                        >
+                            <div class="flex items-center mb-2">
+                                <svg
+                                    class="w-5 h-5 text-blue-600 mr-2"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                >
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        stroke-width="2"
+                                        d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+                                    />
+                                </svg>
+                                <h5 class="font-medium text-gray-900">Executive Summary</h5>
                             </div>
+                            <p class="text-sm text-gray-600">
+                                High-level report for stakeholders with pass/fail verdict and recommendations
+                            </p>
+                        </div>
+                        <div
+                            class="template-card border-2 border-gray-200 rounded-lg p-4"
+                            data-template="detailed"
+                        >
+                            <div class="flex items-center mb-2">
+                                <svg
+                                    class="w-5 h-5 text-gray-400 mr-2"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                >
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        stroke-width="2"
+                                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                                    />
+                                </svg>
+                                <h5 class="font-medium text-gray-900">Detailed Technical</h5>
+                            </div>
+                            <p class="text-sm text-gray-600">
+                                Comprehensive report with full suite breakdowns and failure details
+                            </p>
                         </div>
                     </div>
+                </div>
+
+                <!-- Export Formats -->
+                <div class="mb-6">
+                    <h4 class="text-sm font-medium text-gray-700 mb-3">Export Format</h4>
+                    <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+                        <div
+                            class="export-format border-2 border-gray-200 rounded-lg p-3 text-center"
+                            data-format="html"
+                        >
+                            <svg
+                                class="w-6 h-6 mx-auto mb-2 text-orange-600"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"
+                                />
+                            </svg>
+                            <span class="text-sm font-medium">HTML</span>
+                        </div>
+                        <div
+                            class="export-format border-2 border-gray-200 rounded-lg p-3 text-center selected"
+                            data-format="markdown"
+                        >
+                            <svg
+                                class="w-6 h-6 mx-auto mb-2 text-blue-600"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
+                                />
+                            </svg>
+                            <span class="text-sm font-medium">Markdown</span>
+                        </div>
+                        <div
+                            class="export-format border-2 border-gray-200 rounded-lg p-3 text-center"
+                            data-format="json"
+                        >
+                            <svg
+                                class="w-6 h-6 mx-auto mb-2 text-green-600"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                                />
+                            </svg>
+                            <span class="text-sm font-medium">JSON</span>
+                        </div>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-2">HTML: Self-contained file • Markdown: For GitHub/Confluence • JSON: Machine-readable</p>
+                </div>
+            </div>
+
+            <!-- Preview -->
+            <div class="report-builder p-6 mb-8">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Report Preview</h3>
+                <div class="preview-container" id="report-preview">
+                    <p class="text-gray-500">Configure the report settings above, then click "Generate Report" to see a preview.</p>
+                </div>
+                <div class="flex items-center justify-end gap-3 mt-4">
+                    <button
+                        id="download-report"
+                        class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors duration-200 flex items-center gap-2"
+                    >
+                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        </svg>
+                        Download Report
+                    </button>
                 </div>
             </div>
         </div>
@@ -501,441 +394,6 @@
         <script src="theme.js"></script>
         <script src="navigation.js"></script>
         <script src="api-client.js"></script>
-        <script>
-            class ReportsPage {
-                constructor() {
-                    this.db = new JUnitAPIClient();
-                    this.selectedTemplate = 'summary';
-                    this.selectedFormat = 'json';
-                    this.selectedSuite = 'all';
-                    this.selectedRun = 'all';
-                    this.reports = [];
-                    this.allSuites = [];
-                    this.allRuns = [];
-                    this.init();
-                }
-
-                async init() {
-                    try {
-                        await this.loadSuitesAndRuns();
-                        this.setupEventListeners();
-                        this.loadReports();
-                        this.updatePreview();
-                    } catch (error) {
-                        console.error('Failed to initialize reports page:', error);
-                        this.showNotification('Failed to initialize page', 'error');
-                    }
-                }
-
-                async loadSuitesAndRuns() {
-                    try {
-                        // Load all test cases to extract unique suites
-                        const casesResponse = await this.db.request('/cases?limit=1000');
-                        const cases = casesResponse.data.cases;
-
-                        // Extract unique suites
-                        this.allSuites = [...new Set(cases.map(c => c.classname))]
-                            .filter(Boolean)
-                            .sort();
-
-                        // Populate suite selector
-                        const suiteSelector = document.getElementById('suite-selector');
-                        if (suiteSelector) {
-                            this.allSuites.forEach(suite => {
-                                const option = document.createElement('option');
-                                option.value = suite;
-                                option.textContent = suite;
-                                suiteSelector.appendChild(option);
-                            });
-                        }
-
-                        // Load test runs
-                        const runsResponse = await this.db.request('/runs?limit=20');
-                        this.allRuns = runsResponse.data.runs;
-
-                        // Populate run selector
-                        const runSelector = document.getElementById('run-selector');
-                        if (runSelector) {
-                            this.allRuns.forEach(run => {
-                                const option = document.createElement('option');
-                                option.value = run._id;
-                                option.textContent = `${run.name} - ${new Date(run.timestamp).toLocaleString()}`;
-                                runSelector.appendChild(option);
-                            });
-                        }
-                    } catch (error) {
-                        console.error('Error loading suites and runs:', error);
-                        this.showNotification('Failed to load data sources', 'error');
-                    }
-                }
-
-                setupEventListeners() {
-                    // Data source selection
-                    const suiteSelector = document.getElementById('suite-selector');
-                    const runSelector = document.getElementById('run-selector');
-
-                    if (suiteSelector) {
-                        suiteSelector.addEventListener('change', this.handleSourceChange.bind(this));
-                    }
-
-                    if (runSelector) {
-                        runSelector.addEventListener('change', this.handleSourceChange.bind(this));
-                    }
-
-                    // Template selection
-                    document.querySelectorAll('.template-card').forEach(card => {
-                        card.addEventListener('click', this.selectTemplate.bind(this));
-                    });
-
-                    // Format selection
-                    document.querySelectorAll('.export-format').forEach(format => {
-                        format.addEventListener('click', this.selectFormat.bind(this));
-                    });
-
-                    // Generate report
-                    document
-                        .getElementById('generate-report')
-                        .addEventListener('click', this.generateReport.bind(this));
-                    document
-                        .getElementById('update-preview')
-                        .addEventListener('click', this.updatePreview.bind(this));
-                    document
-                        .getElementById('download-report')
-                        .addEventListener('click', this.downloadReport.bind(this));
-                }
-
-                handleSourceChange() {
-                    const suiteSelector = document.getElementById('suite-selector');
-                    const runSelector = document.getElementById('run-selector');
-
-                    this.selectedSuite = suiteSelector?.value || 'all';
-                    this.selectedRun = runSelector?.value || 'all';
-
-                    // Update badge
-                    const badge = document.getElementById('selection-badge');
-                    const badgeText = document.getElementById('selection-badge-text');
-
-                    if (this.selectedSuite === 'all' && this.selectedRun === 'all') {
-                        badge.style.display = 'none';
-                    } else {
-                        badge.style.display = 'block';
-                        const parts = [];
-
-                        if (this.selectedSuite !== 'all') {
-                            parts.push(`Suite: ${this.selectedSuite}`);
-                        }
-
-                        if (this.selectedRun !== 'all') {
-                            const run = this.allRuns.find(r => r._id === this.selectedRun);
-                            if (run) {
-                                parts.push(`Run: ${run.name}`);
-                            }
-                        }
-
-                        if (parts.length === 0) {
-                            parts.push('All data');
-                        }
-
-                        badgeText.textContent = parts.join(', ');
-                    }
-
-                    this.updatePreview();
-                }
-
-                selectTemplate(event) {
-                    document.querySelectorAll('.template-card').forEach(card => {
-                        card.classList.remove('selected');
-                    });
-                    event.currentTarget.classList.add('selected');
-                    this.selectedTemplate = event.currentTarget.dataset.template;
-                    this.updatePreview();
-                }
-
-                selectFormat(event) {
-                    document.querySelectorAll('.export-format').forEach(format => {
-                        format.classList.remove('selected');
-                    });
-                    event.currentTarget.classList.add('selected');
-                    this.selectedFormat = event.currentTarget.dataset.format;
-                    this.updatePreview();
-                }
-
-                async loadReports() {
-                    // Mock recent reports - in real implementation, this would come from database
-                    this.reports = [
-                        {
-                            id: 1,
-                            name: 'Weekly Test Summary',
-                            format: 'json',
-                            date: new Date(Date.now() - 86400000).toISOString(),
-                            size: '2.3 MB'
-                        },
-                        {
-                            id: 2,
-                            name: 'Release Test Report',
-                            format: 'html',
-                            date: new Date(Date.now() - 172800000).toISOString(),
-                            size: '1.8 MB'
-                        },
-                        {
-                            id: 3,
-                            name: 'Performance Analysis',
-                            format: 'csv',
-                            date: new Date(Date.now() - 259200000).toISOString(),
-                            size: '890 KB'
-                        }
-                    ];
-
-                    this.renderRecentReports();
-                    this.updateQuickStats();
-                }
-
-                renderRecentReports() {
-                    const container = document.getElementById('recent-reports');
-                    if (!container) return;
-
-                    container.innerHTML = this.reports
-                        .map(
-                            report => `
-                    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                        <div class="flex-1">
-                            <h5 class="text-sm font-medium text-gray-900">${report.name}</h5>
-                            <p class="text-xs text-gray-600">${new Date(report.date).toLocaleDateString()} • ${report.size}</p>
-                        </div>
-                        <div class="flex items-center space-x-2">
-                            <span class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800 uppercase">
-                                ${report.format}
-                            </span>
-                            <button class="text-blue-600 hover:text-blue-800 text-xs font-medium">
-                                Download
-                            </button>
-                        </div>
-                    </div>
-                `
-                        )
-                        .join('');
-                }
-
-                updateQuickStats() {
-                    document.getElementById('total-reports').textContent = this.reports.length;
-                    document.getElementById('reports-this-week').textContent = '3';
-
-                    const formatCounts = {};
-                    this.reports.forEach(report => {
-                        formatCounts[report.format] = (formatCounts[report.format] || 0) + 1;
-                    });
-
-                    const mostUsed = Object.keys(formatCounts).reduce((a, b) =>
-                        formatCounts[a] > formatCounts[b] ? a : b
-                    );
-                    document.getElementById('most-used-format').textContent =
-                        mostUsed.toUpperCase();
-                }
-
-                async updatePreview() {
-                    const preview = document.getElementById('report-preview');
-                    if (!preview) return;
-
-                    try {
-                        // Build query parameters based on selection
-                        let queryParams = '?limit=1000';
-                        if (this.selectedRun !== 'all') {
-                            queryParams += `&run_id=${this.selectedRun}`;
-                        }
-
-                        // Fetch test cases
-                        const casesResponse = await this.db.request(`/cases${queryParams}`);
-                        let cases = casesResponse.data.cases;
-
-                        // Filter by suite if selected
-                        if (this.selectedSuite !== 'all') {
-                            cases = cases.filter(c => c.classname === this.selectedSuite);
-                        }
-
-                        // Calculate statistics from filtered cases
-                        const stats = {
-                            total: cases.length,
-                            passed: cases.filter(c => c.status === 'passed').length,
-                            failed: cases.filter(c => c.status === 'failed').length,
-                            error: cases.filter(c => c.status === 'error').length,
-                            skipped: cases.filter(c => c.status === 'skipped').length,
-                            total_time: cases.reduce((sum, c) => sum + (c.time || 0), 0)
-                        };
-
-                        // Build report scope text
-                        const scopeParts = [];
-                        if (this.selectedSuite !== 'all') {
-                            scopeParts.push(`Suite: ${this.selectedSuite}`);
-                        }
-                        if (this.selectedRun !== 'all') {
-                            const run = this.allRuns.find(r => r._id === this.selectedRun);
-                            if (run) {
-                                scopeParts.push(`Run: ${run.name}`);
-                            }
-                        }
-                        const scopeText = scopeParts.length > 0 ? scopeParts.join(', ') : 'All data';
-
-                        let previewContent = '';
-
-                        if (this.selectedFormat === 'json') {
-                            const reportData = {
-                                template: this.selectedTemplate,
-                                generatedAt: new Date().toISOString(),
-                                scope: {
-                                    suite: this.selectedSuite,
-                                    run: this.selectedRun,
-                                    description: scopeText
-                                },
-                                summary: {
-                                    totalTests: stats.total,
-                                    passed: stats.passed,
-                                    failed: stats.failed,
-                                    errors: stats.error,
-                                    skipped: stats.skipped,
-                                    totalTime: stats.total_time,
-                                    passRate: stats.total > 0 ? ((stats.passed / stats.total) * 100).toFixed(2) : 0
-                                }
-                            };
-
-                            if (this.selectedTemplate === 'detailed') {
-                                reportData.failedTests = cases
-                                    .filter(c => c.status === 'failed' || c.status === 'error')
-                                    .slice(0, 10)
-                                    .map(c => ({
-                                        name: c.name,
-                                        classname: c.classname,
-                                        status: c.status,
-                                        time: c.time
-                                    }));
-                            }
-
-                            previewContent = JSON.stringify(reportData, null, 2);
-                        } else if (this.selectedFormat === 'csv') {
-                            previewContent = 'Template,Generated At,Scope,Total Tests,Passed,Failed,Errors,Skipped,Total Time,Pass Rate\n';
-                            const passRate = stats.total > 0 ? ((stats.passed / stats.total) * 100).toFixed(2) : 0;
-                            previewContent += `${this.selectedTemplate},${new Date().toISOString()},"${scopeText}",${stats.total},${stats.passed},${stats.failed},${stats.error},${stats.skipped},${stats.total_time.toFixed(2)},${passRate}%`;
-                        } else if (this.selectedFormat === 'html') {
-                            const passRate = stats.total > 0 ? ((stats.passed / stats.total) * 100).toFixed(2) : 0;
-                            previewContent = `<!DOCTYPE html>
-<html>
-<head>
-    <title>JUnit Test Report</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        .scope { background: #e3f2fd; padding: 10px; border-radius: 5px; margin-bottom: 20px; }
-        ul { line-height: 1.8; }
-    </style>
-</head>
-<body>
-    <h1>JUnit Test Report - ${this.selectedTemplate}</h1>
-    <p>Generated: ${new Date().toISOString()}</p>
-
-    <div class="scope">
-        <strong>Report Scope:</strong> ${scopeText}
-    </div>
-
-    <h2>Summary</h2>
-    <ul>
-        <li>Total Tests: ${stats.total}</li>
-        <li>Passed: ${stats.passed} (${passRate}%)</li>
-        <li>Failed: ${stats.failed}</li>
-        <li>Errors: ${stats.error}</li>
-        <li>Skipped: ${stats.skipped}</li>
-        <li>Total Time: ${stats.total_time.toFixed(2)}s</li>
-    </ul>
-</body>
-</html>`;
-                        }
-
-                        preview.textContent = previewContent;
-                    } catch (error) {
-                        console.error('Error updating preview:', error);
-                        preview.textContent = 'Error generating preview. Please try again.';
-                    }
-                }
-
-                async generateReport() {
-                    const button = document.getElementById('generate-report');
-                    const originalText = button.textContent;
-
-                    button.textContent = 'Generating...';
-                    button.disabled = true;
-
-                    try {
-                        await this.updatePreview();
-
-                        // Add to recent reports
-                        const newReport = {
-                            id: this.reports.length + 1,
-                            name: `${this.selectedTemplate} Report`,
-                            format: this.selectedFormat,
-                            date: new Date().toISOString(),
-                            size: '1.2 MB'
-                        };
-
-                        this.reports.unshift(newReport);
-                        this.renderRecentReports();
-                        this.updateQuickStats();
-
-                        this.showNotification('Report generated successfully!', 'success');
-                    } catch (error) {
-                        console.error('Error generating report:', error);
-                        this.showNotification('Error generating report', 'error');
-                    } finally {
-                        button.textContent = originalText;
-                        button.disabled = false;
-                    }
-                }
-
-                downloadReport() {
-                    const preview = document.getElementById('report-preview');
-                    if (!preview || !preview.textContent) {
-                        this.showNotification('No report to download', 'error');
-                        return;
-                    }
-
-                    let content = preview.textContent;
-                    let mimeType = 'text/plain';
-                    let filename = `test-report.${this.selectedFormat}`;
-
-                    if (this.selectedFormat === 'json') {
-                        mimeType = 'application/json';
-                    } else if (this.selectedFormat === 'csv') {
-                        mimeType = 'text/csv';
-                    } else if (this.selectedFormat === 'html') {
-                        mimeType = 'text/html';
-                    }
-
-                    const blob = new Blob([content], { type: mimeType });
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = filename;
-                    a.click();
-                    URL.revokeObjectURL(url);
-
-                    this.showNotification('Report downloaded successfully!', 'success');
-                }
-
-                showNotification(message, type) {
-                    const notification = document.createElement('div');
-                    notification.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 ${
-                        type === 'error' ? 'bg-red-500 text-white' : 'bg-green-500 text-white'
-                    }`;
-                    notification.textContent = message;
-
-                    document.body.appendChild(notification);
-
-                    setTimeout(() => {
-                        notification.remove();
-                    }, 5000);
-                }
-            }
-
-            // Initialize reports page
-            document.addEventListener('DOMContentLoaded', () => {
-                window.reportsPage = new ReportsPage();
-            });
-        </script>
+        <script src="release-reports.js"></script>
     </body>
 </html>
