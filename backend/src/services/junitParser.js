@@ -80,32 +80,44 @@ const parseJUnitXML = async (xmlContent, filename, ciMetadata = null, uploaderIn
 
         for (const suiteElement of testsuites) {
             if (!testRun) {
-                // Determine the correct timestamp (priority: CI metadata > XML timestamp > current time)
+                // Log suite element structure for debugging
+                logger.info('Suite element attributes', {
+                    attributes: Object.keys(suiteElement),
+                    timestamp: suiteElement.timestamp,
+                    name: suiteElement.name,
+                    filename
+                });
+
+                // Determine the correct timestamp
+                // Priority: XML timestamp (most accurate) > CI metadata build_time > current time
                 let timestamp;
                 let timestampSource;
-                if (ciMetadata && ciMetadata.build_time) {
-                    // Use build time from CI metadata (Jenkins import)
-                    timestamp = new Date(ciMetadata.build_time);
-                    timestampSource = 'ci_metadata.build_time';
-                    logger.info('Using CI metadata timestamp', {
-                        build_time: ciMetadata.build_time,
-                        parsed_timestamp: timestamp.toISOString()
-                    });
-                } else if (suiteElement.timestamp) {
-                    // Use timestamp from JUnit XML
+
+                if (suiteElement.timestamp) {
+                    // Use timestamp from JUnit XML (most accurate - from test execution)
                     timestamp = new Date(suiteElement.timestamp);
                     timestampSource = 'junit_xml';
                     logger.info('Using JUnit XML timestamp', {
                         xml_timestamp: suiteElement.timestamp,
                         parsed_timestamp: timestamp.toISOString()
                     });
+                } else if (ciMetadata && ciMetadata.build_time) {
+                    // Use build time from CI metadata (fallback for XMLs without timestamp)
+                    timestamp = new Date(ciMetadata.build_time);
+                    timestampSource = 'ci_metadata.build_time';
+                    logger.info('Using CI metadata timestamp', {
+                        build_time: ciMetadata.build_time,
+                        parsed_timestamp: timestamp.toISOString()
+                    });
                 } else {
-                    // Fallback to current time (only for manual uploads without timestamp)
+                    // Last resort: use current time
                     timestamp = new Date();
                     timestampSource = 'current_time';
-                    logger.warn('No timestamp in CI metadata or XML, using current time', {
+                    logger.error('No timestamp found - using current time', {
                         timestamp: timestamp.toISOString(),
-                        ci_metadata: ciMetadata
+                        ci_metadata: ciMetadata,
+                        suite_keys: Object.keys(suiteElement),
+                        filename
                     });
                 }
 
