@@ -20,6 +20,9 @@ router.get('/', async (req, res, next) => {
         if (req.query.suite_id) {
             matchQuery.suite_id = new mongoose.Types.ObjectId(req.query.suite_id);
         }
+        if (req.query.classname) {
+            matchQuery.classname = req.query.classname;
+        }
         if (req.query.status) {
             matchQuery.status = req.query.status;
         }
