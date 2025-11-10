@@ -13,6 +13,7 @@ const uploadRoutes = require('./routes/upload');
 const runsRoutes = require('./routes/runs');
 const casesRoutes = require('./routes/cases');
 const statsRoutes = require('./routes/stats');
+const analysisRoutes = require('./routes/analysis');
 
 // Initialize express app
 const app = express();
@@ -23,10 +24,12 @@ connectDB();
 // Middleware
 app.use(helmet());
 app.use(compression());
-app.use(cors({
-    origin: process.env.ALLOWED_ORIGINS.split(','),
-    credentials: true
-}));
+app.use(
+    cors({
+        origin: process.env.ALLOWED_ORIGINS.split(','),
+        credentials: true
+    })
+);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -34,11 +37,13 @@ app.use(express.urlencoded({ extended: true }));
 if (process.env.NODE_ENV === 'development') {
     app.use(morgan('dev'));
 } else {
-    app.use(morgan('combined', {
-        stream: {
-            write: (message) => logger.info(message.trim())
-        }
-    }));
+    app.use(
+        morgan('combined', {
+            stream: {
+                write: message => logger.info(message.trim())
+            }
+        })
+    );
 }
 
 // Health check endpoint
@@ -55,6 +60,7 @@ app.use('/api/v1/upload', uploadRoutes);
 app.use('/api/v1/runs', runsRoutes);
 app.use('/api/v1/cases', casesRoutes);
 app.use('/api/v1/stats', statsRoutes);
+app.use('/api/v1/analysis', analysisRoutes);
 
 // 404 handler
 app.use((req, res) => {
