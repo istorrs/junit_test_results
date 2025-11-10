@@ -7,6 +7,7 @@
 > **Individual Test Case History & Trends**
 
 When developers see a test failure, they immediately ask:
+
 - "Has this test been flaky?"
 - "Is this a new failure or recurring?"
 - "Is this test getting slower?"
@@ -19,9 +20,11 @@ You just need the UI to display it.
 ## 🔥 Top 5 Most Impactful Enhancements
 
 ### 1. Test Case History Page ⭐⭐⭐⭐⭐
+
 **Impact:** CRITICAL | **Effort:** Medium
 
 Create a dedicated page showing:
+
 - ✅ Pass/fail timeline for specific test
 - ✅ Performance trend chart
 - ✅ Failure pattern analysis
@@ -32,6 +35,7 @@ Create a dedicated page showing:
 ---
 
 ### 2. Real Historical Trend Charts ⭐⭐⭐⭐⭐
+
 **Impact:** HIGH | **Effort:** Low
 
 **Current:** Dashboard shows mock data
@@ -42,9 +46,11 @@ Replace ~15 lines of mock data with real API call. Immediate value!
 ---
 
 ### 3. Actionable Insights Dashboard ⭐⭐⭐⭐
+
 **Impact:** HIGH | **Effort:** Medium
 
 Add "Requires Attention" panel showing:
+
 - 🚨 New failures (vs previous run)
 - ⚠️ Flaky tests detected
 - 📉 Performance regressions
@@ -55,10 +61,12 @@ Add "Requires Attention" panel showing:
 ---
 
 ### 4. Enhanced Flaky Test Management ⭐⭐⭐⭐
+
 **Impact:** HIGH | **Effort:** Medium
 
 **Current:** Flaky detection exists but hidden in filters
 **Solution:** Dedicated `/flaky-tests.html` page with:
+
 - List of all flaky tests
 - Failure rate gauges
 - Pattern analysis
@@ -67,9 +75,11 @@ Add "Requires Attention" panel showing:
 ---
 
 ### 5. Test Run Comparison ⭐⭐⭐
+
 **Impact:** MEDIUM-HIGH | **Effort:** Medium
 
 Compare two runs side-by-side:
+
 - What tests newly failed?
 - What tests newly passed?
 - Performance regressions?
@@ -80,6 +90,7 @@ Compare two runs side-by-side:
 ## 📊 Visual Mockups
 
 ### Test Case History Page (Proposed)
+
 ```
 ╔══════════════════════════════════════════════════════════════╗
 ║ testUserLogin (com.example.UserTest)                        ║
@@ -125,6 +136,7 @@ Compare two runs side-by-side:
 ```
 
 ### Insights Panel (Proposed Addition to Dashboard)
+
 ```
 ╔══════════════════════════════════════════════════════════════╗
 ║ 🚨 Requires Attention (4 items)                              ║
@@ -154,9 +166,11 @@ Compare two runs side-by-side:
 ## 🚀 Quick Wins (Implement Today!)
 
 ### 1. Fix Trend Chart (30 minutes)
+
 **File:** `main.js` line 407-510
 
 **Current:**
+
 ```javascript
 // Mock trend data
 const dates = [];
@@ -167,6 +181,7 @@ for (let i = 6; i >= 0; i--) {
 ```
 
 **Fix:**
+
 ```javascript
 async initializeTrendChart() {
     const trends = await this.db.getTrends({ limit: 30 });
@@ -182,11 +197,14 @@ async initializeTrendChart() {
 ---
 
 ### 2. Add "View History" Buttons (1 hour)
+
 Add to test cards in `index.html` and `details.html`:
 
 ```html
-<button class="text-blue-600 hover:text-blue-800 text-xs font-medium"
-        onclick="dashboard.viewTestHistory('${testCase.name}', '${testCase.classname}')">
+<button
+    class="text-blue-600 hover:text-blue-800 text-xs font-medium"
+    onclick="dashboard.viewTestHistory('${testCase.name}', '${testCase.classname}')"
+>
     📊 View History →
 </button>
 ```
@@ -194,12 +212,14 @@ Add to test cards in `index.html` and `details.html`:
 ---
 
 ### 3. Show Flaky Badges (30 minutes)
+
 Test cards already have `is_flaky` data, just need to display it:
 
 ```html
-${testCase.is_flaky ?
-  '<span class="ml-2 px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">⚠️ FLAKY</span>'
-  : ''}
+${testCase.is_flaky ? '<span
+    class="ml-2 px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800"
+    >⚠️ FLAKY</span
+>' : ''}
 ```
 
 ---
@@ -207,6 +227,7 @@ ${testCase.is_flaky ?
 ## 📋 Implementation Checklist
 
 ### Week 1-2: Foundation
+
 - [ ] Create `test-case-history.html` page
 - [ ] Create `test-case-history.js` logic
 - [ ] Add API helper for test case history
@@ -215,6 +236,7 @@ ${testCase.is_flaky ?
 - [ ] Show flaky badges on test cards
 
 ### Week 3-4: Insights
+
 - [ ] Create insights API endpoints
 - [ ] Build insights panel component
 - [ ] Add to dashboard
@@ -222,12 +244,14 @@ ${testCase.is_flaky ?
 - [ ] Implement flaky test management
 
 ### Week 5-6: Analysis
+
 - [ ] Create run comparison page
 - [ ] Build performance analysis dashboard
 - [ ] Add suite-level analysis
 - [ ] Enhanced test detail modal
 
 ### Week 7-8: Polish
+
 - [ ] Advanced filtering
 - [ ] Saved filter presets
 - [ ] Deep linking
@@ -239,6 +263,7 @@ ${testCase.is_flaky ?
 ## 💡 Architecture Notes
 
 ### Existing Infrastructure (Good!)
+
 ✅ MongoDB with full test history
 ✅ API endpoints for history (`/cases/:id/history`)
 ✅ Flaky detection service
@@ -246,6 +271,7 @@ ${testCase.is_flaky ?
 ✅ Modern frontend stack
 
 ### What's Missing (Add These)
+
 ❌ UI for test case history
 ❌ Real data in trend charts
 ❌ Insights/alerts system
@@ -283,6 +309,7 @@ This dashboard should answer the **5 Questions** developers ask:
 4. **Then build** insights panel and flaky test page
 
 **Questions to consider:**
+
 - Which team members will use this most?
 - What do they check first when tests fail?
 - What decisions do they need to make?

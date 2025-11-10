@@ -3,6 +3,7 @@
 ## What Was Wrong
 
 The Docker build was failing with:
+
 ```
 npm error The `npm ci` command can only install with an existing package-lock.json
 ```
@@ -10,17 +11,21 @@ npm error The `npm ci` command can only install with an existing package-lock.js
 ## What Was Fixed
 
 ### 1. Generated package-lock.json ✅
+
 - Ran `npm install` in the backend directory
 - Created `package-lock.json` (63KB)
 - This file is now committed to the repository
 
 ### 2. Updated Dockerfile ✅
+
 Changed from:
+
 ```dockerfile
 RUN npm ci --only=production
 ```
 
 To:
+
 ```dockerfile
 RUN npm install --omit=dev
 ```
@@ -28,6 +33,7 @@ RUN npm install --omit=dev
 This is more flexible and works with or without package-lock.json.
 
 ### 3. Updated Multer Package ✅
+
 Changed from deprecated `multer@1.4.5-lts.1` to `multer@2.0.0-rc.4` (latest stable)
 
 ## How to Build Now
@@ -73,11 +79,13 @@ google-chrome http://localhost
 ## What Changed
 
 ### Files Modified:
+
 1. ✅ `backend/package.json` - Updated multer to v2.x
 2. ✅ `backend/package-lock.json` - Generated (NEW)
 3. ✅ `backend/Dockerfile` - Changed npm command
 
 ### Files Created:
+
 4. ✅ `DOCKER_TROUBLESHOOTING.md` - Comprehensive troubleshooting guide
 
 ## If You Still Have Issues
@@ -116,6 +124,7 @@ docker compose ps
 ### Start Fresh
 
 If anything goes wrong:
+
 ```bash
 # Remove everything
 docker compose down -v
@@ -174,6 +183,7 @@ docker compose exec mongodb mongodump \
 ✅ **Ready to Deploy:** Just run `docker compose up -d`
 
 **Next Steps:**
+
 1. Copy `.env.docker` to `.env`
 2. Edit `.env` and set secure passwords
 3. Run `docker compose up -d`

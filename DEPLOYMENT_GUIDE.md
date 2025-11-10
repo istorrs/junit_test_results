@@ -2,17 +2,18 @@
 
 ## Comparison of Deployment Methods
 
-| Method | Setup Time | Difficulty | Portability | Best For |
-|--------|-----------|------------|-------------|----------|
-| **🐳 Docker Compose** | 5 minutes | ⭐ Easy | ✅ Excellent | **Recommended** - Production & Development |
-| **📜 Auto Script** | 15-30 min | ⭐⭐ Medium | ❌ Ubuntu only | Quick Ubuntu setup |
-| **📖 Manual** | 30-60 min | ⭐⭐⭐ Hard | ❌ Ubuntu only | Learning/Customization |
+| Method                | Setup Time | Difficulty  | Portability    | Best For                                   |
+| --------------------- | ---------- | ----------- | -------------- | ------------------------------------------ |
+| **🐳 Docker Compose** | 5 minutes  | ⭐ Easy     | ✅ Excellent   | **Recommended** - Production & Development |
+| **📜 Auto Script**    | 15-30 min  | ⭐⭐ Medium | ❌ Ubuntu only | Quick Ubuntu setup                         |
+| **📖 Manual**         | 30-60 min  | ⭐⭐⭐ Hard | ❌ Ubuntu only | Learning/Customization                     |
 
 ---
 
 ## Method 1: Docker Compose (Recommended) 🐳
 
 ### Why Docker?
+
 - ✅ **Fastest setup** - 5 minutes from zero to running
 - ✅ **No dependency conflicts** - Everything isolated
 - ✅ **Portable** - Works on any OS (Linux, macOS, Windows)
@@ -30,6 +31,7 @@
 ### Step 1: Install Docker
 
 **Ubuntu/Debian:**
+
 ```bash
 # Remove old versions
 sudo apt remove docker docker-engine docker.io containerd runc
@@ -51,6 +53,7 @@ docker compose version
 ```
 
 **Other OS:**
+
 - **macOS/Windows:** Install Docker Desktop from https://www.docker.com/products/docker-desktop
 
 ### Step 2: Configure Environment
@@ -66,6 +69,7 @@ nano .env
 ```
 
 Update these values:
+
 ```env
 MONGO_ROOT_PASSWORD=YourSecureRootPassword123!
 MONGO_APP_PASSWORD=YourSecureAppPassword123!
@@ -174,30 +178,32 @@ docker compose exec backend env
 For production, you may want to:
 
 1. **Use external MongoDB** (MongoDB Atlas)
-   ```yaml
-   # In docker-compose.yml, remove mongodb service
-   # Update backend MONGODB_URI to Atlas connection string
-   ```
+
+    ```yaml
+    # In docker-compose.yml, remove mongodb service
+    # Update backend MONGODB_URI to Atlas connection string
+    ```
 
 2. **Enable HTTPS**
-   ```bash
-   # Get SSL certificate
-   sudo apt install certbot
-   sudo certbot certonly --standalone -d your-domain.com
 
-   # Update nginx.conf to use SSL
-   # Mount certificates in docker-compose.yml
-   ```
+    ```bash
+    # Get SSL certificate
+    sudo apt install certbot
+    sudo certbot certonly --standalone -d your-domain.com
+
+    # Update nginx.conf to use SSL
+    # Mount certificates in docker-compose.yml
+    ```
 
 3. **Set resource limits**
-   ```yaml
-   backend:
-     deploy:
-       resources:
-         limits:
-           cpus: '2'
-           memory: 2G
-   ```
+    ```yaml
+    backend:
+        deploy:
+            resources:
+                limits:
+                    cpus: '2'
+                    memory: 2G
+    ```
 
 ### Docker Troubleshooting
 
@@ -237,6 +243,7 @@ sudo ./install-ubuntu.sh
 ```
 
 The script will:
+
 1. Install MongoDB 7.0
 2. Install Node.js 20 LTS
 3. Install PM2 and Nginx
@@ -281,66 +288,76 @@ This method gives you full control and understanding of each component.
 
 ### Resource Usage
 
-| Component | Docker | Native |
-|-----------|--------|--------|
-| MongoDB | ~200MB RAM | ~200MB RAM |
-| Backend | ~100MB RAM | ~100MB RAM |
-| Nginx | ~10MB RAM | ~10MB RAM |
-| **Total** | ~310MB RAM | ~310MB RAM |
-| Disk Space | ~2GB | ~1GB |
+| Component  | Docker     | Native     |
+| ---------- | ---------- | ---------- |
+| MongoDB    | ~200MB RAM | ~200MB RAM |
+| Backend    | ~100MB RAM | ~100MB RAM |
+| Nginx      | ~10MB RAM  | ~10MB RAM  |
+| **Total**  | ~310MB RAM | ~310MB RAM |
+| Disk Space | ~2GB       | ~1GB       |
 
 ### Ease of Updates
 
-| Method | Update Process |
-|--------|----------------|
-| **Docker** | `git pull && docker compose up -d --build` |
+| Method     | Update Process                                                      |
+| ---------- | ------------------------------------------------------------------- |
+| **Docker** | `git pull && docker compose up -d --build`                          |
 | **Native** | `cd /opt/junit-dashboard && git pull && npm install && pm2 restart` |
 
 ### Backup & Recovery
 
-| Method | Backup | Restore |
-|--------|--------|---------|
+| Method     | Backup                                  | Restore                                    |
+| ---------- | --------------------------------------- | ------------------------------------------ |
 | **Docker** | `docker compose exec mongodb mongodump` | `docker compose exec mongodb mongorestore` |
-| **Native** | `mongodump --uri=...` | `mongorestore --uri=...` |
+| **Native** | `mongodump --uri=...`                   | `mongorestore --uri=...`                   |
 
 ### Scalability
 
-| Method | Horizontal Scaling | Load Balancing |
-|--------|-------------------|----------------|
+| Method     | Horizontal Scaling          | Load Balancing        |
+| ---------- | --------------------------- | --------------------- |
 | **Docker** | Easy (docker compose scale) | Easy (nginx upstream) |
-| **Native** | Manual | Manual |
+| **Native** | Manual                      | Manual                |
 
 ---
 
 ## Recommendations by Use Case
 
 ### 🏢 Production Deployment
+
 **Choose:** Docker Compose
+
 - Easier to manage
 - Consistent environments
 - Simple updates and rollbacks
 - Better resource isolation
 
 ### 🧪 Development/Testing
+
 **Choose:** Docker Compose
+
 - Quick setup/teardown
 - No pollution of host system
 - Easy to share with team
 
 ### 📚 Learning/Education
+
 **Choose:** Manual Installation
+
 - Understand each component
 - Learn system administration
 - Full control and customization
 
 ### ⚡ Quick Demo
+
 **Choose:** Docker Compose
+
 - Running in 5 minutes
 - No system changes
 - Easy cleanup
 
 ### 🔒 High Security Requirements
+
 **Choose:** Native Installation
+
 - Full control over security settings
 - Direct access to all logs
 - Custom hardening possible
@@ -400,12 +417,14 @@ docker compose exec mongodb mongorestore \
 ### Docker on Cloud
 
 **AWS ECS:**
+
 ```bash
 # Use docker-compose.yml with ECS CLI
 ecs-cli compose up
 ```
 
 **Google Cloud Run:**
+
 ```bash
 # Build and push
 docker build -t gcr.io/PROJECT/junit-dashboard ./backend
@@ -414,6 +433,7 @@ gcloud run deploy --image gcr.io/PROJECT/junit-dashboard
 ```
 
 **Azure Container Instances:**
+
 ```bash
 az container create --resource-group myResourceGroup \
   --name junit-dashboard \
@@ -421,6 +441,7 @@ az container create --resource-group myResourceGroup \
 ```
 
 **DigitalOcean App Platform:**
+
 - Connect GitHub repository
 - Select docker-compose.yml
 - Deploy automatically
@@ -428,6 +449,7 @@ az container create --resource-group myResourceGroup \
 ### Kubernetes
 
 Convert Docker Compose to Kubernetes:
+
 ```bash
 # Install kompose
 curl -L https://github.com/kubernetes/kompose/releases/download/v1.31.2/kompose-linux-amd64 -o kompose
@@ -450,15 +472,15 @@ kubectl apply -f .
 ```yaml
 # In docker-compose.yml
 backend:
-  deploy:
-    replicas: 3  # Run 3 instances
-    resources:
-      limits:
-        cpus: '2'
-        memory: 2G
-      reservations:
-        cpus: '1'
-        memory: 1G
+    deploy:
+        replicas: 3 # Run 3 instances
+        resources:
+            limits:
+                cpus: '2'
+                memory: 2G
+            reservations:
+                cpus: '1'
+                memory: 1G
 ```
 
 ### Native Performance
@@ -478,15 +500,15 @@ exec_mode: 'cluster'
 ```yaml
 # In docker-compose.yml
 backend:
-  security_opt:
-    - no-new-privileges:true
-  cap_drop:
-    - ALL
-  cap_add:
-    - NET_BIND_SERVICE
-  read_only: true
-  tmpfs:
-    - /tmp
+    security_opt:
+        - no-new-privileges:true
+    cap_drop:
+        - ALL
+    cap_add:
+        - NET_BIND_SERVICE
+    read_only: true
+    tmpfs:
+        - /tmp
 ```
 
 ### Network Isolation
@@ -494,11 +516,11 @@ backend:
 ```yaml
 # Separate networks
 networks:
-  frontend:
-    driver: bridge
-  backend:
-    driver: bridge
-    internal: true  # No internet access
+    frontend:
+        driver: bridge
+    backend:
+        driver: bridge
+        internal: true # No internet access
 ```
 
 ---
@@ -543,21 +565,21 @@ tail -f /var/log/nginx/access.log
 
 ### Self-Hosted (Ubuntu Server)
 
-| Provider | Specs | Cost/Month |
-|----------|-------|------------|
-| DigitalOcean | 2GB RAM, 1 CPU | $12 |
-| AWS EC2 | t3.small | $15 |
-| Hetzner | CX21 | $5 |
-| **Average** | | **$10-15** |
+| Provider     | Specs          | Cost/Month |
+| ------------ | -------------- | ---------- |
+| DigitalOcean | 2GB RAM, 1 CPU | $12        |
+| AWS EC2      | t3.small       | $15        |
+| Hetzner      | CX21           | $5         |
+| **Average**  |                | **$10-15** |
 
 ### Cloud Managed
 
-| Service | Cost/Month |
-|---------|------------|
-| MongoDB Atlas (M10) | $57 |
-| Heroku (Hobby) | $14 |
-| AWS ECS Fargate | $20-30 |
-| **Average** | **$30-100** |
+| Service             | Cost/Month  |
+| ------------------- | ----------- |
+| MongoDB Atlas (M10) | $57         |
+| Heroku (Hobby)      | $14         |
+| AWS ECS Fargate     | $20-30      |
+| **Average**         | **$30-100** |
 
 **Recommendation:** Self-hosted Docker is most cost-effective for small teams.
 
@@ -566,6 +588,7 @@ tail -f /var/log/nginx/access.log
 ## Quick Start Comparison
 
 ### Docker (5 minutes)
+
 ```bash
 cp .env.docker .env
 # Edit .env passwords
@@ -573,12 +596,14 @@ docker compose up -d
 ```
 
 ### Auto Script (15 minutes)
+
 ```bash
 sudo ./install-ubuntu.sh
 ./check-installation.sh
 ```
 
 ### Manual (60 minutes)
+
 ```bash
 # Follow INSTALLATION.md step-by-step
 ```
@@ -598,6 +623,7 @@ sudo ./install-ubuntu.sh
 ✅ Consistent across environments
 
 **Use native installation only if:**
+
 - You need maximum performance (minimal overhead)
 - You want to learn system administration
 - You have very specific customization needs
@@ -610,28 +636,29 @@ sudo ./install-ubuntu.sh
 ### After Deployment (Any Method)
 
 1. **Test the installation**
-   ```bash
-   curl http://localhost/health
-   ./ci-cd-examples/upload-test-results.sh
-   ```
+
+    ```bash
+    curl http://localhost/health
+    ./ci-cd-examples/upload-test-results.sh
+    ```
 
 2. **Configure CI/CD**
-   - Copy `ci-cd-examples/Jenkinsfile` or `github-actions.yml`
-   - Update API URL to your server
-   - Test upload from CI/CD
+    - Copy `ci-cd-examples/Jenkinsfile` or `github-actions.yml`
+    - Update API URL to your server
+    - Test upload from CI/CD
 
 3. **Set up backups**
-   - Schedule daily MongoDB backups
-   - Store backups offsite
+    - Schedule daily MongoDB backups
+    - Store backups offsite
 
 4. **Enable HTTPS**
-   - Get SSL certificate (Let's Encrypt)
-   - Update nginx configuration
+    - Get SSL certificate (Let's Encrypt)
+    - Update nginx configuration
 
 5. **Monitor and optimize**
-   - Check logs regularly
-   - Monitor resource usage
-   - Tune based on load
+    - Check logs regularly
+    - Monitor resource usage
+    - Tune based on load
 
 ---
 

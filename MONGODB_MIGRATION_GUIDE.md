@@ -20,6 +20,7 @@ This guide provides a comprehensive plan to migrate the JUnit Test Results Dashb
 ## Architecture Overview
 
 ### Current Architecture (IndexedDB)
+
 ```
 ┌─────────────────────┐
 │   Browser Client    │
@@ -36,6 +37,7 @@ This guide provides a comprehensive plan to migrate the JUnit Test Results Dashb
 ```
 
 ### New Architecture (MongoDB)
+
 ```
 ┌─────────────────────┐         ┌─────────────────────┐         ┌─────────────────────┐
 │   Browser Client    │         │   Backend Server    │         │      MongoDB        │
@@ -56,6 +58,7 @@ This guide provides a comprehensive plan to migrate the JUnit Test Results Dashb
 MongoDB will use 5 collections (similar to IndexedDB object stores):
 
 #### 1. **test_runs** Collection
+
 ```javascript
 {
   _id: ObjectId,
@@ -90,6 +93,7 @@ db.test_runs.createIndex({ "ci_metadata.branch": 1 })
 ```
 
 #### 2. **test_suites** Collection
+
 ```javascript
 {
   _id: ObjectId,
@@ -115,6 +119,7 @@ db.test_suites.createIndex({ timestamp: -1 })
 ```
 
 #### 3. **test_cases** Collection
+
 ```javascript
 {
   _id: ObjectId,
@@ -147,6 +152,7 @@ db.test_cases.createIndex({ name: "text", classname: "text" })  // Text search
 ```
 
 #### 4. **test_results** Collection
+
 ```javascript
 {
   _id: ObjectId,
@@ -175,6 +181,7 @@ db.test_results.createIndex({ timestamp: -1 })
 ```
 
 #### 5. **file_uploads** Collection
+
 ```javascript
 {
   _id: ObjectId,
@@ -265,6 +272,7 @@ backend/
 #### 1. Install MongoDB
 
 **On Ubuntu/Debian:**
+
 ```bash
 # Import MongoDB GPG key
 curl -fsSL https://www.mongodb.org/static/pgp/server-7.0.asc | \
@@ -284,6 +292,7 @@ sudo systemctl enable mongod
 ```
 
 **On macOS:**
+
 ```bash
 # Using Homebrew
 brew tap mongodb/brew
@@ -292,11 +301,13 @@ brew services start mongodb-community@7.0
 ```
 
 **On Windows:**
+
 - Download installer from https://www.mongodb.com/try/download/community
 - Run installer and follow wizard
 - MongoDB runs as a Windows Service
 
 **Using Docker:**
+
 ```bash
 docker run -d \
   --name mongodb \
@@ -326,6 +337,7 @@ npm install --save-dev nodemon jest supertest
 #### 3. Configure Environment Variables
 
 Create `.env` file:
+
 ```env
 # Server Configuration
 NODE_ENV=development
@@ -362,9 +374,11 @@ LOG_LEVEL=debug
 ### 1. File Upload Endpoints
 
 #### **POST /upload**
+
 Upload JUnit XML file(s)
 
 **Request:**
+
 ```http
 POST /api/v1/upload
 Content-Type: multipart/form-data
@@ -381,27 +395,30 @@ Content-Type: multipart/form-data
 ```
 
 **Response:**
+
 ```json
 {
-  "success": true,
-  "data": {
-    "run_id": "507f1f77bcf86cd799439011",
-    "file_upload_id": "507f1f77bcf86cd799439012",
-    "stats": {
-      "total_tests": 150,
-      "passed": 145,
-      "failed": 3,
-      "errors": 1,
-      "skipped": 1
+    "success": true,
+    "data": {
+        "run_id": "507f1f77bcf86cd799439011",
+        "file_upload_id": "507f1f77bcf86cd799439012",
+        "stats": {
+            "total_tests": 150,
+            "passed": 145,
+            "failed": 3,
+            "errors": 1,
+            "skipped": 1
+        }
     }
-  }
 }
 ```
 
 #### **POST /upload/batch**
+
 Upload multiple JUnit XML files
 
 **Request:**
+
 ```http
 POST /api/v1/upload/batch
 Content-Type: multipart/form-data
@@ -416,9 +433,11 @@ Content-Type: multipart/form-data
 ### 2. Test Runs Endpoints
 
 #### **GET /runs**
+
 Get all test runs with pagination
 
 **Query Parameters:**
+
 - `page` (default: 1)
 - `limit` (default: 50)
 - `sort` (default: "-timestamp")
@@ -428,68 +447,73 @@ Get all test runs with pagination
 - `to_date` (ISO date)
 
 **Response:**
+
 ```json
 {
-  "success": true,
-  "data": {
-    "runs": [
-      {
-        "_id": "507f1f77bcf86cd799439011",
-        "name": "Test Run",
-        "timestamp": "2025-11-08T10:30:00.000Z",
-        "total_tests": 150,
-        "total_failures": 3,
-        "total_errors": 1,
-        "total_skipped": 1,
-        "time": 45.2,
-        "ci_metadata": {
-          "branch": "main",
-          "commit_sha": "abc123"
+    "success": true,
+    "data": {
+        "runs": [
+            {
+                "_id": "507f1f77bcf86cd799439011",
+                "name": "Test Run",
+                "timestamp": "2025-11-08T10:30:00.000Z",
+                "total_tests": 150,
+                "total_failures": 3,
+                "total_errors": 1,
+                "total_skipped": 1,
+                "time": 45.2,
+                "ci_metadata": {
+                    "branch": "main",
+                    "commit_sha": "abc123"
+                }
+            }
+        ],
+        "pagination": {
+            "page": 1,
+            "limit": 50,
+            "total": 100,
+            "pages": 2
         }
-      }
-    ],
-    "pagination": {
-      "page": 1,
-      "limit": 50,
-      "total": 100,
-      "pages": 2
     }
-  }
 }
 ```
 
 #### **GET /runs/:id**
+
 Get specific test run details
 
 **Response:**
+
 ```json
 {
-  "success": true,
-  "data": {
-    "_id": "507f1f77bcf86cd799439011",
-    "name": "Test Run",
-    "timestamp": "2025-11-08T10:30:00.000Z",
-    "total_tests": 150,
-    "suites": [
-      {
-        "_id": "507f1f77bcf86cd799439012",
-        "name": "UserServiceTests",
-        "tests": 25,
-        "failures": 1
-      }
-    ]
-  }
+    "success": true,
+    "data": {
+        "_id": "507f1f77bcf86cd799439011",
+        "name": "Test Run",
+        "timestamp": "2025-11-08T10:30:00.000Z",
+        "total_tests": 150,
+        "suites": [
+            {
+                "_id": "507f1f77bcf86cd799439012",
+                "name": "UserServiceTests",
+                "tests": 25,
+                "failures": 1
+            }
+        ]
+    }
 }
 ```
 
 #### **DELETE /runs/:id**
+
 Delete a test run and all associated data
 
 **Response:**
+
 ```json
 {
-  "success": true,
-  "message": "Test run deleted successfully"
+    "success": true,
+    "message": "Test run deleted successfully"
 }
 ```
 
@@ -498,9 +522,11 @@ Delete a test run and all associated data
 ### 3. Test Cases Endpoints
 
 #### **GET /cases**
+
 Get test cases with filtering
 
 **Query Parameters:**
+
 - `run_id`
 - `suite_id`
 - `status` ("passed" | "failed" | "error" | "skipped")
@@ -510,79 +536,84 @@ Get test cases with filtering
 - `limit`
 
 **Response:**
+
 ```json
 {
-  "success": true,
-  "data": {
-    "cases": [
-      {
-        "_id": "507f1f77bcf86cd799439013",
-        "name": "testUserCreation",
-        "classname": "com.example.UserServiceTest",
-        "status": "passed",
-        "time": 0.234,
-        "is_flaky": false
-      }
-    ],
-    "pagination": {
-      "page": 1,
-      "limit": 50,
-      "total": 150
+    "success": true,
+    "data": {
+        "cases": [
+            {
+                "_id": "507f1f77bcf86cd799439013",
+                "name": "testUserCreation",
+                "classname": "com.example.UserServiceTest",
+                "status": "passed",
+                "time": 0.234,
+                "is_flaky": false
+            }
+        ],
+        "pagination": {
+            "page": 1,
+            "limit": 50,
+            "total": 150
+        }
     }
-  }
 }
 ```
 
 #### **GET /cases/:id**
+
 Get specific test case details with full result
 
 **Response:**
+
 ```json
 {
-  "success": true,
-  "data": {
-    "_id": "507f1f77bcf86cd799439013",
-    "name": "testUserCreation",
-    "classname": "com.example.UserServiceTest",
-    "status": "failed",
-    "time": 0.234,
-    "result": {
-      "failure_message": "Expected 200 but got 500",
-      "failure_type": "AssertionError",
-      "stack_trace": "..."
-    },
-    "history": [
-      {
-        "run_id": "...",
-        "timestamp": "2025-11-07T10:30:00.000Z",
-        "status": "passed"
-      }
-    ]
-  }
+    "success": true,
+    "data": {
+        "_id": "507f1f77bcf86cd799439013",
+        "name": "testUserCreation",
+        "classname": "com.example.UserServiceTest",
+        "status": "failed",
+        "time": 0.234,
+        "result": {
+            "failure_message": "Expected 200 but got 500",
+            "failure_type": "AssertionError",
+            "stack_trace": "..."
+        },
+        "history": [
+            {
+                "run_id": "...",
+                "timestamp": "2025-11-07T10:30:00.000Z",
+                "status": "passed"
+            }
+        ]
+    }
 }
 ```
 
 #### **GET /cases/:id/history**
+
 Get execution history for a specific test case
 
 **Response:**
+
 ```json
 {
-  "success": true,
-  "data": [
-    {
-      "run_id": "507f1f77bcf86cd799439011",
-      "timestamp": "2025-11-08T10:30:00.000Z",
-      "status": "failed",
-      "time": 0.234
-    },
-    {
-      "run_id": "507f1f77bcf86cd799439010",
-      "timestamp": "2025-11-07T10:30:00.000Z",
-      "status": "passed",
-      "time": 0.198
-    }
-  ]
+    "success": true,
+    "data": [
+        {
+            "run_id": "507f1f77bcf86cd799439011",
+            "timestamp": "2025-11-08T10:30:00.000Z",
+            "status": "failed",
+            "time": 0.234
+        },
+        {
+            "run_id": "507f1f77bcf86cd799439010",
+            "timestamp": "2025-11-07T10:30:00.000Z",
+            "status": "passed",
+            "time": 0.198
+        }
+    ]
 }
 ```
 
@@ -591,73 +622,81 @@ Get execution history for a specific test case
 ### 4. Statistics Endpoints
 
 #### **GET /stats/overview**
+
 Get overall dashboard statistics
 
 **Query Parameters:**
+
 - `from_date` (ISO date)
 - `to_date` (ISO date)
 
 **Response:**
+
 ```json
 {
-  "success": true,
-  "data": {
-    "total_runs": 100,
-    "total_tests": 15000,
-    "total_passed": 14500,
-    "total_failed": 300,
-    "total_errors": 150,
-    "total_skipped": 50,
-    "success_rate": 96.67,
-    "average_duration": 42.5,
-    "flaky_tests_count": 15
-  }
+    "success": true,
+    "data": {
+        "total_runs": 100,
+        "total_tests": 15000,
+        "total_passed": 14500,
+        "total_failed": 300,
+        "total_errors": 150,
+        "total_skipped": 50,
+        "success_rate": 96.67,
+        "average_duration": 42.5,
+        "flaky_tests_count": 15
+    }
 }
 ```
 
 #### **GET /stats/trends**
+
 Get test execution trends over time
 
 **Query Parameters:**
+
 - `period` ("day" | "week" | "month")
 - `from_date`
 - `to_date`
 
 **Response:**
+
 ```json
 {
-  "success": true,
-  "data": [
-    {
-      "date": "2025-11-08",
-      "total_tests": 150,
-      "passed": 145,
-      "failed": 3,
-      "errors": 1,
-      "skipped": 1,
-      "success_rate": 96.67
-    }
-  ]
+    "success": true,
+    "data": [
+        {
+            "date": "2025-11-08",
+            "total_tests": 150,
+            "passed": 145,
+            "failed": 3,
+            "errors": 1,
+            "skipped": 1,
+            "success_rate": 96.67
+        }
+    ]
 }
 ```
 
 #### **GET /stats/flaky-tests**
+
 Get list of flaky tests
 
 **Response:**
+
 ```json
 {
-  "success": true,
-  "data": [
-    {
-      "name": "testNetworkRequest",
-      "classname": "com.example.NetworkTest",
-      "failure_count": 5,
-      "total_runs": 20,
-      "failure_rate": 25.0,
-      "last_failed": "2025-11-08T10:30:00.000Z"
-    }
-  ]
+    "success": true,
+    "data": [
+        {
+            "name": "testNetworkRequest",
+            "classname": "com.example.NetworkTest",
+            "failure_count": 5,
+            "total_runs": 20,
+            "failure_rate": 25.0,
+            "last_failed": "2025-11-08T10:30:00.000Z"
+        }
+    ]
 }
 ```
 
@@ -666,26 +705,29 @@ Get list of flaky tests
 ### 5. Search Endpoints
 
 #### **GET /search**
+
 Search across test cases
 
 **Query Parameters:**
+
 - `q` (search query)
 - `type` ("test_name" | "class_name" | "error_message")
 
 **Response:**
+
 ```json
 {
-  "success": true,
-  "data": {
-    "results": [
-      {
-        "_id": "507f1f77bcf86cd799439013",
-        "name": "testUserCreation",
-        "classname": "com.example.UserServiceTest",
-        "match_type": "test_name"
-      }
-    ]
-  }
+    "success": true,
+    "data": {
+        "results": [
+            {
+                "_id": "507f1f77bcf86cd799439013",
+                "name": "testUserCreation",
+                "classname": "com.example.UserServiceTest",
+                "match_type": "test_name"
+            }
+        ]
+    }
 }
 ```
 
@@ -774,6 +816,7 @@ window.JUnitAPIClient = JUnitAPIClient;
 ### 2. Update `main.js`
 
 Replace database initialization:
+
 ```javascript
 // OLD:
 this.db = new JUnitDatabase();
@@ -784,6 +827,7 @@ this.api = new JUnitAPIClient();
 ```
 
 Replace all database calls with API calls:
+
 ```javascript
 // OLD:
 const runs = await this.db.getTestRuns(50, 0);
@@ -796,6 +840,7 @@ const runs = response.data.runs;
 ### 3. Update HTML Files
 
 Add API client script before main.js:
+
 ```html
 <script src="api-client.js"></script>
 <script src="main.js"></script>
@@ -804,6 +849,7 @@ Add API client script before main.js:
 ### 4. Handle Authentication (Optional)
 
 If adding authentication in the future:
+
 ```javascript
 class JUnitAPIClient {
     constructor(baseURL) {
@@ -820,7 +866,7 @@ class JUnitAPIClient {
         if (this.token) {
             options.headers = {
                 ...options.headers,
-                'Authorization': `Bearer ${this.token}`
+                Authorization: `Bearer ${this.token}`
             };
         }
         return fetch(url, options);
@@ -835,81 +881,81 @@ class JUnitAPIClient {
 ### Phase 1: Backend Setup (Week 1)
 
 1. **Day 1-2: Project Setup**
-   - [ ] Install MongoDB locally or set up cloud instance (MongoDB Atlas)
-   - [ ] Create Node.js project structure
-   - [ ] Install dependencies
-   - [ ] Set up environment configuration
+    - [ ] Install MongoDB locally or set up cloud instance (MongoDB Atlas)
+    - [ ] Create Node.js project structure
+    - [ ] Install dependencies
+    - [ ] Set up environment configuration
 
 2. **Day 3-4: Database Models**
-   - [ ] Create Mongoose schemas for all collections
-   - [ ] Set up indexes
-   - [ ] Write database initialization script
+    - [ ] Create Mongoose schemas for all collections
+    - [ ] Set up indexes
+    - [ ] Write database initialization script
 
 3. **Day 5-7: Core Services**
-   - [ ] Implement JUnit XML parser service
-   - [ ] Implement hash generation service
-   - [ ] Implement flaky test detection service
-   - [ ] Write unit tests
+    - [ ] Implement JUnit XML parser service
+    - [ ] Implement hash generation service
+    - [ ] Implement flaky test detection service
+    - [ ] Write unit tests
 
 ### Phase 2: API Development (Week 2)
 
 1. **Day 1-2: Upload Endpoints**
-   - [ ] Implement file upload handler
-   - [ ] Implement XML parsing and storage
-   - [ ] Add duplicate detection
-   - [ ] Test with sample XML files
+    - [ ] Implement file upload handler
+    - [ ] Implement XML parsing and storage
+    - [ ] Add duplicate detection
+    - [ ] Test with sample XML files
 
 2. **Day 3-4: Query Endpoints**
-   - [ ] Implement test runs endpoints
-   - [ ] Implement test cases endpoints
-   - [ ] Add filtering and pagination
-   - [ ] Add search functionality
+    - [ ] Implement test runs endpoints
+    - [ ] Implement test cases endpoints
+    - [ ] Add filtering and pagination
+    - [ ] Add search functionality
 
 3. **Day 5-7: Statistics & Advanced Features**
-   - [ ] Implement statistics endpoints
-   - [ ] Implement trends analysis
-   - [ ] Add flaky test detection
-   - [ ] Write integration tests
+    - [ ] Implement statistics endpoints
+    - [ ] Implement trends analysis
+    - [ ] Add flaky test detection
+    - [ ] Write integration tests
 
 ### Phase 3: Frontend Migration (Week 3)
 
 1. **Day 1-2: API Client**
-   - [ ] Create API client wrapper
-   - [ ] Implement all API methods
-   - [ ] Add error handling
-   - [ ] Test API connectivity
+    - [ ] Create API client wrapper
+    - [ ] Implement all API methods
+    - [ ] Add error handling
+    - [ ] Test API connectivity
 
 2. **Day 3-5: Frontend Updates**
-   - [ ] Replace database.js with api-client.js
-   - [ ] Update main.js to use API calls
-   - [ ] Update all other JavaScript files
-   - [ ] Test all dashboard features
+    - [ ] Replace database.js with api-client.js
+    - [ ] Update main.js to use API calls
+    - [ ] Update all other JavaScript files
+    - [ ] Test all dashboard features
 
 3. **Day 6-7: Testing & Bug Fixes**
-   - [ ] End-to-end testing
-   - [ ] Fix bugs and issues
-   - [ ] Performance optimization
-   - [ ] Documentation updates
+    - [ ] End-to-end testing
+    - [ ] Fix bugs and issues
+    - [ ] Performance optimization
+    - [ ] Documentation updates
 
 ### Phase 4: Deployment (Week 4)
 
 1. **Day 1-2: Backend Deployment**
-   - [ ] Set up production MongoDB
-   - [ ] Deploy backend to cloud (Heroku, AWS, DigitalOcean)
-   - [ ] Configure environment variables
-   - [ ] Set up SSL/HTTPS
+    - [ ] Set up production MongoDB
+    - [ ] Deploy backend to cloud (Heroku, AWS, DigitalOcean)
+    - [ ] Configure environment variables
+    - [ ] Set up SSL/HTTPS
 
 2. **Day 3-4: Frontend Deployment**
-   - [ ] Update API base URL to production
-   - [ ] Deploy frontend to hosting service
-   - [ ] Configure CORS properly
-   - [ ] Test production deployment
+    - [ ] Update API base URL to production
+    - [ ] Deploy frontend to hosting service
+    - [ ] Configure CORS properly
+    - [ ] Test production deployment
 
 3. **Day 5-7: Monitoring & Optimization**
-   - [ ] Set up logging and monitoring
-   - [ ] Add database backup strategy
-   - [ ] Performance tuning
-   - [ ] Documentation finalization
+    - [ ] Set up logging and monitoring
+    - [ ] Add database backup strategy
+    - [ ] Performance tuning
+    - [ ] Documentation finalization
 
 ---
 
@@ -920,88 +966,93 @@ class JUnitAPIClient {
 #### Option 1: MongoDB Atlas (Cloud - Recommended)
 
 1. **Create Account:**
-   - Go to https://www.mongodb.com/cloud/atlas
-   - Sign up for free tier (512MB storage, shared cluster)
+    - Go to https://www.mongodb.com/cloud/atlas
+    - Sign up for free tier (512MB storage, shared cluster)
 
 2. **Create Cluster:**
-   - Choose region closest to your users
-   - Select M0 (Free) or M10+ for production
-   - Configure cluster name
+    - Choose region closest to your users
+    - Select M0 (Free) or M10+ for production
+    - Configure cluster name
 
 3. **Create Database User:**
-   ```
-   Database Access → Add New Database User
-   Username: junit_admin
-   Password: <generate strong password>
-   Privileges: Read and write to any database
-   ```
+
+    ```
+    Database Access → Add New Database User
+    Username: junit_admin
+    Password: <generate strong password>
+    Privileges: Read and write to any database
+    ```
 
 4. **Configure Network Access:**
-   ```
-   Network Access → Add IP Address
-   Allow access from anywhere: 0.0.0.0/0 (for development)
-   Or whitelist specific IPs (for production)
-   ```
+
+    ```
+    Network Access → Add IP Address
+    Allow access from anywhere: 0.0.0.0/0 (for development)
+    Or whitelist specific IPs (for production)
+    ```
 
 5. **Get Connection String:**
-   ```
-   Connect → Connect your application
-   Copy connection string:
-   mongodb+srv://junit_admin:<password>@cluster0.xxxxx.mongodb.net/junit_test_results?retryWrites=true&w=majority
-   ```
+
+    ```
+    Connect → Connect your application
+    Copy connection string:
+    mongodb+srv://junit_admin:<password>@cluster0.xxxxx.mongodb.net/junit_test_results?retryWrites=true&w=majority
+    ```
 
 6. **Update .env:**
-   ```env
-   MONGODB_URI=mongodb+srv://junit_admin:<password>@cluster0.xxxxx.mongodb.net/junit_test_results?retryWrites=true&w=majority
-   ```
+    ```env
+    MONGODB_URI=mongodb+srv://junit_admin:<password>@cluster0.xxxxx.mongodb.net/junit_test_results?retryWrites=true&w=majority
+    ```
 
 #### Option 2: Self-Hosted MongoDB
 
 **Using Docker Compose:**
 
 Create `docker-compose.yml`:
+
 ```yaml
 version: '3.8'
 
 services:
-  mongodb:
-    image: mongo:7.0
-    container_name: junit_mongodb
-    restart: always
-    ports:
-      - "27017:27017"
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: admin
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_PASSWORD}
-      MONGO_INITDB_DATABASE: junit_test_results
-    volumes:
-      - mongodb_data:/data/db
-      - ./init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
-    networks:
-      - junit_network
+    mongodb:
+        image: mongo:7.0
+        container_name: junit_mongodb
+        restart: always
+        ports:
+            - '27017:27017'
+        environment:
+            MONGO_INITDB_ROOT_USERNAME: admin
+            MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_PASSWORD}
+            MONGO_INITDB_DATABASE: junit_test_results
+        volumes:
+            - mongodb_data:/data/db
+            - ./init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
+        networks:
+            - junit_network
 
-  backend:
-    build: ./backend
-    container_name: junit_backend
-    restart: always
-    ports:
-      - "5000:5000"
-    environment:
-      MONGODB_URI: mongodb://admin:${MONGODB_PASSWORD}@mongodb:27017/junit_test_results?authSource=admin
-    depends_on:
-      - mongodb
-    networks:
-      - junit_network
+    backend:
+        build: ./backend
+        container_name: junit_backend
+        restart: always
+        ports:
+            - '5000:5000'
+        environment:
+            MONGODB_URI: mongodb://admin:${MONGODB_PASSWORD}@mongodb:27017/junit_test_results?authSource=admin
+        depends_on:
+            - mongodb
+        networks:
+            - junit_network
 
 volumes:
-  mongodb_data:
+    mongodb_data:
 
 networks:
-  junit_network:
-    driver: bridge
+    junit_network:
+        driver: bridge
 ```
 
 Start services:
+
 ```bash
 docker-compose up -d
 ```
@@ -1075,6 +1126,7 @@ sudo nano /etc/nginx/sites-available/junit-backend
 ```
 
 Nginx configuration:
+
 ```nginx
 server {
     listen 80;
@@ -1094,6 +1146,7 @@ server {
 ### Frontend Deployment
 
 Update `api-client.js` with production URL:
+
 ```javascript
 constructor(baseURL = 'https://your-backend-domain.com/api/v1') {
     this.baseURL = baseURL;
@@ -1101,6 +1154,7 @@ constructor(baseURL = 'https://your-backend-domain.com/api/v1') {
 ```
 
 Deploy to:
+
 - **Netlify**: Drag & drop or connect GitHub
 - **Vercel**: Import repository and deploy
 - **GitHub Pages**: Push to gh-pages branch
@@ -1113,61 +1167,63 @@ Deploy to:
 ### Export from IndexedDB
 
 Create `export-indexeddb.html`:
+
 ```html
 <!DOCTYPE html>
 <html>
-<head>
-    <title>Export IndexedDB Data</title>
-</head>
-<body>
-    <button onclick="exportData()">Export Data</button>
-    <script src="database.js"></script>
-    <script>
-        async function exportData() {
-            const db = new JUnitDatabase();
-            await db.initializeDatabase();
+    <head>
+        <title>Export IndexedDB Data</title>
+    </head>
+    <body>
+        <button onclick="exportData()">Export Data</button>
+        <script src="database.js"></script>
+        <script>
+            async function exportData() {
+                const db = new JUnitDatabase();
+                await db.initializeDatabase();
 
-            // Export all collections
-            const runs = await db.getTestRuns(10000, 0);
+                // Export all collections
+                const runs = await db.getTestRuns(10000, 0);
 
-            const exportData = {
-                test_runs: [],
-                test_suites: [],
-                test_cases: [],
-                test_results: []
-            };
+                const exportData = {
+                    test_runs: [],
+                    test_suites: [],
+                    test_cases: [],
+                    test_results: []
+                };
 
-            // Get all data
-            for (const run of runs) {
-                exportData.test_runs.push(run);
+                // Get all data
+                for (const run of runs) {
+                    exportData.test_runs.push(run);
 
-                const suites = await db.getTestSuites(run.id);
-                exportData.test_suites.push(...suites);
+                    const suites = await db.getTestSuites(run.id);
+                    exportData.test_suites.push(...suites);
 
-                for (const suite of suites) {
-                    const cases = await db.getTestCases({ suite_id: suite.id });
-                    exportData.test_cases.push(...cases);
+                    for (const suite of suites) {
+                        const cases = await db.getTestCases({ suite_id: suite.id });
+                        exportData.test_cases.push(...cases);
+                    }
                 }
-            }
 
-            // Download as JSON
-            const blob = new Blob([JSON.stringify(exportData, null, 2)], {
-                type: 'application/json'
-            });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'indexeddb-export.json';
-            a.click();
-        }
-    </script>
-</body>
+                // Download as JSON
+                const blob = new Blob([JSON.stringify(exportData, null, 2)], {
+                    type: 'application/json'
+                });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'indexeddb-export.json';
+                a.click();
+            }
+        </script>
+    </body>
 </html>
 ```
 
 ### Import to MongoDB
 
 Create `import-to-mongodb.js`:
+
 ```javascript
 const fs = require('fs');
 const mongoose = require('mongoose');
@@ -1244,6 +1300,7 @@ importData().catch(console.error);
 ```
 
 Run import:
+
 ```bash
 node import-to-mongodb.js
 ```
@@ -1287,11 +1344,13 @@ curl http://localhost:5000/api/v1/stats/overview
 ## Security Considerations
 
 ### 1. Input Validation
+
 - Validate all file uploads (size, type)
 - Sanitize XML content before parsing
 - Validate all query parameters
 
 ### 2. Rate Limiting
+
 ```javascript
 const rateLimit = require('express-rate-limit');
 
@@ -1304,21 +1363,26 @@ app.use('/api/v1/upload', uploadLimiter);
 ```
 
 ### 3. CORS Configuration
+
 ```javascript
 const cors = require('cors');
 
-app.use(cors({
-    origin: process.env.ALLOWED_ORIGINS.split(','),
-    credentials: true
-}));
+app.use(
+    cors({
+        origin: process.env.ALLOWED_ORIGINS.split(','),
+        credentials: true
+    })
+);
 ```
 
 ### 4. Authentication (Future)
+
 - Implement JWT-based authentication
 - Add role-based access control (RBAC)
 - Secure sensitive endpoints
 
 ### 5. HTTPS
+
 - Use SSL/TLS certificates (Let's Encrypt)
 - Redirect HTTP to HTTPS
 - Enable HSTS headers
@@ -1328,18 +1392,21 @@ app.use(cors({
 ## Performance Optimization
 
 ### Database Optimization
+
 1. **Indexes**: Ensure all frequently queried fields have indexes
 2. **Aggregation Pipeline**: Use for complex queries
 3. **Projection**: Only return needed fields
 4. **Connection Pooling**: Configure proper pool size
 
 ### API Optimization
+
 1. **Caching**: Implement Redis for frequently accessed data
 2. **Compression**: Enable gzip compression
 3. **Pagination**: Limit result sets
 4. **Async Processing**: Queue long-running tasks
 
 ### Frontend Optimization
+
 1. **Lazy Loading**: Load data on demand
 2. **Debouncing**: Debounce search inputs
 3. **Caching**: Cache API responses
@@ -1364,13 +1431,16 @@ const logger = winston.createLogger({
 });
 
 if (process.env.NODE_ENV !== 'production') {
-    logger.add(new winston.transports.Console({
-        format: winston.format.simple()
-    }));
+    logger.add(
+        new winston.transports.Console({
+            format: winston.format.simple()
+        })
+    );
 }
 ```
 
 ### Monitoring Tools
+
 - **MongoDB Atlas Monitoring**: Built-in metrics
 - **PM2 Monitoring**: Process monitoring
 - **New Relic / Datadog**: APM solutions
@@ -1383,6 +1453,7 @@ if (process.env.NODE_ENV !== 'production') {
 ### Common Issues
 
 **Issue: MongoDB Connection Failed**
+
 ```
 Solution:
 1. Check MongoDB is running: sudo systemctl status mongod
@@ -1392,6 +1463,7 @@ Solution:
 ```
 
 **Issue: CORS Errors**
+
 ```
 Solution:
 1. Add frontend URL to ALLOWED_ORIGINS in .env
@@ -1400,6 +1472,7 @@ Solution:
 ```
 
 **Issue: File Upload Fails**
+
 ```
 Solution:
 1. Check MAX_FILE_SIZE in .env

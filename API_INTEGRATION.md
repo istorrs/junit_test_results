@@ -76,7 +76,7 @@ Add the following to your `Jenkinsfile`:
 ```groovy
 pipeline {
     agent any
-    
+
     stages {
         stage('Test') {
             steps {
@@ -86,12 +86,12 @@ pipeline {
                 sh 'npm test -- --reporter=xunit'
             }
         }
-        
+
         stage('Upload Results') {
             steps {
                 script {
                     def xmlContent = readFile 'target/surefire-reports/TEST-*.xml'
-                    
+
                     // Upload to dashboard
                     def result = sh(
                         script: """
@@ -112,19 +112,19 @@ pipeline {
                         """,
                         returnStdout: true
                     )
-                    
+
                     def response = readJSON text: result
                     if (response.success) {
                         echo "Test results uploaded: ${response.url}"
                         // Archive the URL for easy access
-                        archiveArtifacts artifacts: 'test-results-url.txt', 
+                        archiveArtifacts artifacts: 'test-results-url.txt',
                             content: "Dashboard URL: ${response.url}\n"
                     }
                 }
             }
         }
     }
-    
+
     post {
         always {
             // Alternative: Use JavaScript integration
@@ -141,7 +141,7 @@ pipeline {
                         build_url: '${env.BUILD_URL}'
                     });
                 """
-                
+
                 // Execute the upload script
                 sh "node -e \"${jsScript}\""
             }
@@ -186,64 +186,64 @@ Create a workflow file `.github/workflows/test-and-upload.yml`:
 name: Test and Upload Results
 
 on:
-  push:
-    branches: [ main, develop ]
-  pull_request:
-    branches: [ main ]
+    push:
+        branches: [main, develop]
+    pull_request:
+        branches: [main]
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
-    
-    steps:
-    - uses: actions/checkout@v3
-    
-    - name: Set up JDK 11
-      uses: actions/setup-java@v3
-      with:
-        java-version: '11'
-        distribution: 'temurin'
-    
-    - name: Run tests
-      run: mvn test
-      continue-on-error: true
-    
-    - name: Upload test results
-      if: always()
-      run: |
-        # Read the JUnit XML file
-        XML_CONTENT=$(cat target/surefire-reports/TEST-*.xml | sed 's/"/\\"/g')
-        
-        # Upload to dashboard
-        curl -X POST https://dashboard.example.com/api/upload \
-          -H "Content-Type: application/json" \
-          -d "{
-            \"xmlContent\": \"$XML_CONTENT\",
-            \"filename\": \"github-actions-results.xml\",
-            \"metadata\": {
-              \"ci_provider\": \"github_actions\",
-              \"build_id\": \"${{ github.run_number }}\",
-              \"commit_sha\": \"${{ github.sha }}\",
-              \"branch\": \"${{ github.ref_name }}\",
-              \"repository\": \"${{ github.repository }}\",
-              \"build_url\": \"${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\"
-            }
-          }"
-    
-    - name: Comment PR with dashboard link
-      if: github.event_name == 'pull_request'
-      uses: actions/github-script@v6
-      with:
-        script: |
-          // Get the dashboard URL from the previous step
-          const dashboardUrl = process.env.DASHBOARD_URL;
-          
-          github.rest.issues.createComment({
-            issue_number: context.issue.number,
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            body: `🧪 Test results uploaded to [JUnit Dashboard](${dashboardUrl})`
-          });
+    test:
+        runs-on: ubuntu-latest
+
+        steps:
+            - uses: actions/checkout@v3
+
+            - name: Set up JDK 11
+              uses: actions/setup-java@v3
+              with:
+                  java-version: '11'
+                  distribution: 'temurin'
+
+            - name: Run tests
+              run: mvn test
+              continue-on-error: true
+
+            - name: Upload test results
+              if: always()
+              run: |
+                  # Read the JUnit XML file
+                  XML_CONTENT=$(cat target/surefire-reports/TEST-*.xml | sed 's/"/\\"/g')
+
+                  # Upload to dashboard
+                  curl -X POST https://dashboard.example.com/api/upload \
+                    -H "Content-Type: application/json" \
+                    -d "{
+                      \"xmlContent\": \"$XML_CONTENT\",
+                      \"filename\": \"github-actions-results.xml\",
+                      \"metadata\": {
+                        \"ci_provider\": \"github_actions\",
+                        \"build_id\": \"${{ github.run_number }}\",
+                        \"commit_sha\": \"${{ github.sha }}\",
+                        \"branch\": \"${{ github.ref_name }}\",
+                        \"repository\": \"${{ github.repository }}\",
+                        \"build_url\": \"${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\"
+                      }
+                    }"
+
+            - name: Comment PR with dashboard link
+              if: github.event_name == 'pull_request'
+              uses: actions/github-script@v6
+              with:
+                  script: |
+                      // Get the dashboard URL from the previous step
+                      const dashboardUrl = process.env.DASHBOARD_URL;
+
+                      github.rest.issues.createComment({
+                        issue_number: context.issue.number,
+                        owner: context.repo.owner,
+                        repo: context.repo.repo,
+                        body: `🧪 Test results uploaded to [JUnit Dashboard](${dashboardUrl})`
+                      });
 ```
 
 ## GitLab CI Integration
@@ -252,45 +252,45 @@ Add to your `.gitlab-ci.yml`:
 
 ```yaml
 stages:
-  - test
-  - upload
+    - test
+    - upload
 
 test:
-  stage: test
-  script:
-    - mvn test
-  artifacts:
-    reports:
-      junit: target/surefire-reports/TEST-*.xml
-    paths:
-      - target/surefire-reports/
-    when: always
+    stage: test
+    script:
+        - mvn test
+    artifacts:
+        reports:
+            junit: target/surefire-reports/TEST-*.xml
+        paths:
+            - target/surefire-reports/
+        when: always
 
 upload_results:
-  stage: upload
-  script:
-    - |
-      # Read the JUnit XML file
-      XML_CONTENT=$(cat target/surefire-reports/TEST-*.xml | sed 's/"/\\"/g')
-      
-      # Upload to dashboard
-      curl -X POST https://dashboard.example.com/api/upload \
-        -H "Content-Type: application/json" \
-        -d "{
-          \"xmlContent\": \"$XML_CONTENT\",
-          \"filename\": \"gitlab-ci-results.xml\",
-          \"metadata\": {
-            \"ci_provider\": \"gitlab_ci\",
-            \"build_id\": \"$CI_PIPELINE_ID\",
-            \"commit_sha\": \"$CI_COMMIT_SHA\",
-            \"branch\": \"$CI_COMMIT_REF_NAME\",
-            \"repository\": \"$CI_PROJECT_PATH\",
-            \"build_url\": \"$CI_PIPELINE_URL\"
-          }
-        }"
-  dependencies:
-    - test
-  when: always
+    stage: upload
+    script:
+        - |
+            # Read the JUnit XML file
+            XML_CONTENT=$(cat target/surefire-reports/TEST-*.xml | sed 's/"/\\"/g')
+
+            # Upload to dashboard
+            curl -X POST https://dashboard.example.com/api/upload \
+              -H "Content-Type: application/json" \
+              -d "{
+                \"xmlContent\": \"$XML_CONTENT\",
+                \"filename\": \"gitlab-ci-results.xml\",
+                \"metadata\": {
+                  \"ci_provider\": \"gitlab_ci\",
+                  \"build_id\": \"$CI_PIPELINE_ID\",
+                  \"commit_sha\": \"$CI_COMMIT_SHA\",
+                  \"branch\": \"$CI_COMMIT_REF_NAME\",
+                  \"repository\": \"$CI_PROJECT_PATH\",
+                  \"build_url\": \"$CI_PIPELINE_URL\"
+                }
+              }"
+    dependencies:
+        - test
+    when: always
 ```
 
 ## JavaScript Integration
@@ -306,7 +306,7 @@ async function uploadTestResults() {
     try {
         // Read JUnit XML file
         const xmlContent = fs.readFileSync('target/surefire-reports/TEST-results.xml', 'utf8');
-        
+
         // Upload to dashboard
         const response = await axios.post('https://dashboard.example.com/api/upload', {
             xmlContent: xmlContent,
@@ -319,13 +319,12 @@ async function uploadTestResults() {
                 repository: process.env.GIT_URL || 'local'
             }
         });
-        
+
         console.log('Test results uploaded successfully!');
         console.log('Dashboard URL:', response.data.url);
-        
+
         // You can save this URL for later reference
         fs.writeFileSync('dashboard-url.txt', response.data.url);
-        
     } catch (error) {
         console.error('Failed to upload test results:', error.message);
         process.exit(1);
@@ -339,14 +338,14 @@ uploadTestResults();
 
 The API supports the following metadata fields:
 
-| Field | Description | Example |
-|-------|-------------|---------|
-| `ci_provider` | CI/CD system name | `jenkins`, `github_actions`, `gitlab_ci` |
-| `build_id` | Unique build identifier | `12345` |
-| `commit_sha` | Git commit hash | `abc123def456` |
-| `branch` | Git branch name | `main`, `feature/new-feature` |
-| `repository` | Repository identifier | `my-org/my-repo` |
-| `build_url` | Link to CI build | `https://ci.example.com/build/12345` |
+| Field         | Description             | Example                                  |
+| ------------- | ----------------------- | ---------------------------------------- |
+| `ci_provider` | CI/CD system name       | `jenkins`, `github_actions`, `gitlab_ci` |
+| `build_id`    | Unique build identifier | `12345`                                  |
+| `commit_sha`  | Git commit hash         | `abc123def456`                           |
+| `branch`      | Git branch name         | `main`, `feature/new-feature`            |
+| `repository`  | Repository identifier   | `my-org/my-repo`                         |
+| `build_url`   | Link to CI build        | `https://ci.example.com/build/12345`     |
 
 ## Error Handling
 
@@ -361,6 +360,7 @@ The API provides detailed error messages:
 ```
 
 Common error cases:
+
 - Missing required fields (xmlContent, filename)
 - Invalid XML format
 - Duplicate test results

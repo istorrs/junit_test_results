@@ -1,4 +1,5 @@
 // Actionable Insights Component
+/* eslint-disable no-redeclare */
 class InsightsPanel {
     constructor(db) {
         this.db = db;
@@ -319,3 +320,4 @@ class InsightsPanel {
 
 // Export for use in main dashboard
 window.InsightsPanel = InsightsPanel;
+/* eslint-enable no-redeclare */

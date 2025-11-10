@@ -127,22 +127,25 @@ exit
 ```
 
 Enable authentication:
+
 ```bash
 # Edit MongoDB configuration
 sudo nano /etc/mongod.conf
 ```
 
 Add/modify these lines:
+
 ```yaml
 security:
-  authorization: enabled
+    authorization: enabled
 
 net:
-  bindIp: 127.0.0.1  # Only allow local connections (more secure)
-  port: 27017
+    bindIp: 127.0.0.1 # Only allow local connections (more secure)
+    port: 27017
 ```
 
 Restart MongoDB:
+
 ```bash
 sudo systemctl restart mongod
 ```
@@ -205,6 +208,7 @@ mkdir -p uploads logs
 ```
 
 Final structure:
+
 ```
 /opt/junit-dashboard/
 ├── src/
@@ -242,6 +246,7 @@ Final structure:
 ### 2.3 Create Environment Configuration
 
 Create `.env` file:
+
 ```bash
 cat > .env << 'EOF'
 # Server Configuration
@@ -268,6 +273,7 @@ EOF
 ```
 
 Create `.env.example` for version control:
+
 ```bash
 cp .env .env.example
 # Edit .env.example and replace sensitive values with placeholders
@@ -276,6 +282,7 @@ cp .env .env.example
 ### 2.4 Create Configuration Files
 
 **src/config/database.js:**
+
 ```javascript
 const mongoose = require('mongoose');
 
@@ -284,7 +291,7 @@ const connectDB = async () => {
         const conn = await mongoose.connect(process.env.MONGODB_URI, {
             maxPoolSize: 10,
             serverSelectionTimeoutMS: 5000,
-            socketTimeoutMS: 45000,
+            socketTimeoutMS: 45000
         });
 
         console.log(`MongoDB Connected: ${conn.connection.host}`);
@@ -328,7 +335,9 @@ const createIndexes = async () => {
         await db.collection('test_results').createIndex({ timestamp: -1 });
 
         // file_uploads indexes
-        await db.collection('file_uploads').createIndex({ content_hash: 1 }, { unique: true, sparse: true });
+        await db
+            .collection('file_uploads')
+            .createIndex({ content_hash: 1 }, { unique: true, sparse: true });
         await db.collection('file_uploads').createIndex({ upload_timestamp: -1 });
 
         console.log('Database indexes created successfully');
@@ -341,6 +350,7 @@ module.exports = { connectDB };
 ```
 
 **src/utils/logger.js:**
+
 ```javascript
 const fs = require('fs');
 const path = require('path');
@@ -380,252 +390,272 @@ module.exports = {
 ### 2.5 Create Mongoose Models
 
 **src/models/TestRun.js:**
+
 ```javascript
 const mongoose = require('mongoose');
 
-const testRunSchema = new mongoose.Schema({
-    name: {
-        type: String,
-        required: true
+const testRunSchema = new mongoose.Schema(
+    {
+        name: {
+            type: String,
+            required: true
+        },
+        timestamp: {
+            type: Date,
+            required: true,
+            default: Date.now
+        },
+        time: {
+            type: Number,
+            default: 0
+        },
+        total_tests: {
+            type: Number,
+            default: 0
+        },
+        total_failures: {
+            type: Number,
+            default: 0
+        },
+        total_errors: {
+            type: Number,
+            default: 0
+        },
+        total_skipped: {
+            type: Number,
+            default: 0
+        },
+        content_hash: {
+            type: String,
+            unique: true,
+            sparse: true
+        },
+        file_upload_id: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'FileUpload'
+        },
+        source: {
+            type: String,
+            enum: ['manual_upload', 'ci_cd', 'api'],
+            default: 'api'
+        },
+        ci_metadata: {
+            provider: String,
+            build_id: String,
+            commit_sha: String,
+            branch: String,
+            repository: String,
+            build_url: String,
+            job_name: String
+        }
     },
-    timestamp: {
-        type: Date,
-        required: true,
-        default: Date.now
-    },
-    time: {
-        type: Number,
-        default: 0
-    },
-    total_tests: {
-        type: Number,
-        default: 0
-    },
-    total_failures: {
-        type: Number,
-        default: 0
-    },
-    total_errors: {
-        type: Number,
-        default: 0
-    },
-    total_skipped: {
-        type: Number,
-        default: 0
-    },
-    content_hash: {
-        type: String,
-        unique: true,
-        sparse: true
-    },
-    file_upload_id: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'FileUpload'
-    },
-    source: {
-        type: String,
-        enum: ['manual_upload', 'ci_cd', 'api'],
-        default: 'api'
-    },
-    ci_metadata: {
-        provider: String,
-        build_id: String,
-        commit_sha: String,
-        branch: String,
-        repository: String,
-        build_url: String,
-        job_name: String
+    {
+        timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }
     }
-}, {
-    timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }
-});
+);
 
 module.exports = mongoose.model('TestRun', testRunSchema);
 ```
 
 **src/models/TestSuite.js:**
+
 ```javascript
 const mongoose = require('mongoose');
 
-const testSuiteSchema = new mongoose.Schema({
-    run_id: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'TestRun',
-        required: true
+const testSuiteSchema = new mongoose.Schema(
+    {
+        run_id: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'TestRun',
+            required: true
+        },
+        name: {
+            type: String,
+            required: true
+        },
+        classname: String,
+        timestamp: {
+            type: Date,
+            default: Date.now
+        },
+        time: {
+            type: Number,
+            default: 0
+        },
+        tests: {
+            type: Number,
+            default: 0
+        },
+        failures: {
+            type: Number,
+            default: 0
+        },
+        errors: {
+            type: Number,
+            default: 0
+        },
+        skipped: {
+            type: Number,
+            default: 0
+        },
+        hostname: String,
+        file_upload_id: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'FileUpload'
+        }
     },
-    name: {
-        type: String,
-        required: true
-    },
-    classname: String,
-    timestamp: {
-        type: Date,
-        default: Date.now
-    },
-    time: {
-        type: Number,
-        default: 0
-    },
-    tests: {
-        type: Number,
-        default: 0
-    },
-    failures: {
-        type: Number,
-        default: 0
-    },
-    errors: {
-        type: Number,
-        default: 0
-    },
-    skipped: {
-        type: Number,
-        default: 0
-    },
-    hostname: String,
-    file_upload_id: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'FileUpload'
+    {
+        timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }
     }
-}, {
-    timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }
-});
+);
 
 module.exports = mongoose.model('TestSuite', testSuiteSchema);
 ```
 
 **src/models/TestCase.js:**
+
 ```javascript
 const mongoose = require('mongoose');
 
-const testCaseSchema = new mongoose.Schema({
-    suite_id: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'TestSuite',
-        required: true
+const testCaseSchema = new mongoose.Schema(
+    {
+        suite_id: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'TestSuite',
+            required: true
+        },
+        run_id: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'TestRun',
+            required: true
+        },
+        name: {
+            type: String,
+            required: true
+        },
+        classname: String,
+        time: {
+            type: Number,
+            default: 0
+        },
+        status: {
+            type: String,
+            enum: ['passed', 'failed', 'error', 'skipped'],
+            required: true
+        },
+        assertions: Number,
+        file: String,
+        line: Number,
+        system_out: String,
+        system_err: String,
+        is_flaky: {
+            type: Boolean,
+            default: false
+        },
+        flaky_detected_at: Date,
+        file_upload_id: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'FileUpload'
+        }
     },
-    run_id: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'TestRun',
-        required: true
-    },
-    name: {
-        type: String,
-        required: true
-    },
-    classname: String,
-    time: {
-        type: Number,
-        default: 0
-    },
-    status: {
-        type: String,
-        enum: ['passed', 'failed', 'error', 'skipped'],
-        required: true
-    },
-    assertions: Number,
-    file: String,
-    line: Number,
-    system_out: String,
-    system_err: String,
-    is_flaky: {
-        type: Boolean,
-        default: false
-    },
-    flaky_detected_at: Date,
-    file_upload_id: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'FileUpload'
+    {
+        timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }
     }
-}, {
-    timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }
-});
+);
 
 module.exports = mongoose.model('TestCase', testCaseSchema);
 ```
 
 **src/models/TestResult.js:**
+
 ```javascript
 const mongoose = require('mongoose');
 
-const testResultSchema = new mongoose.Schema({
-    case_id: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'TestCase',
-        required: true
+const testResultSchema = new mongoose.Schema(
+    {
+        case_id: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'TestCase',
+            required: true
+        },
+        suite_id: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'TestSuite',
+            required: true
+        },
+        run_id: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'TestRun',
+            required: true
+        },
+        status: {
+            type: String,
+            enum: ['passed', 'failed', 'error', 'skipped'],
+            required: true
+        },
+        time: Number,
+        failure_message: String,
+        failure_type: String,
+        error_message: String,
+        error_type: String,
+        skipped_message: String,
+        system_out: String,
+        system_err: String,
+        stack_trace: String,
+        timestamp: {
+            type: Date,
+            default: Date.now
+        }
     },
-    suite_id: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'TestSuite',
-        required: true
-    },
-    run_id: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'TestRun',
-        required: true
-    },
-    status: {
-        type: String,
-        enum: ['passed', 'failed', 'error', 'skipped'],
-        required: true
-    },
-    time: Number,
-    failure_message: String,
-    failure_type: String,
-    error_message: String,
-    error_type: String,
-    skipped_message: String,
-    system_out: String,
-    system_err: String,
-    stack_trace: String,
-    timestamp: {
-        type: Date,
-        default: Date.now
+    {
+        timestamps: { createdAt: 'created_at' }
     }
-}, {
-    timestamps: { createdAt: 'created_at' }
-});
+);
 
 module.exports = mongoose.model('TestResult', testResultSchema);
 ```
 
 **src/models/FileUpload.js:**
+
 ```javascript
 const mongoose = require('mongoose');
 
-const fileUploadSchema = new mongoose.Schema({
-    filename: {
-        type: String,
-        required: true
+const fileUploadSchema = new mongoose.Schema(
+    {
+        filename: {
+            type: String,
+            required: true
+        },
+        upload_timestamp: {
+            type: Date,
+            default: Date.now
+        },
+        file_size: Number,
+        status: {
+            type: String,
+            enum: ['processing', 'completed', 'failed'],
+            default: 'processing'
+        },
+        run_id: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'TestRun'
+        },
+        content_hash: {
+            type: String,
+            unique: true,
+            sparse: true
+        },
+        uploader: {
+            ip: String,
+            user_agent: String,
+            source: String
+        },
+        error_message: String
     },
-    upload_timestamp: {
-        type: Date,
-        default: Date.now
-    },
-    file_size: Number,
-    status: {
-        type: String,
-        enum: ['processing', 'completed', 'failed'],
-        default: 'processing'
-    },
-    run_id: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'TestRun'
-    },
-    content_hash: {
-        type: String,
-        unique: true,
-        sparse: true
-    },
-    uploader: {
-        ip: String,
-        user_agent: String,
-        source: String
-    },
-    error_message: String
-}, {
-    timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }
-});
+    {
+        timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }
+    }
+);
 
 module.exports = mongoose.model('FileUpload', fileUploadSchema);
 ```
@@ -633,10 +663,11 @@ module.exports = mongoose.model('FileUpload', fileUploadSchema);
 ### 2.6 Create Service Files
 
 **src/services/hashGenerator.js:**
+
 ```javascript
 const crypto = require('crypto');
 
-const generateHash = (content) => {
+const generateHash = content => {
     return crypto.createHash('sha256').update(content).digest('hex');
 };
 
@@ -644,6 +675,7 @@ module.exports = { generateHash };
 ```
 
 **src/services/junitParser.js:**
+
 ```javascript
 const xml2js = require('xml2js');
 const TestRun = require('../models/TestRun');
@@ -668,7 +700,10 @@ const parseJUnitXML = async (xmlContent, filename, ciMetadata = null, uploaderIn
         const contentHash = generateHash(xmlContent);
 
         // Check for duplicate
-        const existingUpload = await FileUpload.findOne({ content_hash: contentHash, status: 'completed' });
+        const existingUpload = await FileUpload.findOne({
+            content_hash: contentHash,
+            status: 'completed'
+        });
         if (existingUpload) {
             logger.warn('Duplicate test results detected', { filename, contentHash });
             return {
@@ -748,7 +783,6 @@ const parseJUnitXML = async (xmlContent, filename, ciMetadata = null, uploaderIn
             file_upload_id: fileUpload._id,
             stats
         };
-
     } catch (error) {
         logger.error('Error parsing JUnit XML', { error: error.message });
         throw error;
@@ -807,8 +841,10 @@ const processTestCase = async (caseData, suiteId, runId, fileUploadId) => {
         stackTrace = error._ || error.message || '';
     } else if (caseData.skipped !== undefined) {
         status = 'skipped';
-        skippedMessage = typeof caseData.skipped === 'string' ? caseData.skipped :
-                         (caseData.skipped.message || '');
+        skippedMessage =
+            typeof caseData.skipped === 'string'
+                ? caseData.skipped
+                : caseData.skipped.message || '';
     }
 
     // Create test case
@@ -846,7 +882,7 @@ const processTestCase = async (caseData, suiteId, runId, fileUploadId) => {
     });
 };
 
-const calculateStats = async (runId) => {
+const calculateStats = async runId => {
     const cases = await TestCase.find({ run_id: runId });
 
     return {
@@ -863,11 +899,12 @@ module.exports = { parseJUnitXML };
 ```
 
 **src/services/flakyDetector.js:**
+
 ```javascript
 const TestCase = require('../models/TestCase');
 const logger = require('../utils/logger');
 
-const detectFlakyTests = async (runId) => {
+const detectFlakyTests = async runId => {
     try {
         const testCases = await TestCase.find({
             run_id: runId,
@@ -879,7 +916,9 @@ const detectFlakyTests = async (runId) => {
             const history = await TestCase.find({
                 name: testCase.name,
                 classname: testCase.classname
-            }).sort({ created_at: -1 }).limit(10);
+            })
+                .sort({ created_at: -1 })
+                .limit(10);
 
             if (history.length >= 3) {
                 const statuses = history.map(h => h.status);
@@ -911,6 +950,7 @@ module.exports = { detectFlakyTests };
 ### 2.7 Create Middleware
 
 **src/middleware/errorHandler.js:**
+
 ```javascript
 const logger = require('../utils/logger');
 
@@ -936,6 +976,7 @@ module.exports = errorHandler;
 ```
 
 **src/middleware/validator.js:**
+
 ```javascript
 const Joi = require('joi');
 
@@ -959,7 +1000,7 @@ const validateUpload = (req, res, next) => {
     next();
 };
 
-const validateQuery = (schema) => {
+const validateQuery = schema => {
     return (req, res, next) => {
         const { error } = schema.validate(req.query);
         if (error) {
@@ -978,6 +1019,7 @@ module.exports = { validateUpload, validateQuery };
 ### 2.8 Create API Routes
 
 **src/routes/upload.js:**
+
 ```javascript
 const express = require('express');
 const router = express.Router();
@@ -992,7 +1034,7 @@ const storage = multer.memoryStorage();
 const upload = multer({
     storage,
     limits: {
-        fileSize: parseInt(process.env.MAX_FILE_SIZE) || 52428800, // 50MB default
+        fileSize: parseInt(process.env.MAX_FILE_SIZE) || 52428800 // 50MB default
     },
     fileFilter: (req, file, cb) => {
         if (file.originalname.endsWith('.xml')) {
@@ -1013,9 +1055,10 @@ router.post('/', upload.single('file'), validateUpload, async (req, res, next) =
         let ciMetadata = null;
         if (req.body.ci_metadata) {
             try {
-                ciMetadata = typeof req.body.ci_metadata === 'string'
-                    ? JSON.parse(req.body.ci_metadata)
-                    : req.body.ci_metadata;
+                ciMetadata =
+                    typeof req.body.ci_metadata === 'string'
+                        ? JSON.parse(req.body.ci_metadata)
+                        : req.body.ci_metadata;
             } catch (e) {
                 logger.warn('Invalid CI metadata format', { error: e.message });
             }
@@ -1048,76 +1091,84 @@ router.post('/', upload.single('file'), validateUpload, async (req, res, next) =
                 stats: result.stats
             }
         });
-
     } catch (error) {
         next(error);
     }
 });
 
 // POST /api/v1/upload/batch - Upload multiple JUnit XML files
-router.post('/batch', upload.array('files', parseInt(process.env.MAX_FILES) || 20), async (req, res, next) => {
-    try {
-        const results = [];
+router.post(
+    '/batch',
+    upload.array('files', parseInt(process.env.MAX_FILES) || 20),
+    async (req, res, next) => {
+        try {
+            const results = [];
 
-        for (const file of req.files) {
-            try {
-                const xmlContent = file.buffer.toString('utf-8');
-                const filename = file.originalname;
+            for (const file of req.files) {
+                try {
+                    const xmlContent = file.buffer.toString('utf-8');
+                    const filename = file.originalname;
 
-                let ciMetadata = null;
-                if (req.body.ci_metadata) {
-                    ciMetadata = typeof req.body.ci_metadata === 'string'
-                        ? JSON.parse(req.body.ci_metadata)
-                        : req.body.ci_metadata;
-                }
+                    let ciMetadata = null;
+                    if (req.body.ci_metadata) {
+                        ciMetadata =
+                            typeof req.body.ci_metadata === 'string'
+                                ? JSON.parse(req.body.ci_metadata)
+                                : req.body.ci_metadata;
+                    }
 
-                const uploaderInfo = {
-                    ip: req.ip,
-                    user_agent: req.headers['user-agent'],
-                    source: ciMetadata ? ciMetadata.provider : 'api'
-                };
+                    const uploaderInfo = {
+                        ip: req.ip,
+                        user_agent: req.headers['user-agent'],
+                        source: ciMetadata ? ciMetadata.provider : 'api'
+                    };
 
-                const result = await parseJUnitXML(xmlContent, filename, ciMetadata, uploaderInfo);
+                    const result = await parseJUnitXML(
+                        xmlContent,
+                        filename,
+                        ciMetadata,
+                        uploaderInfo
+                    );
 
-                results.push({
-                    filename,
-                    ...result
-                });
+                    results.push({
+                        filename,
+                        ...result
+                    });
 
-                if (result.success) {
-                    detectFlakyTests(result.run_id).catch(err => {
-                        logger.error('Error in flaky test detection', { error: err.message });
+                    if (result.success) {
+                        detectFlakyTests(result.run_id).catch(err => {
+                            logger.error('Error in flaky test detection', { error: err.message });
+                        });
+                    }
+                } catch (error) {
+                    results.push({
+                        filename: file.originalname,
+                        success: false,
+                        error: error.message
                     });
                 }
-
-            } catch (error) {
-                results.push({
-                    filename: file.originalname,
-                    success: false,
-                    error: error.message
-                });
             }
+
+            res.status(201).json({
+                success: true,
+                data: {
+                    total_files: req.files.length,
+                    successful: results.filter(r => r.success).length,
+                    failed: results.filter(r => !r.success).length,
+                    results
+                }
+            });
+        } catch (error) {
+            next(error);
         }
-
-        res.status(201).json({
-            success: true,
-            data: {
-                total_files: req.files.length,
-                successful: results.filter(r => r.success).length,
-                failed: results.filter(r => !r.success).length,
-                results
-            }
-        });
-
-    } catch (error) {
-        next(error);
     }
-});
+);
 
 module.exports = router;
 ```
 
 **src/routes/runs.js:**
+
 ```javascript
 const express = require('express');
 const router = express.Router();
@@ -1164,7 +1215,6 @@ router.get('/', async (req, res, next) => {
                 }
             }
         });
-
     } catch (error) {
         next(error);
     }
@@ -1191,7 +1241,6 @@ router.get('/:id', async (req, res, next) => {
                 suites
             }
         });
-
     } catch (error) {
         next(error);
     }
@@ -1215,14 +1264,12 @@ router.delete('/:id', async (req, res, next) => {
                 success: true,
                 message: 'Test run deleted successfully'
             });
-
         } catch (error) {
             await session.abortTransaction();
             throw error;
         } finally {
             session.endSession();
         }
-
     } catch (error) {
         next(error);
     }
@@ -1232,6 +1279,7 @@ module.exports = router;
 ```
 
 **src/routes/cases.js:**
+
 ```javascript
 const express = require('express');
 const router = express.Router();
@@ -1277,7 +1325,6 @@ router.get('/', async (req, res, next) => {
                 }
             }
         });
-
     } catch (error) {
         next(error);
     }
@@ -1304,7 +1351,6 @@ router.get('/:id', async (req, res, next) => {
                 result
             }
         });
-
     } catch (error) {
         next(error);
     }
@@ -1326,15 +1372,14 @@ router.get('/:id/history', async (req, res, next) => {
             name: testCase.name,
             classname: testCase.classname
         })
-        .sort({ created_at: -1 })
-        .limit(20)
-        .lean();
+            .sort({ created_at: -1 })
+            .limit(20)
+            .lean();
 
         res.json({
             success: true,
             data: history
         });
-
     } catch (error) {
         next(error);
     }
@@ -1344,6 +1389,7 @@ module.exports = router;
 ```
 
 **src/routes/stats.js:**
+
 ```javascript
 const express = require('express');
 const router = express.Router();
@@ -1376,15 +1422,13 @@ router.get('/overview', async (req, res, next) => {
             average_duration: cases.reduce((sum, c) => sum + c.time, 0) / cases.length || 0
         };
 
-        stats.success_rate = stats.total_tests > 0
-            ? ((stats.total_passed / stats.total_tests) * 100).toFixed(2)
-            : 0;
+        stats.success_rate =
+            stats.total_tests > 0 ? ((stats.total_passed / stats.total_tests) * 100).toFixed(2) : 0;
 
         res.json({
             success: true,
             data: stats
         });
-
     } catch (error) {
         next(error);
     }
@@ -1393,10 +1437,7 @@ router.get('/overview', async (req, res, next) => {
 // GET /api/v1/stats/trends - Get test execution trends
 router.get('/trends', async (req, res, next) => {
     try {
-        const runs = await TestRun.find()
-            .sort({ timestamp: 1 })
-            .limit(30)
-            .lean();
+        const runs = await TestRun.find().sort({ timestamp: 1 }).limit(30).lean();
 
         const trends = [];
 
@@ -1411,9 +1452,13 @@ router.get('/trends', async (req, res, next) => {
                 failed: cases.filter(c => c.status === 'failed').length,
                 errors: cases.filter(c => c.status === 'error').length,
                 skipped: cases.filter(c => c.status === 'skipped').length,
-                success_rate: cases.length > 0
-                    ? ((cases.filter(c => c.status === 'passed').length / cases.length) * 100).toFixed(2)
-                    : 0
+                success_rate:
+                    cases.length > 0
+                        ? (
+                              (cases.filter(c => c.status === 'passed').length / cases.length) *
+                              100
+                          ).toFixed(2)
+                        : 0
             });
         }
 
@@ -1421,7 +1466,6 @@ router.get('/trends', async (req, res, next) => {
             success: true,
             data: trends
         });
-
     } catch (error) {
         next(error);
     }
@@ -1437,11 +1481,7 @@ router.get('/flaky-tests', async (req, res, next) => {
                     _id: { name: '$name', classname: '$classname' },
                     failure_count: {
                         $sum: {
-                            $cond: [
-                                { $in: ['$status', ['failed', 'error']] },
-                                1,
-                                0
-                            ]
+                            $cond: [{ $in: ['$status', ['failed', 'error']] }, 1, 0]
                         }
                     },
                     total_runs: { $sum: 1 },
@@ -1455,10 +1495,7 @@ router.get('/flaky-tests', async (req, res, next) => {
                     failure_count: 1,
                     total_runs: 1,
                     failure_rate: {
-                        $multiply: [
-                            { $divide: ['$failure_count', '$total_runs'] },
-                            100
-                        ]
+                        $multiply: [{ $divide: ['$failure_count', '$total_runs'] }, 100]
                     },
                     last_failed: 1
                 }
@@ -1470,7 +1507,6 @@ router.get('/flaky-tests', async (req, res, next) => {
             success: true,
             data: flakyTests
         });
-
     } catch (error) {
         next(error);
     }
@@ -1482,6 +1518,7 @@ module.exports = router;
 ### 2.9 Create Main Server File
 
 **src/server.js:**
+
 ```javascript
 require('dotenv').config();
 const express = require('express');
@@ -1508,10 +1545,12 @@ connectDB();
 // Middleware
 app.use(helmet());
 app.use(compression());
-app.use(cors({
-    origin: process.env.ALLOWED_ORIGINS.split(','),
-    credentials: true
-}));
+app.use(
+    cors({
+        origin: process.env.ALLOWED_ORIGINS.split(','),
+        credentials: true
+    })
+);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -1519,11 +1558,13 @@ app.use(express.urlencoded({ extended: true }));
 if (process.env.NODE_ENV === 'development') {
     app.use(morgan('dev'));
 } else {
-    app.use(morgan('combined', {
-        stream: {
-            write: (message) => logger.info(message.trim())
-        }
-    }));
+    app.use(
+        morgan('combined', {
+            stream: {
+                write: message => logger.info(message.trim())
+            }
+        })
+    );
 }
 
 // Health check endpoint
@@ -1602,25 +1643,28 @@ EOF
 ### 2.11 Create PM2 Configuration
 
 **ecosystem.config.js:**
+
 ```javascript
 module.exports = {
-  apps: [{
-    name: 'junit-dashboard-api',
-    script: './src/server.js',
-    instances: 2,  // Use 2 CPU cores, or 'max' for all cores
-    exec_mode: 'cluster',
-    env: {
-      NODE_ENV: 'production'
-    },
-    error_file: './logs/pm2-error.log',
-    out_file: './logs/pm2-out.log',
-    log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
-    merge_logs: true,
-    autorestart: true,
-    watch: false,
-    max_memory_restart: '1G',
-    time: true
-  }]
+    apps: [
+        {
+            name: 'junit-dashboard-api',
+            script: './src/server.js',
+            instances: 2, // Use 2 CPU cores, or 'max' for all cores
+            exec_mode: 'cluster',
+            env: {
+                NODE_ENV: 'production'
+            },
+            error_file: './logs/pm2-error.log',
+            out_file: './logs/pm2-out.log',
+            log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+            merge_logs: true,
+            autorestart: true,
+            watch: false,
+            max_memory_restart: '1G',
+            time: true
+        }
+    ]
 };
 ```
 
@@ -1792,82 +1836,83 @@ Create `.github/workflows/test-and-upload.yml`:
 name: Run Tests and Upload Results
 
 on:
-  push:
-    branches: [ main, develop ]
-  pull_request:
-    branches: [ main ]
+    push:
+        branches: [main, develop]
+    pull_request:
+        branches: [main]
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
+    test:
+        runs-on: ubuntu-latest
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
 
-      - name: Set up JDK
-        uses: actions/setup-java@v4
-        with:
-          java-version: '17'
-          distribution: 'temurin'
+            - name: Set up JDK
+              uses: actions/setup-java@v4
+              with:
+                  java-version: '17'
+                  distribution: 'temurin'
 
-      - name: Run tests
-        run: mvn clean test
+            - name: Run tests
+              run: mvn clean test
 
-      - name: Upload test results to dashboard
-        if: always()  # Run even if tests fail
-        env:
-          JUNIT_API_URL: ${{ secrets.JUNIT_API_URL }}
-        run: |
-          # Find all JUnit XML files
-          find . -name "*.xml" -path "*/surefire-reports/*" | while read xmlfile; do
-            echo "Uploading $xmlfile..."
+            - name: Upload test results to dashboard
+              if: always() # Run even if tests fail
+              env:
+                  JUNIT_API_URL: ${{ secrets.JUNIT_API_URL }}
+              run: |
+                  # Find all JUnit XML files
+                  find . -name "*.xml" -path "*/surefire-reports/*" | while read xmlfile; do
+                    echo "Uploading $xmlfile..."
 
-            # Prepare CI metadata JSON
-            CI_METADATA=$(cat <<EOF
-          {
-            "provider": "github_actions",
-            "build_id": "${{ github.run_id }}",
-            "build_url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}",
-            "job_name": "${{ github.workflow }}",
-            "commit_sha": "${{ github.sha }}",
-            "branch": "${{ github.ref_name }}",
-            "repository": "${{ github.repository }}"
-          }
-          EOF
-          )
+                    # Prepare CI metadata JSON
+                    CI_METADATA=$(cat <<EOF
+                  {
+                    "provider": "github_actions",
+                    "build_id": "${{ github.run_id }}",
+                    "build_url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}",
+                    "job_name": "${{ github.workflow }}",
+                    "commit_sha": "${{ github.sha }}",
+                    "branch": "${{ github.ref_name }}",
+                    "repository": "${{ github.repository }}"
+                  }
+                  EOF
+                  )
 
-            # Upload to dashboard API
-            curl -X POST "${JUNIT_API_URL}/api/v1/upload" \
-              -F "file=@$xmlfile" \
-              -F "ci_metadata=${CI_METADATA}" \
-              --fail --silent --show-error || echo "Failed to upload $xmlfile"
-          done
+                    # Upload to dashboard API
+                    curl -X POST "${JUNIT_API_URL}/api/v1/upload" \
+                      -F "file=@$xmlfile" \
+                      -F "ci_metadata=${CI_METADATA}" \
+                      --fail --silent --show-error || echo "Failed to upload $xmlfile"
+                  done
 
-      - name: Archive test results (optional backup)
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: junit-test-results
-          path: '**/surefire-reports/*.xml'
+            - name: Archive test results (optional backup)
+              if: always()
+              uses: actions/upload-artifact@v4
+              with:
+                  name: junit-test-results
+                  path: '**/surefire-reports/*.xml'
 ```
 
 **Simplified version using action:**
 
 ```yaml
-      - name: Upload test results
-        if: always()
-        run: |
-          curl -X POST ${{ secrets.JUNIT_API_URL }}/api/v1/upload/batch \
-            -F "files=@target/surefire-reports/TEST-*.xml" \
-            -F 'ci_metadata={"provider":"github_actions","build_id":"${{ github.run_id }}","commit_sha":"${{ github.sha }}","branch":"${{ github.ref_name }}"}'
+- name: Upload test results
+  if: always()
+  run: |
+      curl -X POST ${{ secrets.JUNIT_API_URL }}/api/v1/upload/batch \
+        -F "files=@target/surefire-reports/TEST-*.xml" \
+        -F 'ci_metadata={"provider":"github_actions","build_id":"${{ github.run_id }}","commit_sha":"${{ github.sha }}","branch":"${{ github.ref_name }}"}'
 ```
 
 **Store API URL in GitHub Secrets:**
+
 1. Go to your repository → Settings → Secrets and variables → Actions
 2. Add new repository secret:
-   - Name: `JUNIT_API_URL`
-   - Value: `http://your-ubuntu-server:5000`
+    - Name: `JUNIT_API_URL`
+    - Value: `http://your-ubuntu-server:5000`
 
 ### 3.3 GitLab CI Integration
 
@@ -1875,46 +1920,46 @@ Create `.gitlab-ci.yml`:
 
 ```yaml
 stages:
-  - test
-  - upload
+    - test
+    - upload
 
 test:
-  stage: test
-  image: maven:3.9-openjdk-17
-  script:
-    - mvn clean test
-  artifacts:
-    when: always
-    paths:
-      - target/surefire-reports/*.xml
-    expire_in: 1 week
+    stage: test
+    image: maven:3.9-openjdk-17
+    script:
+        - mvn clean test
+    artifacts:
+        when: always
+        paths:
+            - target/surefire-reports/*.xml
+        expire_in: 1 week
 
 upload_test_results:
-  stage: upload
-  image: curlimages/curl:latest
-  when: always
-  dependencies:
-    - test
-  script:
-    - |
-      for xmlfile in target/surefire-reports/*.xml; do
-        echo "Uploading $xmlfile..."
+    stage: upload
+    image: curlimages/curl:latest
+    when: always
+    dependencies:
+        - test
+    script:
+        - |
+            for xmlfile in target/surefire-reports/*.xml; do
+              echo "Uploading $xmlfile..."
 
-        curl -X POST "${JUNIT_API_URL}/api/v1/upload" \
-          -F "file=@$xmlfile" \
-          -F "ci_metadata={
-            \"provider\": \"gitlab\",
-            \"build_id\": \"${CI_PIPELINE_ID}\",
-            \"build_url\": \"${CI_PIPELINE_URL}\",
-            \"job_name\": \"${CI_JOB_NAME}\",
-            \"commit_sha\": \"${CI_COMMIT_SHA}\",
-            \"branch\": \"${CI_COMMIT_REF_NAME}\",
-            \"repository\": \"${CI_PROJECT_URL}\"
-          }" \
-          --fail --silent --show-error
-      done
-  variables:
-    JUNIT_API_URL: "http://your-ubuntu-server:5000"
+              curl -X POST "${JUNIT_API_URL}/api/v1/upload" \
+                -F "file=@$xmlfile" \
+                -F "ci_metadata={
+                  \"provider\": \"gitlab\",
+                  \"build_id\": \"${CI_PIPELINE_ID}\",
+                  \"build_url\": \"${CI_PIPELINE_URL}\",
+                  \"job_name\": \"${CI_JOB_NAME}\",
+                  \"commit_sha\": \"${CI_COMMIT_SHA}\",
+                  \"branch\": \"${CI_COMMIT_REF_NAME}\",
+                  \"repository\": \"${CI_PROJECT_URL}\"
+                }" \
+                --fail --silent --show-error
+            done
+    variables:
+        JUNIT_API_URL: 'http://your-ubuntu-server:5000'
 ```
 
 ### 3.4 Bash Script for Manual Uploads
@@ -1988,11 +2033,13 @@ fi
 ```
 
 Make executable:
+
 ```bash
 chmod +x upload-test-results.sh
 ```
 
 Usage:
+
 ```bash
 # Upload from default directory
 ./upload-test-results.sh
@@ -2262,6 +2309,7 @@ sudo nano /etc/nginx/sites-available/junit-dashboard
 ```
 
 Nginx configuration:
+
 ```nginx
 server {
     listen 80;
@@ -2295,6 +2343,7 @@ server {
 ```
 
 Enable site:
+
 ```bash
 sudo ln -s /etc/nginx/sites-available/junit-dashboard /etc/nginx/sites-enabled/
 sudo nginx -t
@@ -2415,50 +2464,51 @@ Create `docker-compose.yml`:
 version: '3.8'
 
 services:
-  mongodb:
-    image: mongo:7.0
-    container_name: junit-mongodb
-    restart: always
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: admin
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_PASSWORD}
-      MONGO_INITDB_DATABASE: junit_test_results
-    volumes:
-      - mongodb_data:/data/db
-    ports:
-      - "27017:27017"
-    networks:
-      - junit-network
+    mongodb:
+        image: mongo:7.0
+        container_name: junit-mongodb
+        restart: always
+        environment:
+            MONGO_INITDB_ROOT_USERNAME: admin
+            MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_PASSWORD}
+            MONGO_INITDB_DATABASE: junit_test_results
+        volumes:
+            - mongodb_data:/data/db
+        ports:
+            - '27017:27017'
+        networks:
+            - junit-network
 
-  backend:
-    build: .
-    container_name: junit-backend
-    restart: always
-    environment:
-      NODE_ENV: production
-      PORT: 5000
-      MONGODB_URI: mongodb://admin:${MONGODB_PASSWORD}@mongodb:27017/junit_test_results?authSource=admin
-      CORS_ORIGIN: ${CORS_ORIGIN}
-      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS}
-    ports:
-      - "5000:5000"
-    depends_on:
-      - mongodb
-    volumes:
-      - ./uploads:/app/uploads
-      - ./logs:/app/logs
-    networks:
-      - junit-network
+    backend:
+        build: .
+        container_name: junit-backend
+        restart: always
+        environment:
+            NODE_ENV: production
+            PORT: 5000
+            MONGODB_URI: mongodb://admin:${MONGODB_PASSWORD}@mongodb:27017/junit_test_results?authSource=admin
+            CORS_ORIGIN: ${CORS_ORIGIN}
+            ALLOWED_ORIGINS: ${ALLOWED_ORIGINS}
+        ports:
+            - '5000:5000'
+        depends_on:
+            - mongodb
+        volumes:
+            - ./uploads:/app/uploads
+            - ./logs:/app/logs
+        networks:
+            - junit-network
 
 volumes:
-  mongodb_data:
+    mongodb_data:
 
 networks:
-  junit-network:
-    driver: bridge
+    junit-network:
+        driver: bridge
 ```
 
 Deploy with Docker:
+
 ```bash
 docker-compose up -d
 ```
@@ -2470,9 +2520,11 @@ docker-compose up -d
 1. Create MongoDB Atlas account
 2. Create cluster and get connection string
 3. Update `.env`:
+
 ```env
 MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/junit_test_results
 ```
+
 4. Restart application
 
 **To AWS:**
