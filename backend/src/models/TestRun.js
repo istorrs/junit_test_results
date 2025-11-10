@@ -3,12 +3,14 @@ const mongoose = require('mongoose');
 const testRunSchema = new mongoose.Schema({
     name: {
         type: String,
-        required: true
+        required: true,
+        index: true
     },
     timestamp: {
         type: Date,
         required: true,
-        default: Date.now
+        default: Date.now,
+        index: true
     },
     time: {
         type: Number,
@@ -45,16 +47,34 @@ const testRunSchema = new mongoose.Schema({
         default: 'api'
     },
     ci_metadata: {
+        job_name: {
+            type: String,
+            index: true  // Index for filtering by project
+        },
+        build_number: {
+            type: Number,
+            index: true  // Index for test run identification
+        },
+        build_time: {
+            type: Date,
+            index: true
+        },
+        // Legacy fields for other CI systems
         provider: String,
         build_id: String,
         commit_sha: String,
         branch: String,
         repository: String,
-        build_url: String,
-        job_name: String
+        build_url: String
     }
 }, {
     timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }
 });
+
+// Compound index for unique test run identification
+testRunSchema.index({ 'ci_metadata.job_name': 1, 'ci_metadata.build_number': 1, 'ci_metadata.build_time': 1 }, { unique: true, sparse: true });
+
+// Index for filtering by project (job_name)
+testRunSchema.index({ 'ci_metadata.job_name': 1, timestamp: -1 });
 
 module.exports = mongoose.model('TestRun', testRunSchema);

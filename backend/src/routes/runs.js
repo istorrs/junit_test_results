@@ -6,6 +6,23 @@ const TestSuite = require('../models/TestSuite');
 const TestCase = require('../models/TestCase');
 const TestResult = require('../models/TestResult');
 
+// GET /api/v1/runs/projects - Get all unique job names (projects)
+router.get('/projects', async (req, res, next) => {
+    try {
+        const projects = await TestRun.distinct('ci_metadata.job_name');
+        const projectsFiltered = projects.filter(p => p != null && p !== '');
+
+        res.json({
+            success: true,
+            data: {
+                projects: projectsFiltered.sort()
+            }
+        });
+    } catch (error) {
+        next(error);
+    }
+});
+
 // GET /api/v1/runs - Get all test runs with pagination
 router.get('/', async (req, res, next) => {
     try {
@@ -16,6 +33,9 @@ router.get('/', async (req, res, next) => {
         const query = {};
 
         // Filters
+        if (req.query.job_name) {
+            query['ci_metadata.job_name'] = req.query.job_name;
+        }
         if (req.query.branch) {
             query['ci_metadata.branch'] = req.query.branch;
         }

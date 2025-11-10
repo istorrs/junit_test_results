@@ -20,40 +20,25 @@ const parseJUnitXML = async (xmlContent, filename, ciMetadata = null, uploaderIn
         // Generate content hash for duplicate detection
         const contentHash = generateHash(xmlContent);
 
-        // Check for duplicate - if found, delete existing data to allow re-import
+        // Check for duplicate file - if this exact XML was already uploaded, skip it
         const existingUpload = await FileUpload.findOne({
             content_hash: contentHash,
             status: 'completed'
         });
         if (existingUpload) {
-            logger.warn('Duplicate test results detected - deleting existing data for re-import', {
+            logger.warn('Duplicate XML file detected - skipping upload', {
                 filename,
                 contentHash,
+                existing_file_id: existingUpload._id,
                 existing_run_id: existingUpload.run_id
             });
-
-            // Delete all related data in cascade
-            const runId = existingUpload.run_id;
-
-            // Delete test results
-            await TestResult.deleteMany({ run_id: runId });
-            logger.info('Deleted test results for re-import', { run_id: runId });
-
-            // Delete test cases
-            await TestCase.deleteMany({ run_id: runId });
-            logger.info('Deleted test cases for re-import', { run_id: runId });
-
-            // Delete test suites
-            await TestSuite.deleteMany({ run_id: runId });
-            logger.info('Deleted test suites for re-import', { run_id: runId });
-
-            // Delete test run
-            await TestRun.findByIdAndDelete(runId);
-            logger.info('Deleted test run for re-import', { run_id: runId });
-
-            // Delete file upload record
-            await FileUpload.findByIdAndDelete(existingUpload._id);
-            logger.info('Deleted file upload record for re-import', { file_upload_id: existingUpload._id });
+            return {
+                success: true,
+                duplicate: true,
+                run_id: existingUpload.run_id,
+                file_upload_id: existingUpload._id,
+                message: 'Duplicate file skipped'
+            };
         }
 
         // Create file upload record
@@ -78,69 +63,113 @@ const parseJUnitXML = async (xmlContent, filename, ciMetadata = null, uploaderIn
 
         let testRun;
 
-        for (const suiteElement of testsuites) {
-            if (!testRun) {
-                // Determine the correct timestamp
-                // Priority: XML timestamp (most accurate) > CI metadata build_time > current time
-                let timestamp;
-                let timestampSource;
+        // Determine the correct timestamp
+        // Priority: CI metadata build_time > XML timestamp > current time
+        let timestamp;
+        let timestampSource;
 
-                // Check for timestamp in nested testsuite first (common structure with <testsuites> wrapper)
-                // Then check direct testsuite element
-                let timestampValue = null;
-                if (suiteElement.testsuite && suiteElement.testsuite.timestamp) {
-                    timestampValue = suiteElement.testsuite.timestamp;
-                    logger.info(`Found timestamp in nested testsuite: ${timestampValue}`);
-                } else if (suiteElement.timestamp) {
-                    timestampValue = suiteElement.timestamp;
-                    logger.info(`Found timestamp in suite element: ${timestampValue}`);
-                }
+        if (ciMetadata && ciMetadata.build_time) {
+            // Use build time from CI metadata (most accurate for test run identification)
+            timestamp = new Date(ciMetadata.build_time);
+            timestampSource = 'ci_metadata.build_time';
+            logger.info('Using CI metadata timestamp', {
+                build_time: ciMetadata.build_time,
+                parsed_timestamp: timestamp.toISOString()
+            });
+        } else {
+            // Check for timestamp in XML
+            const suiteElement = testsuites[0];
+            let timestampValue = null;
+            if (suiteElement.testsuite && suiteElement.testsuite.timestamp) {
+                timestampValue = suiteElement.testsuite.timestamp;
+            } else if (suiteElement.timestamp) {
+                timestampValue = suiteElement.timestamp;
+            }
 
-                if (timestampValue) {
-                    // Use timestamp from JUnit XML (most accurate - from test execution)
-                    timestamp = new Date(timestampValue);
-                    timestampSource = 'junit_xml';
-                    logger.info('Using JUnit XML timestamp', {
-                        xml_timestamp: timestampValue,
-                        parsed_timestamp: timestamp.toISOString()
-                    });
-                } else if (ciMetadata && ciMetadata.build_time) {
-                    // Use build time from CI metadata (fallback for XMLs without timestamp)
-                    timestamp = new Date(ciMetadata.build_time);
-                    timestampSource = 'ci_metadata.build_time';
-                    logger.info('Using CI metadata timestamp', {
-                        build_time: ciMetadata.build_time,
-                        parsed_timestamp: timestamp.toISOString()
-                    });
-                } else {
-                    // Last resort: use current time
-                    timestamp = new Date();
-                    timestampSource = 'current_time';
-                    logger.error('No timestamp found - using current time', {
-                        timestamp: timestamp.toISOString(),
-                        ci_metadata: ciMetadata,
-                        suite_keys: Object.keys(suiteElement),
-                        filename
-                    });
-                }
+            if (timestampValue) {
+                timestamp = new Date(timestampValue);
+                timestampSource = 'junit_xml';
+                logger.info('Using JUnit XML timestamp', {
+                    xml_timestamp: timestampValue,
+                    parsed_timestamp: timestamp.toISOString()
+                });
+            } else {
+                // Last resort: use current time
+                timestamp = new Date();
+                timestampSource = 'current_time';
+                logger.warn('No timestamp found - using current time', {
+                    timestamp: timestamp.toISOString(),
+                    filename
+                });
+            }
+        }
 
-                // Create test run
+        // Find or create test run based on CI metadata
+        if (ciMetadata && ciMetadata.job_name && ciMetadata.build_number) {
+            // Look for existing test run with same job_name, build_number, and build_time
+            testRun = await TestRun.findOne({
+                'ci_metadata.job_name': ciMetadata.job_name,
+                'ci_metadata.build_number': ciMetadata.build_number,
+                'ci_metadata.build_time': ciMetadata.build_time
+            });
+
+            if (testRun) {
+                logger.info('Found existing test run - adding XML to it', {
+                    run_id: testRun._id,
+                    job_name: ciMetadata.job_name,
+                    build_number: ciMetadata.build_number,
+                    existing_files: testRun.file_upload_id
+                });
+            } else {
+                // Create new test run with proper naming: "JOB_NAME #BUILD_NUMBER"
+                const testRunName = `${ciMetadata.job_name} #${ciMetadata.build_number}`;
+
                 testRun = await TestRun.create({
-                    name: suiteElement.name || filename,
+                    name: testRunName,
                     timestamp,
-                    time: parseFloat(suiteElement.time || 0),
-                    total_tests: parseInt(suiteElement.tests || 0),
-                    total_failures: parseInt(suiteElement.failures || 0),
-                    total_errors: parseInt(suiteElement.errors || 0),
-                    total_skipped: parseInt(suiteElement.skipped || 0),
+                    time: 0,  // Will be calculated from test cases
+                    total_tests: 0,  // Will be calculated from test cases
+                    total_failures: 0,
+                    total_errors: 0,
+                    total_skipped: 0,
                     file_upload_id: fileUpload._id,
-                    content_hash: contentHash,
-                    source: ciMetadata ? 'ci_cd' : 'api',
+                    source: 'ci_cd',
                     ci_metadata: ciMetadata
                 });
 
-                logger.info('Test run created', { run_id: testRun._id, name: testRun.name });
+                logger.info('Created new test run from CI metadata', {
+                    run_id: testRun._id,
+                    name: testRunName,
+                    job_name: ciMetadata.job_name,
+                    build_number: ciMetadata.build_number
+                });
             }
+        } else {
+            // No CI metadata - create test run with filename
+            const suiteElement = testsuites[0];
+            testRun = await TestRun.create({
+                name: suiteElement.name || filename,
+                timestamp,
+                time: 0,  // Will be calculated from test cases
+                total_tests: 0,
+                total_failures: 0,
+                total_errors: 0,
+                total_skipped: 0,
+                file_upload_id: fileUpload._id,
+                content_hash: contentHash,
+                source: 'api',
+                ci_metadata: null
+            });
+
+            logger.info('Created test run without CI metadata', {
+                run_id: testRun._id,
+                name: testRun.name,
+                filename
+            });
+        }
+
+        // Process all test suites from this XML
+        for (const suiteElement of testsuites) {
 
             // Process test suites
             let suites = suiteElement.testsuite || [suiteElement];
@@ -150,29 +179,6 @@ const parseJUnitXML = async (xmlContent, filename, ciMetadata = null, uploaderIn
 
             for (const suite of suites) {
                 await processTestSuite(suite, testRun._id, fileUpload._id, testRun.timestamp);
-            }
-        }
-
-        // Update test run name based on test case classnames if name is generic
-        if (
-            testRun.name === 'pytest tests' ||
-            testRun.name === 'pytest' ||
-            !testRun.name ||
-            testRun.name === filename
-        ) {
-            const testCases = await TestCase.find({ run_id: testRun._id }).limit(100);
-            const classnames = [...new Set(testCases.map(tc => tc.classname).filter(c => c))];
-
-            if (classnames.length > 0) {
-                // Use the most common classname or combine first few unique ones
-                const newName =
-                    classnames.length === 1
-                        ? classnames[0]
-                        : classnames.slice(0, 3).join(', ') + (classnames.length > 3 ? '...' : '');
-
-                await TestRun.findByIdAndUpdate(testRun._id, { name: newName });
-                testRun.name = newName;
-                logger.info('Updated test run name', { run_id: testRun._id, name: newName });
             }
         }
 
