@@ -76,6 +76,8 @@ services:
             - ./reports.html:/usr/share/nginx/html/reports.html:ro
             - ./test-case-history.html:/usr/share/nginx/html/test-case-history.html:ro
             - ./flaky-tests.html:/usr/share/nginx/html/flaky-tests.html:ro
+            - ./compare-runs.html:/usr/share/nginx/html/compare-runs.html:ro
+            - ./performance-analysis.html:/usr/share/nginx/html/performance-analysis.html:ro
             - ./data-management.html:/usr/share/nginx/html/data-management.html:ro
             - ./debug-trace.html:/usr/share/nginx/html/debug-trace.html:ro
             - ./debug-console.html:/usr/share/nginx/html/debug-console.html:ro
@@ -91,6 +93,7 @@ services:
             - ./console-capture.js:/usr/share/nginx/html/console-capture.js:ro
             - ./theme.js:/usr/share/nginx/html/theme.js:ro
             - ./navigation.js:/usr/share/nginx/html/navigation.js:ro
+            - ./global-search.js:/usr/share/nginx/html/global-search.js:ro
             - ./data-management.js:/usr/share/nginx/html/data-management.js:ro
             - ./debug-console.js:/usr/share/nginx/html/debug-console.js:ro
             # Resources
