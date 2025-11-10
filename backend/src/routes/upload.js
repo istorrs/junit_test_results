@@ -11,7 +11,7 @@ const storage = multer.memoryStorage();
 const upload = multer({
     storage,
     limits: {
-        fileSize: parseInt(process.env.MAX_FILE_SIZE) || 52428800, // 50MB default
+        fileSize: parseInt(process.env.MAX_FILE_SIZE) || 52428800 // 50MB default
     },
     fileFilter: (req, file, cb) => {
         if (file.originalname.endsWith('.xml')) {
@@ -32,12 +32,16 @@ router.post('/', upload.single('file'), validateUpload, async (req, res, next) =
         let ciMetadata = null;
         if (req.body.ci_metadata) {
             try {
-                ciMetadata = typeof req.body.ci_metadata === 'string'
-                    ? JSON.parse(req.body.ci_metadata)
-                    : req.body.ci_metadata;
+                ciMetadata =
+                    typeof req.body.ci_metadata === 'string'
+                        ? JSON.parse(req.body.ci_metadata)
+                        : req.body.ci_metadata;
+                logger.info('Received CI metadata', { ci_metadata: ciMetadata, filename });
             } catch (e) {
                 logger.warn('Invalid CI metadata format', { error: e.message });
             }
+        } else {
+            logger.info('No CI metadata in request', { filename });
         }
 
         // Uploader info
@@ -67,70 +71,77 @@ router.post('/', upload.single('file'), validateUpload, async (req, res, next) =
                 stats: result.stats
             }
         });
-
     } catch (error) {
         next(error);
     }
 });
 
 // POST /api/v1/upload/batch - Upload multiple JUnit XML files
-router.post('/batch', upload.array('files', parseInt(process.env.MAX_FILES) || 20), async (req, res, next) => {
-    try {
-        const results = [];
+router.post(
+    '/batch',
+    upload.array('files', parseInt(process.env.MAX_FILES) || 20),
+    async (req, res, next) => {
+        try {
+            const results = [];
 
-        for (const file of req.files) {
-            try {
-                const xmlContent = file.buffer.toString('utf-8');
-                const filename = file.originalname;
+            for (const file of req.files) {
+                try {
+                    const xmlContent = file.buffer.toString('utf-8');
+                    const filename = file.originalname;
 
-                let ciMetadata = null;
-                if (req.body.ci_metadata) {
-                    ciMetadata = typeof req.body.ci_metadata === 'string'
-                        ? JSON.parse(req.body.ci_metadata)
-                        : req.body.ci_metadata;
-                }
+                    let ciMetadata = null;
+                    if (req.body.ci_metadata) {
+                        ciMetadata =
+                            typeof req.body.ci_metadata === 'string'
+                                ? JSON.parse(req.body.ci_metadata)
+                                : req.body.ci_metadata;
+                    }
 
-                const uploaderInfo = {
-                    ip: req.ip,
-                    user_agent: req.headers['user-agent'],
-                    source: ciMetadata ? ciMetadata.provider : 'api'
-                };
+                    const uploaderInfo = {
+                        ip: req.ip,
+                        user_agent: req.headers['user-agent'],
+                        source: ciMetadata ? ciMetadata.provider : 'api'
+                    };
 
-                const result = await parseJUnitXML(xmlContent, filename, ciMetadata, uploaderInfo);
+                    const result = await parseJUnitXML(
+                        xmlContent,
+                        filename,
+                        ciMetadata,
+                        uploaderInfo
+                    );
 
-                results.push({
-                    filename,
-                    ...result
-                });
+                    results.push({
+                        filename,
+                        ...result
+                    });
 
-                if (result.success) {
-                    detectFlakyTests(result.run_id).catch(err => {
-                        logger.error('Error in flaky test detection', { error: err.message });
+                    if (result.success) {
+                        detectFlakyTests(result.run_id).catch(err => {
+                            logger.error('Error in flaky test detection', { error: err.message });
+                        });
+                    }
+                } catch (error) {
+                    results.push({
+                        filename: file.originalname,
+                        success: false,
+                        error: error.message
                     });
                 }
-
-            } catch (error) {
-                results.push({
-                    filename: file.originalname,
-                    success: false,
-                    error: error.message
-                });
             }
+
+            res.status(201).json({
+                success: true,
+                data: {
+                    total_files: req.files.length,
+                    successful: results.filter(r => r.success).length,
+                    failed: results.filter(r => !r.success).length,
+                    results
+                }
+            });
+        } catch (error) {
+            next(error);
         }
-
-        res.status(201).json({
-            success: true,
-            data: {
-                total_files: req.files.length,
-                successful: results.filter(r => r.success).length,
-                failed: results.filter(r => !r.success).length,
-                results
-            }
-        });
-
-    } catch (error) {
-        next(error);
     }
-});
+);
 
 module.exports = router;

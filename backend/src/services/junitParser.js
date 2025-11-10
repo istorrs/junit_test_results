@@ -60,15 +60,31 @@ const parseJUnitXML = async (xmlContent, filename, ciMetadata = null, uploaderIn
             if (!testRun) {
                 // Determine the correct timestamp (priority: CI metadata > XML timestamp > current time)
                 let timestamp;
+                let timestampSource;
                 if (ciMetadata && ciMetadata.build_time) {
                     // Use build time from CI metadata (Jenkins import)
                     timestamp = new Date(ciMetadata.build_time);
+                    timestampSource = 'ci_metadata.build_time';
+                    logger.info('Using CI metadata timestamp', {
+                        build_time: ciMetadata.build_time,
+                        parsed_timestamp: timestamp.toISOString()
+                    });
                 } else if (suiteElement.timestamp) {
                     // Use timestamp from JUnit XML
                     timestamp = new Date(suiteElement.timestamp);
+                    timestampSource = 'junit_xml';
+                    logger.info('Using JUnit XML timestamp', {
+                        xml_timestamp: suiteElement.timestamp,
+                        parsed_timestamp: timestamp.toISOString()
+                    });
                 } else {
                     // Fallback to current time (only for manual uploads without timestamp)
                     timestamp = new Date();
+                    timestampSource = 'current_time';
+                    logger.warn('No timestamp in CI metadata or XML, using current time', {
+                        timestamp: timestamp.toISOString(),
+                        ci_metadata: ciMetadata
+                    });
                 }
 
                 // Create test run
