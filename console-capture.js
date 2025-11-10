@@ -1,8 +1,6 @@
 // Global Console Capture - Runs on every page
 // Stores console logs in sessionStorage so they can be viewed in debug console
 
-/* global sessionStorage, CustomEvent */
-
 (function () {
     const MAX_LOGS = 1000;
     const STORAGE_KEY = 'junit-console-logs';

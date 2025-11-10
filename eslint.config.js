@@ -1,27 +1,49 @@
 import js from '@eslint/js';
+import globals from 'globals';
 
 export default [
     js.configs.recommended,
+    // Backend (Node.js) configuration
     {
+        files: ['backend/**/*.js', 'src/**/*.js'],
+        languageOptions: {
+            ecmaVersion: 2022,
+            sourceType: 'commonjs',
+            globals: {
+                ...globals.node
+            }
+        },
+        rules: {
+            'no-unused-vars': [
+                'error',
+                {
+                    argsIgnorePattern: '^_',
+                    varsIgnorePattern: '^_'
+                }
+            ],
+            'no-console': 'off',
+            'no-undef': 'error',
+            'no-redeclare': 'error',
+            'no-constant-condition': 'error',
+            'no-unreachable': 'error',
+            'no-duplicate-case': 'error',
+            'no-empty': 'warn',
+            'no-extra-semi': 'error',
+            curly: ['error', 'all'],
+            eqeqeq: ['error', 'always'],
+            'prefer-const': 'error',
+            'no-var': 'error'
+        }
+    },
+    // Frontend (Browser) configuration
+    {
+        files: ['*.js'],
+        ignores: ['backend/**/*.js', 'src/**/*.js'],
         languageOptions: {
             ecmaVersion: 2022,
             sourceType: 'script',
             globals: {
-                window: 'readonly',
-                document: 'readonly',
-                console: 'readonly',
-                alert: 'readonly',
-                fetch: 'readonly',
-                FormData: 'readonly',
-                Blob: 'readonly',
-                URL: 'readonly',
-                URLSearchParams: 'readonly',
-                FileReader: 'readonly',
-                IntersectionObserver: 'readonly',
-                setTimeout: 'readonly',
-                setInterval: 'readonly',
-                clearInterval: 'readonly',
-                clearTimeout: 'readonly',
+                ...globals.browser,
                 // Libraries
                 echarts: 'readonly',
                 anime: 'readonly',
@@ -39,10 +61,7 @@ export default [
                 flakyTestsPage: 'writable',
                 reportsPage: 'writable',
                 testDetailsModal: 'writable',
-                dashboardDebugger: 'writable',
-                navigator: 'readonly',
-                screen: 'readonly',
-                localStorage: 'readonly'
+                dashboardDebugger: 'writable'
             }
         },
         rules: {

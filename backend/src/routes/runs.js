@@ -44,7 +44,6 @@ router.get('/', async (req, res, next) => {
                 }
             }
         });
-
     } catch (error) {
         next(error);
     }
@@ -71,7 +70,6 @@ router.get('/:id', async (req, res, next) => {
                 suites
             }
         });
-
     } catch (error) {
         next(error);
     }
@@ -80,30 +78,25 @@ router.get('/:id', async (req, res, next) => {
 // DELETE /api/v1/runs/:id - Delete test run and all related data
 router.delete('/:id', async (req, res, next) => {
     try {
-        const session = await TestRun.startSession();
-        session.startTransaction();
-
-        try {
-            // Delete all related data
-            await TestResult.deleteMany({ run_id: req.params.id }, { session });
-            await TestCase.deleteMany({ run_id: req.params.id }, { session });
-            await TestSuite.deleteMany({ run_id: req.params.id }, { session });
-            await TestRun.findByIdAndDelete(req.params.id, { session });
-
-            await session.commitTransaction();
-
-            res.json({
-                success: true,
-                message: 'Test run deleted successfully'
+        // Verify the test run exists
+        const run = await TestRun.findById(req.params.id);
+        if (!run) {
+            return res.status(404).json({
+                success: false,
+                error: 'Test run not found'
             });
-
-        } catch (error) {
-            await session.abortTransaction();
-            throw error;
-        } finally {
-            session.endSession();
         }
 
+        // Delete all related data (no transaction needed for standalone MongoDB)
+        await TestResult.deleteMany({ run_id: req.params.id });
+        await TestCase.deleteMany({ run_id: req.params.id });
+        await TestSuite.deleteMany({ run_id: req.params.id });
+        await TestRun.findByIdAndDelete(req.params.id);
+
+        res.json({
+            success: true,
+            message: 'Test run deleted successfully'
+        });
     } catch (error) {
         next(error);
     }
