@@ -407,6 +407,17 @@ class DataManagement {
             return;
         }
 
+        // Disable the buttons while deleting
+        const confirmBtn = document.getElementById('confirm-delete');
+        const cancelBtn = document.getElementById('cancel-delete');
+        if (confirmBtn) {
+            confirmBtn.disabled = true;
+            confirmBtn.textContent = 'Deleting...';
+        }
+        if (cancelBtn) {
+            cancelBtn.disabled = true;
+        }
+
         try {
             await this.db.deleteTestRun(this.deleteRunId);
             this.showNotification('Test run deleted successfully', 'success');
@@ -414,7 +425,16 @@ class DataManagement {
             await this.loadUploads();
         } catch (error) {
             console.error('Failed to delete test run:', error);
-            this.showNotification('Failed to delete test run', 'error');
+            this.showNotification(`Failed to delete test run: ${error.message}`, 'error');
+
+            // Re-enable buttons on error
+            if (confirmBtn) {
+                confirmBtn.disabled = false;
+                confirmBtn.textContent = 'Delete';
+            }
+            if (cancelBtn) {
+                cancelBtn.disabled = false;
+            }
         }
     }
 
