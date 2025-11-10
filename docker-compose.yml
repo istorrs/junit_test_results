@@ -98,6 +98,7 @@ services:
             - ./shared-utils.js:/usr/share/nginx/html/shared-utils.js:ro
             - ./data-management.js:/usr/share/nginx/html/data-management.js:ro
             - ./debug-console.js:/usr/share/nginx/html/debug-console.js:ro
+            - ./release-reports.js:/usr/share/nginx/html/release-reports.js:ro
             # Resources
             - ./resources:/usr/share/nginx/html/resources:ro
             # Add SSL certificates here when ready:
