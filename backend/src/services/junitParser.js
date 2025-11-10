@@ -179,33 +179,81 @@ const processTestCase = async (caseData, suiteId, runId, fileUploadId) => {
 
     // Helper function to extract error message from stack trace
     const extractErrorMessage = (trace, existingMessage) => {
-        if (existingMessage) return existingMessage;
-        if (!trace) return null;
+        if (existingMessage) {
+            return existingMessage;
+        }
+        if (!trace) {
+            return null;
+        }
 
-        // For pytest-style failures, extract the error type and message from stack trace
-        // Common formats:
-        // "Failed: ExceptionType: message"
-        // "ExceptionType: message"
-        // "AssertionError: message"
+        // For Python/pytest stack traces, find the FIRST exception (root cause)
+        // Python stack traces show exceptions in order, first one is the root cause
+        // Format:
+        //   libraries/mqtt_explore.py:859: MQTTClientMessageTimeoutException
+        //   E       libraries.mqtt_explore.MQTTClientMessageTimeoutException
+        //
+        // Or for assertions:
+        //   E       AssertionError: expected value
+        //
+        // Look for lines starting with "E       " which pytest uses to mark exception lines
         const lines = trace.split('\n');
+
+        // First pass: find the first "E       " line with an exception
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i];
+            // Pytest marks exception lines with "E       " or "E   "
+            if (line.match(/^E\s{3,}/)) {
+                const exceptionLine = line.replace(/^E\s+/, '').trim();
+                // This is an exception line - extract it
+                if (
+                    exceptionLine &&
+                    !exceptionLine.startsWith('>>>') &&
+                    !exceptionLine.startsWith('self =')
+                ) {
+                    return exceptionLine.length > 500
+                        ? exceptionLine.substring(0, 500) + '...'
+                        : exceptionLine;
+                }
+            }
+
+            // Also look for file:line: ExceptionType format (before the E lines)
+            const fileMatch = line.match(/^\s*(.+?):(\d+):\s*([A-Z]\w+(?:Error|Exception))/);
+            if (fileMatch) {
+                const [, file, lineNum, exceptionType] = fileMatch;
+                const fileName = file.split('/').pop();
+                return `${exceptionType} at ${fileName}:${lineNum}`;
+            }
+        }
+
+        // Second pass: look for "raise" or "assert" statements (root cause)
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i];
+            const trimmed = line.trim();
+            if (trimmed.startsWith('raise ') || trimmed.startsWith('assert ')) {
+                // Found the root cause raise/assert statement
+                return trimmed.length > 500 ? trimmed.substring(0, 500) + '...' : trimmed;
+            }
+        }
+
+        // Fallback: look for "Failed:" line (pytest wrapper)
         for (const line of lines) {
             const trimmed = line.trim();
-            // Look for lines starting with "Failed:" or containing exception patterns
-            if (
-                trimmed.startsWith('Failed:') ||
-                trimmed.match(/^[A-Z][a-zA-Z.]+(?:Error|Exception):/)
-            ) {
-                // Extract the error message (everything after "Failed:" or the exception type)
+            if (trimmed.startsWith('Failed:')) {
                 const cleaned = trimmed.replace(/^Failed:\s*/, '');
-                // Limit length to avoid storing entire stack traces as messages
                 return cleaned.length > 500 ? cleaned.substring(0, 500) + '...' : cleaned;
             }
         }
 
-        // Fallback: use first non-empty line (up to 500 chars)
+        // Last resort: first non-empty line that looks like an error
         for (const line of lines) {
             const trimmed = line.trim();
-            if (trimmed && !trimmed.startsWith('at ') && !trimmed.startsWith('File ')) {
+            if (
+                trimmed &&
+                !trimmed.startsWith('at ') &&
+                !trimmed.startsWith('File ') &&
+                !trimmed.startsWith('>') &&
+                !trimmed.startsWith('_')
+            ) {
                 return trimmed.length > 500 ? trimmed.substring(0, 500) + '...' : trimmed;
             }
         }
