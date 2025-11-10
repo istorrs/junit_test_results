@@ -1,0 +1,330 @@
+#!/usr/bin/env groovy
+/**
+ * Jenkins Pipeline: Import Historical JUnit Test Results
+ *
+ * This pipeline imports historical JUnit XML files from the GITHUB_CD_GATEWAY_TEST job
+ * and uploads them to the JUnit Test Results Dashboard API.
+ *
+ * Configuration:
+ * - SOURCE_JOB: The Jenkins job to import from
+ * - DASHBOARD_API_URL: The URL of your dashboard API
+ * - START_BUILD: First build number to process (default: 1)
+ * - END_BUILD: Last build number to process (default: latest)
+ * - ARTIFACTS_PATH: Path to artifacts within the build (default: reports/)
+ */
+pipeline {
+    agent any
+    parameters {
+        string(
+            name: 'SOURCE_JOB',
+            defaultValue: 'GITHUB_CD_GATEWAY_TEST',
+            description: 'Jenkins job name to import historical data from'
+        )
+        string(
+            name: 'DASHBOARD_API_URL',
+            defaultValue: 'http://localhost/api/v1',
+            description: 'JUnit Dashboard API URL (e.g., http://localhost/api/v1 or http://your-server/api/v1)'
+        )
+        string(
+            name: 'START_BUILD',
+            defaultValue: '1',
+            description: 'First build number to process'
+        )
+        string(
+            name: 'END_BUILD',
+            defaultValue: '',
+            description: 'Last build number to process (leave empty for latest)'
+        )
+        string(
+            name: 'ARTIFACTS_PATH',
+            defaultValue: 'reports/',
+            description: 'Path to artifacts directory within each build'
+        )
+        booleanParam(
+            name: 'DRY_RUN',
+            defaultValue: false,
+            description: 'Dry run mode - show what would be imported without actually uploading'
+        )
+        booleanParam(
+            name: 'SKIP_DUPLICATES',
+            defaultValue: true,
+            description: 'Skip uploads if the dashboard returns duplicate error'
+        )
+    }
+    environment {
+        IMPORT_STATS = "${WORKSPACE}/import-stats.json"
+    }
+    stages {
+        stage('Initialize') {
+            steps {
+                script {
+                    echo "=== JUnit Historical Data Import ==="
+                    echo "Source Job: ${params.SOURCE_JOB}"
+                    echo "Dashboard API: ${params.DASHBOARD_API_URL}"
+                    echo "Build Range: ${params.START_BUILD} to ${params.END_BUILD ?: 'latest'}"
+                    echo "Artifacts Path: ${params.ARTIFACTS_PATH}"
+                    echo "Dry Run: ${params.DRY_RUN}"
+                    echo "Skip Duplicates: ${params.SKIP_DUPLICATES}"
+                    echo "======================================="
+                    // Initialize statistics
+                    env.TOTAL_BUILDS = "0"
+                    env.PROCESSED_BUILDS = "0"
+                    env.TOTAL_FILES = "0"
+                    env.UPLOADED_FILES = "0"
+                    env.SKIPPED_FILES = "0"
+                    env.FAILED_FILES = "0"
+                }
+            }
+        }
+        stage('Validate Configuration') {
+            steps {
+                script {
+                    // Test API connectivity
+                    echo "Testing API connectivity..."
+                    def healthCheck = sh(
+                        script: "curl -s -o /dev/null -w '%{http_code}' ${params.DASHBOARD_API_URL.replace('/api/v1', '')}/health",
+                        returnStdout: true
+                    ).trim()
+                    if (healthCheck != "200") {
+                        error("Dashboard API health check failed! HTTP ${healthCheck}")
+                    }
+                    echo "API is reachable"
+                }
+            }
+        }
+        stage('Process Historical Builds') {
+            steps {
+                script {
+                    // Get build info using @NonCPS helper
+                    def buildInfo = getBuildRangeInfo(params.SOURCE_JOB, params.START_BUILD, params.END_BUILD)
+                    if (!buildInfo.success) {
+                        error(buildInfo.error)
+                    }
+                    def startBuild = buildInfo.startBuild
+                    def endBuild = buildInfo.endBuild
+                    env.TOTAL_BUILDS = (endBuild - startBuild + 1).toString()
+                    echo "Processing ${env.TOTAL_BUILDS} builds from #${startBuild} to #${endBuild}"
+                    def processedCount = 0
+                    def uploadedCount = 0
+                    def skippedCount = 0
+                    def failedCount = 0
+                    def totalFilesCount = 0
+
+                    // Iterate through builds in order (oldest first)
+                    for (int buildNumber = startBuild; buildNumber <= endBuild; buildNumber++) {
+                        def buildData = getBuildInfo(params.SOURCE_JOB, buildNumber, params.ARTIFACTS_PATH)
+                        if (!buildData.exists) {
+                            echo "Build #${buildNumber} not found, skipping..."
+                            continue
+                        }
+
+                        processedCount++
+                        echo "\n--- Processing Build #${buildNumber} ---"
+                        echo "Build Date: ${buildData.timestamp}"
+                        echo "Build Result: ${buildData.result}"
+
+                        if (!buildData.hasArtifacts) {
+                            echo "No artifacts directory found"
+                            continue
+                        }
+
+                        // Clean and prepare temp directory
+                        sh 'rm -rf temp_reports && mkdir -p temp_reports'
+
+                        // Copy only XML files from archived artifacts
+                        copyArtifacts(
+                            projectName: params.SOURCE_JOB,
+                            selector: specific("${buildNumber}"),
+                            filter: "${params.ARTIFACTS_PATH}**/*.xml",
+                            target: 'temp_reports',
+                            flatten: false,
+                            optional: true
+                        )
+
+                        // Find copied XML files
+                        def xmlFilesList = sh(
+                            script: "find temp_reports -type f -name '*.xml' -print",
+                            returnStdout: true
+                        ).trim()
+
+                        if (!xmlFilesList) {
+                            echo "No XML files found in artifacts"
+                            sh 'rm -rf temp_reports'
+                            continue
+                        }
+
+                        def xmlFiles = xmlFilesList.split('\n')
+                        echo "Found ${xmlFiles.size()} XML file(s)"
+                        totalFilesCount += xmlFiles.size()
+
+                        // Process each XML file
+                        for (xmlFilePath in xmlFiles) {
+                            def fileName = sh(script: "basename '${xmlFilePath}'", returnStdout: true).trim()
+                            echo " Processing: ${fileName}"
+
+                            if (params.DRY_RUN) {
+                                echo " [DRY RUN] Would upload: ${xmlFilePath}"
+                                uploadedCount++
+                            } else {
+                                def uploadResult = uploadJUnitXMLFile(
+                                    xmlFilePath,
+                                    params.DASHBOARD_API_URL,
+                                    buildNumber,
+                                    buildData.timestamp,
+                                    params.SOURCE_JOB,
+                                    params.SKIP_DUPLICATES
+                                )
+                                if (uploadResult.success) {
+                                    echo " Uploaded successfully"
+                                    uploadedCount++
+                                } else if (uploadResult.duplicate) {
+                                    echo " Skipped (duplicate)"
+                                    skippedCount++
+                                } else {
+                                    echo " Upload failed: ${uploadResult.error}"
+                                    failedCount++
+                                }
+                            }
+                        }
+
+                        // Cleanup
+                        sh 'rm -rf temp_reports'
+                    }
+
+                    // Update final stats
+                    env.PROCESSED_BUILDS = processedCount.toString()
+                    env.TOTAL_FILES = totalFilesCount.toString()
+                    env.UPLOADED_FILES = uploadedCount.toString()
+                    env.SKIPPED_FILES = skippedCount.toString()
+                    env.FAILED_FILES = failedCount.toString()
+                }
+            }
+        }
+        stage('Summary') {
+            steps {
+                script {
+                    echo "\n========================================="
+                    echo "=== Import Summary ==="
+                    echo "========================================="
+                    echo "Total Builds Found: ${env.TOTAL_BUILDS}"
+                    echo "Builds Processed: ${env.PROCESSED_BUILDS}"
+                    echo "Total XML Files: ${env.TOTAL_FILES}"
+                    echo "Files Uploaded: ${env.UPLOADED_FILES}"
+                    echo "Files Skipped (duplicates): ${env.SKIPPED_FILES}"
+                    echo "Files Failed: ${env.FAILED_FILES}"
+                    echo "========================================="
+                    if (params.DRY_RUN) {
+                        echo "\nThis was a DRY RUN - no files were actually uploaded"
+                    }
+
+                    def stats = [
+                        timestamp: new Date().format("yyyy-MM-dd'T'HH:mm:ss'Z'"),
+                        sourceJob: params.SOURCE_JOB,
+                        buildRange: [
+                            start: params.START_BUILD.toInteger(),
+                            end: params.END_BUILD ?: 'latest'
+                        ],
+                        totalBuilds: env.TOTAL_BUILDS.toInteger(),
+                        processedBuilds: env.PROCESSED_BUILDS.toInteger(),
+                        totalFiles: env.TOTAL_FILES.toInteger(),
+                        uploadedFiles: env.UPLOADED_FILES.toInteger(),
+                        skippedFiles: env.SKIPPED_FILES.toInteger(),
+                        failedFiles: env.FAILED_FILES.toInteger(),
+                        dryRun: params.DRY_RUN
+                    ]
+                    writeJSON file: env.IMPORT_STATS, json: stats
+                    archiveArtifacts artifacts: 'import-stats.json', fingerprint: true
+                }
+            }
+        }
+    }
+    post {
+        success {
+            echo "\nHistorical data import completed successfully!"
+        }
+        failure {
+            echo "\nHistorical data import failed!"
+        }
+        always {
+            echo "\nImport statistics saved to: ${env.IMPORT_STATS}"
+        }
+    }
+}
+
+// === HELPER FUNCTIONS ===
+
+/**
+ * Get build range information without storing non-serializable objects
+ */
+@NonCPS
+def getBuildRangeInfo(String jobName, String startBuildParam, String endBuildParam) {
+    try {
+        def sourceJob = Jenkins.instance.getItemByFullName(jobName)
+        if (!sourceJob) {
+            return [success: false, error: "Source job '${jobName}' not found!"]
+        }
+        def lastBuild = sourceJob.getLastBuild()
+        if (!lastBuild) {
+            return [success: false, error: "No builds found in job '${jobName}'"]
+        }
+        def startBuild = startBuildParam.toInteger()
+        def endBuild = endBuildParam ? endBuildParam.toInteger() : lastBuild.number
+        return [success: true, startBuild: startBuild, endBuild: endBuild]
+    } catch (Exception e) {
+        return [success: false, error: "Error getting build range: ${e.message}"]
+    }
+}
+
+/**
+ * Get build info without storing non-serializable objects
+ */
+@NonCPS
+def getBuildInfo(String jobName, int buildNumber, String artifactsPath) {
+    try {
+        def sourceJob = Jenkins.instance.getItemByFullName(jobName)
+        if (!sourceJob) return [exists: false]
+        def build = sourceJob.getBuildByNumber(buildNumber)
+        if (!build) return [exists: false]
+
+        def artifactsDir = new File(build.getArtifactsDir(), artifactsPath)
+        return [
+            exists: true,
+            timestamp: build.getTime().format("yyyy-MM-dd'T'HH:mm:ss'Z'"),
+            result: build.result?.toString() ?: 'UNKNOWN',
+            hasArtifacts: artifactsDir.exists() && artifactsDir.isDirectory()
+        ]
+    } catch (Exception e) {
+        return [exists: false]
+    }
+}
+
+/**
+ * Upload a JUnit XML file to the dashboard API
+ */
+def uploadJUnitXMLFile(String xmlFilePath, String apiUrl, int buildNumber, String buildTime, String jobName, boolean skipDuplicates) {
+    try {
+        def response = sh(
+            script: """
+                curl -s -w '\\n%{http_code}' -X POST \\
+                    -F "file=@${xmlFilePath}" \\
+                    -F 'ci_metadata={\\"build_number\\":${buildNumber},\\"build_time\\":\\"${buildTime}\\",\\"job_name\\":\\"${jobName}\\"}' \\
+                    ${apiUrl}/upload
+            """,
+            returnStdout: true
+        ).trim()
+
+        def lines = response.split('\n')
+        def httpCode = lines[-1]
+        def body = lines.size() > 1 ? lines[0..-2].join('\n') : ''
+
+        if (httpCode == '200' || httpCode == '201') {
+            return [success: true, duplicate: false]
+        } else if (httpCode == '409' || body.contains('Duplicate')) {
+            return [success: false, duplicate: true]
+        } else {
+            return [success: false, duplicate: false, error: "HTTP ${httpCode}: ${body.take(200)}"]
+        }
+    } catch (Exception e) {
+        return [success: false, duplicate: false, error: e.message]
+    }
+}
