@@ -6,6 +6,11 @@
         <script src="console-capture.js"></script>
         <title>Compare Test Runs - JUnit Dashboard</title>
         <script src="https://cdn.tailwindcss.com"></script>
+        <script>
+            tailwind.config = {
+                darkMode: 'class'
+            };
+        </script>
         <link
             href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
             rel="stylesheet"
@@ -188,15 +193,18 @@
             </div>
         </div>
 
-        <script src="db.js"></script>
+        <!-- Load shared scripts -->
+        <script src="theme.js"></script>
+        <script src="navigation.js"></script>
+        <script src="api-client.js"></script>
+
         <script>
-            const db = new TestResultsDB();
+            const db = new JUnitAPIClient();
             let allRuns = [];
 
             // Initialize
             async function init() {
                 try {
-                    await db.connect();
                     await loadRuns();
 
                     // Check for URL parameters
