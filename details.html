@@ -481,7 +481,17 @@
                     const chartContainer = document.getElementById('performance-chart');
                     if (!chartContainer) return;
 
-                    const chart = echarts.init(chartContainer);
+                    // Get current theme
+                    const isDark =
+                        window.themeManager && window.themeManager.getCurrentTheme() === 'dark';
+
+                    // Dispose existing chart if it exists
+                    if (this.performanceChart) {
+                        this.performanceChart.dispose();
+                    }
+
+                    // Initialize chart with theme-aware colors
+                    this.performanceChart = echarts.init(chartContainer);
 
                     // Prepare data - sort by execution time descending to show slowest tests first
                     const sortedTests = [...this.testCases]
@@ -504,6 +514,7 @@
                     });
 
                     const option = {
+                        backgroundColor: 'transparent',
                         tooltip: {
                             trigger: 'axis',
                             axisPointer: {
@@ -512,6 +523,11 @@
                             formatter: function (params) {
                                 const data = params[0];
                                 return `${data.name}<br/>Time: ${data.value.toFixed(3)}s`;
+                            },
+                            backgroundColor: isDark ? '#374151' : '#ffffff',
+                            borderColor: isDark ? '#4b5563' : '#e5e7eb',
+                            textStyle: {
+                                color: isDark ? '#f3f4f6' : '#1f2937'
                             }
                         },
                         grid: {
@@ -525,14 +541,34 @@
                             data: testNames,
                             axisLabel: {
                                 fontSize: 10,
-                                rotate: 45
+                                rotate: 45,
+                                color: isDark ? '#d1d5db' : '#4b5563'
+                            },
+                            axisLine: {
+                                lineStyle: {
+                                    color: isDark ? '#4b5563' : '#e5e7eb'
+                                }
                             }
                         },
                         yAxis: {
                             type: 'value',
                             name: 'Execution Time (s)',
+                            nameTextStyle: {
+                                color: isDark ? '#d1d5db' : '#4b5563'
+                            },
                             axisLabel: {
-                                fontSize: 10
+                                fontSize: 10,
+                                color: isDark ? '#d1d5db' : '#4b5563'
+                            },
+                            axisLine: {
+                                lineStyle: {
+                                    color: isDark ? '#4b5563' : '#e5e7eb'
+                                }
+                            },
+                            splitLine: {
+                                lineStyle: {
+                                    color: isDark ? '#374151' : '#f3f4f6'
+                                }
                             }
                         },
                         series: [
@@ -549,8 +585,43 @@
                         ]
                     };
 
-                    chart.setOption(option);
-                    window.addEventListener('resize', () => chart.resize());
+                    this.performanceChart.setOption(option);
+
+                    // Re-render chart on resize
+                    window.addEventListener('resize', () => {
+                        if (this.performanceChart) {
+                            this.performanceChart.resize();
+                        }
+                    });
+
+                    // Re-render chart on theme change
+                    this.setupThemeChangeListener();
+                }
+
+                setupThemeChangeListener() {
+                    // Listen for theme changes via mutation observer
+                    if (this.themeObserver) {
+                        return; // Already set up
+                    }
+
+                    this.themeObserver = new MutationObserver(mutations => {
+                        mutations.forEach(mutation => {
+                            if (
+                                mutation.type === 'attributes' &&
+                                mutation.attributeName === 'class'
+                            ) {
+                                // Theme changed, re-render chart
+                                if (this.performanceChart && this.testCases) {
+                                    this.initializePerformanceChart();
+                                }
+                            }
+                        });
+                    });
+
+                    this.themeObserver.observe(document.documentElement, {
+                        attributes: true,
+                        attributeFilter: ['class']
+                    });
                 }
 
                 setupEventListeners() {
