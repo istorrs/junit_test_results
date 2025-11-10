@@ -314,7 +314,7 @@ def uploadJUnitXMLFile(String xmlFilePath, String apiUrl, int buildNumber, Strin
             script: """
                 curl -s -w '\\n%{http_code}' -X POST \\
                     -F "file=@${xmlFilePath}" \\
-                    -F ci_metadata='${ciMetadataJson}' \\
+                    -F "ci_metadata=${ciMetadataJson}" \\
                     ${apiUrl}/upload
             """,
             returnStdout: true
