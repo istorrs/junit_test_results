@@ -481,9 +481,8 @@
                     const chartContainer = document.getElementById('performance-chart');
                     if (!chartContainer) return;
 
-                    // Get current theme
-                    const isDark =
-                        window.themeManager && window.themeManager.getCurrentTheme() === 'dark';
+                    // Get current theme by checking if dark class is present on html element
+                    const isDark = document.documentElement.classList.contains('dark');
 
                     // Dispose existing chart if it exists
                     if (this.performanceChart) {
@@ -587,12 +586,15 @@
 
                     this.performanceChart.setOption(option);
 
-                    // Re-render chart on resize
-                    window.addEventListener('resize', () => {
-                        if (this.performanceChart) {
-                            this.performanceChart.resize();
-                        }
-                    });
+                    // Set up resize handler (only once)
+                    if (!this.resizeHandler) {
+                        this.resizeHandler = () => {
+                            if (this.performanceChart) {
+                                this.performanceChart.resize();
+                            }
+                        };
+                        window.addEventListener('resize', this.resizeHandler);
+                    }
 
                     // Re-render chart on theme change
                     this.setupThemeChangeListener();

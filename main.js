@@ -383,6 +383,49 @@ class JUnitDashboard {
     initializeCharts(stats) {
         this.initializeStatusChart(stats);
         this.initializeTrendChart();
+        this.setupChartThemeListener();
+    }
+
+    setupChartThemeListener() {
+        // Listen for theme changes and re-render charts
+        if (this.chartThemeObserver) {
+            return; // Already set up
+        }
+
+        this.chartThemeObserver = new MutationObserver(mutations => {
+            mutations.forEach(mutation => {
+                if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+                    // Theme changed, re-render charts
+                    if (this.charts.status) {
+                        // Re-initialize status chart with current stats
+                        const stats = {
+                            passed: parseInt(
+                                document.getElementById('passed-tests')?.textContent || 0
+                            ),
+                            failed: parseInt(
+                                document.getElementById('failed-tests')?.textContent || 0
+                            ),
+                            error: parseInt(
+                                document.getElementById('error-tests')?.textContent || 0
+                            ),
+                            skipped: parseInt(
+                                document.getElementById('skipped-tests')?.textContent || 0
+                            )
+                        };
+                        this.initializeStatusChart(stats);
+                    }
+                    if (this.charts.trend) {
+                        // Re-initialize trend chart
+                        this.initializeTrendChart();
+                    }
+                }
+            });
+        });
+
+        this.chartThemeObserver.observe(document.documentElement, {
+            attributes: true,
+            attributeFilter: ['class']
+        });
     }
 
     initializeStatusChart(stats) {
@@ -391,18 +434,33 @@ class JUnitDashboard {
             return;
         }
 
+        // Get current theme
+        const isDark = document.documentElement.classList.contains('dark');
+
+        // Dispose existing chart if exists
+        if (this.charts.status) {
+            this.charts.status.dispose();
+        }
+
         const chart = echarts.init(chartContainer);
 
         const option = {
+            backgroundColor: 'transparent',
             tooltip: {
                 trigger: 'item',
-                formatter: '{a} <br/>{b}: {c} ({d}%)'
+                formatter: '{a} <br/>{b}: {c} ({d}%)',
+                backgroundColor: isDark ? '#374151' : '#ffffff',
+                borderColor: isDark ? '#4b5563' : '#e5e7eb',
+                textStyle: {
+                    color: isDark ? '#f3f4f6' : '#1f2937'
+                }
             },
             legend: {
                 orient: 'vertical',
                 left: 'left',
                 textStyle: {
-                    fontSize: 12
+                    fontSize: 12,
+                    color: isDark ? '#d1d5db' : '#4b5563'
                 }
             },
             series: [
@@ -456,6 +514,14 @@ class JUnitDashboard {
             return;
         }
 
+        // Get current theme
+        const isDark = document.documentElement.classList.contains('dark');
+
+        // Dispose existing chart if exists
+        if (this.charts.trend) {
+            this.charts.trend.dispose();
+        }
+
         const chart = echarts.init(chartContainer);
 
         try {
@@ -476,12 +542,13 @@ class JUnitDashboard {
             const totalTests = trends.map(t => t.total_tests || 0);
 
             const option = {
+                backgroundColor: 'transparent',
                 tooltip: {
                     trigger: 'axis',
                     axisPointer: {
                         type: 'cross',
                         label: {
-                            backgroundColor: '#6a7985'
+                            backgroundColor: isDark ? '#4b5563' : '#6a7985'
                         }
                     },
                     formatter: function (params) {
@@ -500,12 +567,18 @@ class JUnitDashboard {
                             <strong>Success Rate: ${successRate}%</strong>
                         </div>
                     `;
+                    },
+                    backgroundColor: isDark ? '#374151' : '#ffffff',
+                    borderColor: isDark ? '#4b5563' : '#e5e7eb',
+                    textStyle: {
+                        color: isDark ? '#f3f4f6' : '#1f2937'
                     }
                 },
                 legend: {
                     data: ['Passed', 'Failed'],
                     textStyle: {
-                        fontSize: 12
+                        fontSize: 12,
+                        color: isDark ? '#d1d5db' : '#4b5563'
                     }
                 },
                 grid: {
@@ -520,7 +593,13 @@ class JUnitDashboard {
                         boundaryGap: false,
                         data: dates,
                         axisLabel: {
-                            fontSize: 10
+                            fontSize: 10,
+                            color: isDark ? '#d1d5db' : '#4b5563'
+                        },
+                        axisLine: {
+                            lineStyle: {
+                                color: isDark ? '#4b5563' : '#e5e7eb'
+                            }
                         }
                     }
                 ],
@@ -528,7 +607,18 @@ class JUnitDashboard {
                     {
                         type: 'value',
                         axisLabel: {
-                            fontSize: 10
+                            fontSize: 10,
+                            color: isDark ? '#d1d5db' : '#4b5563'
+                        },
+                        axisLine: {
+                            lineStyle: {
+                                color: isDark ? '#4b5563' : '#e5e7eb'
+                            }
+                        },
+                        splitLine: {
+                            lineStyle: {
+                                color: isDark ? '#374151' : '#f3f4f6'
+                            }
                         }
                     }
                 ],
