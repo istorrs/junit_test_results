@@ -591,8 +591,7 @@ class JUnitDashboard {
     }
 
     handleRunFilter(event) {
-        this.currentFilters.run_id =
-            event.target.value === 'all' ? null : parseInt(event.target.value);
+        this.currentFilters.run_id = event.target.value === 'all' ? null : event.target.value;
         this.applyFilters();
     }
 
