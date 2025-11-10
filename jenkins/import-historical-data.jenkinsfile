@@ -303,11 +303,18 @@ def getBuildInfo(String jobName, int buildNumber, String artifactsPath) {
  */
 def uploadJUnitXMLFile(String xmlFilePath, String apiUrl, int buildNumber, String buildTime, String jobName, boolean skipDuplicates) {
     try {
+        // Create properly escaped JSON for ci_metadata
+        def ciMetadataJson = groovy.json.JsonOutput.toJson([
+            build_number: buildNumber,
+            build_time: buildTime,
+            job_name: jobName
+        ])
+
         def response = sh(
             script: """
                 curl -s -w '\\n%{http_code}' -X POST \\
                     -F "file=@${xmlFilePath}" \\
-                    -F 'ci_metadata={\\"build_number\\":${buildNumber},\\"build_time\\":\\"${buildTime}\\",\\"job_name\\":\\"${jobName}\\"}' \\
+                    -F ci_metadata='${ciMetadataJson}' \\
                     ${apiUrl}/upload
             """,
             returnStdout: true
