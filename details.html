@@ -241,6 +241,28 @@
                 </div>
             </div>
 
+            <!-- Failure Patterns Analysis -->
+            <div
+                id="failure-patterns-section"
+                class="bg-white rounded-lg shadow-sm border border-gray-200 mb-8"
+                style="display: none"
+            >
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h3 class="text-lg font-semibold text-gray-900">Failure Patterns</h3>
+                </div>
+                <div class="p-6">
+                    <!-- Pattern Summary -->
+                    <div id="pattern-summary" class="mb-6">
+                        <!-- Summary will be populated here -->
+                    </div>
+
+                    <!-- Patterns List -->
+                    <div id="patterns-container">
+                        <!-- Patterns will be populated here -->
+                    </div>
+                </div>
+            </div>
+
             <!-- Test Case List -->
             <div class="bg-white rounded-lg shadow-sm border border-gray-200">
                 <div class="px-6 py-4 border-b border-gray-200">
@@ -335,6 +357,7 @@
                     this.renderTestSuites();
                     this.renderTestCases();
                     this.initializePerformanceChart();
+                    this.renderFailurePatterns();
                 }
 
                 async getTestRun(runId) {
@@ -672,6 +695,155 @@
                             arrow.style.transform = 'rotate(180deg)';
                         }
                     });
+                }
+
+                async renderFailurePatterns() {
+                    const section = document.getElementById('failure-patterns-section');
+                    const summaryContainer = document.getElementById('pattern-summary');
+                    const patternsContainer = document.getElementById('patterns-container');
+
+                    if (!section || !summaryContainer || !patternsContainer) return;
+
+                    const runId = this.currentRunId;
+                    if (!runId) return;
+
+                    try {
+                        const analysis = await this.db.getFailurePatterns(runId);
+
+                        if (!analysis || analysis.totalFailures === 0) {
+                            section.style.display = 'none';
+                            return;
+                        }
+
+                        section.style.display = 'block';
+
+                        // Render summary
+                        const categories = Object.entries(analysis.categoryCounts);
+                        const totalFailures = analysis.totalFailures;
+
+                        summaryContainer.innerHTML = `
+                            <div class="flex items-center justify-between mb-4">
+                                <div>
+                                    <h4 class="text-lg font-semibold text-gray-900">${totalFailures} Test Failure${totalFailures === 1 ? '' : 's'}</h4>
+                                    <p class="text-sm text-gray-600">${analysis.patterns.length} distinct pattern${analysis.patterns.length === 1 ? '' : 's'} identified</p>
+                                </div>
+                            </div>
+                            <div class="flex flex-wrap gap-3 mb-4">
+                                ${categories
+                                    .map(
+                                        ([category, count]) => `
+                                    <div class="flex items-center space-x-2 px-3 py-2 bg-gray-100 rounded-lg">
+                                        <span class="text-sm font-medium text-gray-700">${category}</span>
+                                        <span class="text-sm text-gray-600">(${count})</span>
+                                    </div>
+                                `
+                                    )
+                                    .join('')}
+                            </div>
+                        `;
+
+                        // Render patterns
+                        patternsContainer.innerHTML = `
+                            <div class="space-y-4">
+                                ${analysis.patterns
+                                    .map(
+                                        (pattern, index) => `
+                                    <div class="border border-gray-200 rounded-lg overflow-hidden">
+                                        <div class="bg-gray-50 px-4 py-3 flex items-center justify-between cursor-pointer" onclick="detailsPage.togglePattern('pattern-${index}')">
+                                            <div class="flex-1">
+                                                <div class="flex items-center space-x-3 mb-2">
+                                                    <span class="text-2xl">${this.getCategoryIcon(pattern.category)}</span>
+                                                    <div>
+                                                        <h5 class="text-base font-semibold text-gray-900">Pattern #${index + 1}: ${pattern.category}</h5>
+                                                        <p class="text-sm text-gray-600">${pattern.exceptionType} in ${pattern.rootCause}</p>
+                                                    </div>
+                                                </div>
+                                                <p class="text-sm text-gray-700 ml-9">${this.escapeHtml(pattern.exampleMessage.substring(0, 150))}${pattern.exampleMessage.length > 150 ? '...' : ''}</p>
+                                            </div>
+                                            <div class="flex items-center space-x-3">
+                                                <div class="text-right">
+                                                    <span class="text-lg font-bold text-gray-900">${pattern.count}</span>
+                                                    <span class="text-sm text-gray-600 block">test${pattern.count === 1 ? '' : 's'}</span>
+                                                </div>
+                                                <svg id="pattern-arrow-${index}" class="w-5 h-5 text-gray-500 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                                </svg>
+                                            </div>
+                                        </div>
+                                        <div id="pattern-${index}" class="pattern-content hidden px-4 py-4 bg-white">
+                                            <div class="mb-4">
+                                                <h6 class="text-sm font-semibold text-gray-900 mb-2">Affected Tests (${pattern.affectedTests.length}):</h6>
+                                                <div class="space-y-2">
+                                                    ${pattern.affectedTests
+                                                        .map(
+                                                            test => `
+                                                        <div class="flex items-center justify-between p-2 bg-gray-50 rounded">
+                                                            <div class="flex-1">
+                                                                <p class="text-sm font-medium text-gray-900">${this.escapeHtml(test.name)}</p>
+                                                                <p class="text-xs text-gray-600">${this.escapeHtml(test.classname)}</p>
+                                                            </div>
+                                                            <span class="text-xs text-gray-500">${test.time.toFixed(3)}s</span>
+                                                        </div>
+                                                    `
+                                                        )
+                                                        .join('')}
+                                                </div>
+                                            </div>
+                                            ${
+                                                pattern.exampleStackTrace
+                                                    ? `
+                                                <div>
+                                                    <h6 class="text-sm font-semibold text-gray-900 mb-2">Example Stack Trace:</h6>
+                                                    <pre class="text-xs bg-gray-900 text-gray-100 p-3 rounded overflow-x-auto">${this.escapeHtml(pattern.exampleStackTrace)}</pre>
+                                                </div>
+                                            `
+                                                    : ''
+                                            }
+                                        </div>
+                                    </div>
+                                `
+                                    )
+                                    .join('')}
+                            </div>
+                        `;
+                    } catch (error) {
+                        console.error('Failed to load failure patterns:', error);
+                        section.style.display = 'none';
+                    }
+                }
+
+                togglePattern(patternId) {
+                    const content = document.getElementById(patternId);
+                    const index = patternId.replace('pattern-', '');
+                    const arrow = document.getElementById(`pattern-arrow-${index}`);
+
+                    if (content && arrow) {
+                        content.classList.toggle('hidden');
+                        if (content.classList.contains('hidden')) {
+                            arrow.style.transform = 'rotate(0deg)';
+                        } else {
+                            arrow.style.transform = 'rotate(180deg)';
+                        }
+                    }
+                }
+
+                getCategoryIcon(category) {
+                    const icons = {
+                        'Assertion Failure': '🔴',
+                        'Null Pointer Error': '⚠️',
+                        'Timeout Error': '⏱️',
+                        'Connection Error': '🔌',
+                        'Setup/Teardown Error': '🔧',
+                        'Invalid State/Argument': '❌',
+                        'Other Error': '🔶'
+                    };
+                    return icons[category] || '🔶';
+                }
+
+                escapeHtml(text) {
+                    const div = document.createElement('div');
+                    div.textContent = text;
+                    return div.innerHTML;
                 }
 
                 viewTestDetails(testCaseId) {

@@ -407,6 +407,12 @@ class JUnitAPIClient {
             this.healthCheckInterval = null;
         }
     }
+
+    // Get failure patterns analysis for a test run
+    async getFailurePatterns(runId) {
+        const response = await this.request(`/analysis/failure-patterns/${runId}`);
+        return response.data;
+    }
 }
 
 // Export for use in other modules
