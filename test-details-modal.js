@@ -124,7 +124,7 @@ class TestDetailsModal {
             this.testHistory = await database.getTestCases({
                 name: this.currentTestCase.name,
                 classname: this.currentTestCase.classname,
-                limit: 10
+                limit: window.limitsConfig.get('testHistoryModal')
             });
         } catch (error) {
             logError('Error loading test history', error);

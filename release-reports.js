@@ -34,7 +34,7 @@ class ReleaseReportsPage {
         try {
             // Get selected project from navigation
             const selectedProject = window.navigationManager?.getSelectedProject();
-            let queryParams = '?limit=100';
+            let queryParams = `?limit=${window.limitsConfig.get('releaseReportsRuns')}`;
 
             // Filter by project if one is selected
             if (selectedProject && selectedProject !== 'all') {
@@ -76,7 +76,8 @@ class ReleaseReportsPage {
 
     async loadTestCasesForRun(runId) {
         try {
-            const casesResponse = await this.db.request(`/cases?run_id=${runId}&limit=2000`);
+            const limit = window.limitsConfig.get('releaseReportsTestCases');
+            const casesResponse = await this.db.request(`/cases?run_id=${runId}&limit=${limit}`);
             this.runTestCases = casesResponse.data.cases;
 
             // Calculate stats for each suite

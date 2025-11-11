@@ -273,7 +273,11 @@ class JUnitAPIClient {
     }
 
     // Get test case history (for flaky test detection)
-    async getTestCaseHistory(testName, className, limit = 100) {
+    async getTestCaseHistory(testName, className, limit) {
+        // Use configurable limit (default from limitsConfig)
+        if (!limit) {
+            limit = window.limitsConfig ? window.limitsConfig.get('testCaseHistory') : 100;
+        }
         // Use exact name and classname filters with a reasonable limit
         // This is more efficient than searching and filtering client-side
         const response = await this.request(

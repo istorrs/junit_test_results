@@ -135,7 +135,8 @@ class GlobalSearch {
 
     async loadRecentTests() {
         try {
-            const response = await this.db.fetchWithAuth('/cases?limit=20');
+            const limit = window.limitsConfig.get('searchTestCases');
+            const response = await this.db.fetchWithAuth(`/cases?limit=${limit}`);
             this.displayResults(response.data.cases || [], 'Recent Tests');
         } catch (error) {
             console.error('Error loading recent tests:', error);
@@ -152,7 +153,8 @@ class GlobalSearch {
         }
 
         try {
-            const response = await this.db.fetchWithAuth(`/cases?search=${encodeURIComponent(query)}&limit=50`);
+            const limit = window.limitsConfig.get('searchTestCases');
+            const response = await this.db.fetchWithAuth(`/cases?search=${encodeURIComponent(query)}&limit=${limit}`);
             const results = response.data.cases || [];
 
             // Client-side filtering for better matching
