@@ -235,12 +235,12 @@ const processTestSuite = async (suiteData, runId, fileUploadId, testRunTimestamp
         }
 
         for (const testcase of testcases) {
-            await processTestCase(testcase, testSuite._id, runId, fileUploadId);
+            await processTestCase(testcase, testSuite._id, runId, fileUploadId, testRunTimestamp);
         }
     }
 };
 
-const processTestCase = async (caseData, suiteId, runId, fileUploadId) => {
+const processTestCase = async (caseData, suiteId, runId, fileUploadId, testRunTimestamp) => {
     let status = 'passed';
     let failureMessage = null;
     let failureType = null;
@@ -387,7 +387,7 @@ const processTestCase = async (caseData, suiteId, runId, fileUploadId) => {
         system_out: testCase.system_out,
         system_err: testCase.system_err,
         stack_trace: stackTrace,
-        timestamp: new Date()
+        timestamp: testRunTimestamp
     });
 };
 
