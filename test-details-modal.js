@@ -374,7 +374,7 @@ class TestDetailsModal {
                             <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
                                 ${this.testHistory.map(t => `
                                     <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
-                                        <td class="px-3 py-2 text-gray-900 dark:text-white">${new Date(t.created_at).toLocaleString()}</td>
+                                        <td class="px-3 py-2 text-gray-900 dark:text-white">${new Date(t.timestamp).toLocaleString()}</td>
                                         <td class="px-3 py-2">
                                             <span class="px-2 py-1 text-xs rounded-full ${this.getStatusColorClass(t.status)}">
                                                 ${t.status.toUpperCase()}
