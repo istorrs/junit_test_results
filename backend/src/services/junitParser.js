@@ -235,12 +235,38 @@ const processTestSuite = async (suiteData, runId, fileUploadId, testRunTimestamp
         }
 
         for (const testcase of testcases) {
-            await processTestCase(testcase, testSuite._id, runId, fileUploadId);
+            await processTestCase(testcase, testSuite._id, runId, fileUploadId, testRunTimestamp);
+        }
+    }
+
+    // Update suite name if it's generic (e.g., "pytest") - use classname from test cases instead
+    if (
+        testSuite.name === 'pytest' ||
+        testSuite.name === 'pytest tests' ||
+        testSuite.name === 'Unnamed Suite' ||
+        !testSuite.name
+    ) {
+        const testCases = await TestCase.find({ suite_id: testSuite._id });
+        const classnames = [...new Set(testCases.map(tc => tc.classname).filter(c => c))];
+
+        if (classnames.length > 0) {
+            // Use the most common classname or the first one if all test cases are from same class
+            const newName =
+                classnames.length === 1
+                    ? classnames[0]
+                    : classnames[0]; // Use first classname for consistency
+
+            await TestSuite.findByIdAndUpdate(testSuite._id, { name: newName });
+            logger.info('Updated test suite name from generic to classname', {
+                suite_id: testSuite._id,
+                old_name: testSuite.name,
+                new_name: newName
+            });
         }
     }
 };
 
-const processTestCase = async (caseData, suiteId, runId, fileUploadId) => {
+const processTestCase = async (caseData, suiteId, runId, fileUploadId, testRunTimestamp) => {
     let status = 'passed';
     let failureMessage = null;
     let failureType = null;
@@ -387,7 +413,7 @@ const processTestCase = async (caseData, suiteId, runId, fileUploadId) => {
         system_out: testCase.system_out,
         system_err: testCase.system_err,
         stack_trace: stackTrace,
-        timestamp: new Date()
+        timestamp: testRunTimestamp
     });
 };
 
