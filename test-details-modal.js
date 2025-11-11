@@ -120,10 +120,12 @@ class TestDetailsModal {
 
     async loadTestHistory(database) {
         try {
-            const response = await database.request(
-                `/cases?name=${encodeURIComponent(this.currentTestCase.name)}&classname=${encodeURIComponent(this.currentTestCase.classname)}&limit=10`
-            );
-            this.testHistory = response.data.cases || [];
+            // Use getTestCases which properly transforms timestamps
+            this.testHistory = await database.getTestCases({
+                name: this.currentTestCase.name,
+                classname: this.currentTestCase.classname,
+                limit: 10
+            });
         } catch (error) {
             logError('Error loading test history', error);
             this.testHistory = [];
