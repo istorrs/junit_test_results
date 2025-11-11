@@ -34,9 +34,20 @@ class JUnitDashboardDebugger {
     }
 
     logError(type, details) {
+        // Properly serialize error objects
+        let serializedDetails = details;
+        if (details instanceof Error) {
+            serializedDetails = {
+                message: details.message,
+                name: details.name,
+                stack: details.stack,
+                ...details // Capture any additional properties
+            };
+        }
+
         const error = {
             type,
-            details,
+            details: serializedDetails,
             timestamp: new Date().toISOString(),
             userAgent: navigator.userAgent,
             url: window.location.href

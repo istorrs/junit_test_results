@@ -16,11 +16,21 @@ class JUnitDashboard {
 
     async init() {
         try {
+            console.log('[JUnitDashboard] Initializing database...');
             await this.db.initializeDatabase();
+
+            console.log('[JUnitDashboard] Setting up event listeners...');
             this.setupEventListeners();
+
+            console.log('[JUnitDashboard] Loading dashboard...');
             this.loadDashboard();
+
+            console.log('[JUnitDashboard] Initializing animations...');
             this.initializeAnimations();
+
+            console.log('[JUnitDashboard] Initialization complete!');
         } catch (error) {
+            console.error('[JUnitDashboard] Initialization failed:', error);
             logError('Failed to initialize dashboard', error);
             this.showError('Failed to initialize application. Please refresh the page.');
         }
