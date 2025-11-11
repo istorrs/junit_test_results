@@ -212,10 +212,11 @@ class JUnitAPIClient {
             line: testCase.line,
             is_flaky: testCase.is_flaky || false,
             flaky_detected_at: testCase.flaky_detected_at,
-            timestamp: testCase.timestamp,
+            timestamp: testCase.result?.timestamp || testCase.created_at,
             system_out: testCase.system_out,
-            system_err: testCase.system_err
-            // Note: Filtered out - __v, file_upload_id, created_at, updated_at
+            system_err: testCase.system_err,
+            result: testCase.result
+            // Note: Filtered out - __v, file_upload_id, updated_at
         }));
 
         console.log('[JUnitAPIClient.getTestCases] Transformed cases count:', transformedCases.length);
