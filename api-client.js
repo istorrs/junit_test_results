@@ -96,21 +96,31 @@ class JUnitAPIClient {
 
     // Get test runs (replaces getTestRuns)
     async getTestRuns(filtersOrLimit = 50, offset = 0) {
-        let params = new URLSearchParams();
+        const params = new URLSearchParams();
 
         // Support both old signature getTestRuns(limit, offset) and new signature getTestRuns(filters)
         if (typeof filtersOrLimit === 'object') {
             // New signature: filters object
             const filters = filtersOrLimit;
-            if (filters.limit) params.append('limit', filters.limit);
+            if (filters.limit) {
+                params.append('limit', filters.limit);
+            }
             if (filters.offset) {
                 const page = Math.floor(filters.offset / (filters.limit || 50)) + 1;
                 params.append('page', page);
             }
-            if (filters.job_name) params.append('job_name', filters.job_name);
-            if (filters.branch) params.append('branch', filters.branch);
-            if (filters.from_date) params.append('from_date', filters.from_date);
-            if (filters.to_date) params.append('to_date', filters.to_date);
+            if (filters.job_name) {
+                params.append('job_name', filters.job_name);
+            }
+            if (filters.branch) {
+                params.append('branch', filters.branch);
+            }
+            if (filters.from_date) {
+                params.append('from_date', filters.from_date);
+            }
+            if (filters.to_date) {
+                params.append('to_date', filters.to_date);
+            }
         } else {
             // Old signature: limit and offset as separate parameters
             const limit = filtersOrLimit;
@@ -178,6 +188,15 @@ class JUnitAPIClient {
         if (filters.search) {
             params.append('search', filters.search);
         }
+        if (filters.name) {
+            params.append('name', filters.name);
+        }
+        if (filters.classname) {
+            params.append('classname', filters.classname);
+        }
+        if (filters.limit) {
+            params.append('limit', filters.limit);
+        }
 
         const queryString = params.toString();
         const endpoint = `/cases?${queryString}`;
@@ -188,7 +207,10 @@ class JUnitAPIClient {
         console.log('[JUnitAPIClient.getTestCases] Raw API response:', response);
         console.log('[JUnitAPIClient.getTestCases] response.data:', response.data);
         console.log('[JUnitAPIClient.getTestCases] response.data.cases:', response.data?.cases);
-        console.log('[JUnitAPIClient.getTestCases] Cases count:', response.data?.cases?.length || 0);
+        console.log(
+            '[JUnitAPIClient.getTestCases] Cases count:',
+            response.data?.cases?.length || 0
+        );
 
         // Check if response has the expected structure
         if (!response.data || !response.data.cases) {
@@ -212,16 +234,22 @@ class JUnitAPIClient {
             line: testCase.line,
             is_flaky: testCase.is_flaky || false,
             flaky_detected_at: testCase.flaky_detected_at,
-            timestamp: testCase.result?.timestamp || testCase.created_at,
+            timestamp: testCase.timestamp || testCase.created_at,
             system_out: testCase.system_out,
             system_err: testCase.system_err,
             result: testCase.result
             // Note: Filtered out - __v, file_upload_id, updated_at
         }));
 
-        console.log('[JUnitAPIClient.getTestCases] Transformed cases count:', transformedCases.length);
+        console.log(
+            '[JUnitAPIClient.getTestCases] Transformed cases count:',
+            transformedCases.length
+        );
         if (transformedCases.length > 0) {
-            console.log('[JUnitAPIClient.getTestCases] Sample transformed case:', transformedCases[0]);
+            console.log(
+                '[JUnitAPIClient.getTestCases] Sample transformed case:',
+                transformedCases[0]
+            );
         }
 
         return transformedCases;
@@ -245,12 +273,13 @@ class JUnitAPIClient {
     }
 
     // Get test case history (for flaky test detection)
-    async getTestCaseHistory(testName, className) {
-        // Search for test cases with matching name and classname
-        const response = await this.request(`/cases?search=${encodeURIComponent(testName)}`);
-        const cases = response.data.cases.filter(
-            c => c.name === testName && c.classname === className
+    async getTestCaseHistory(testName, className, limit = 100) {
+        // Use exact name and classname filters with a reasonable limit
+        // This is more efficient than searching and filtering client-side
+        const response = await this.request(
+            `/cases?name=${encodeURIComponent(testName)}&classname=${encodeURIComponent(className)}&limit=${limit}`
         );
+        const cases = response.data.cases;
 
         // Transform and sort by date
         // Backend now joins with TestRun to provide actual execution timestamp
