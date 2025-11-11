@@ -253,6 +253,7 @@ class JUnitAPIClient {
         );
 
         // Transform and sort by date
+        // Backend now joins with TestRun to provide actual execution timestamp
         return cases
             .map(c => ({
                 id: c._id,
@@ -260,10 +261,11 @@ class JUnitAPIClient {
                 classname: c.classname,
                 status: c.status,
                 time: c.time || 0,
-                timestamp: c.result?.timestamp || c.created_at,
+                timestamp: c.timestamp || c.created_at, // Use run timestamp if available, fallback to created_at
                 created_at: c.created_at,
                 is_flaky: c.is_flaky || false,
                 run_id: c.run_id,
+                run_name: c.run_name,
                 suite_id: c.suite_id,
                 failure_message: c.result?.failure_message || '',
                 failure_type: c.result?.failure_type || '',
