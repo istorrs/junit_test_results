@@ -32,7 +32,16 @@ class ReleaseReportsPage {
 
     async loadTestRuns() {
         try {
-            const runsResponse = await this.db.request('/runs?limit=50');
+            // Get selected project from navigation
+            const selectedProject = window.navigationManager?.getSelectedProject();
+            let queryParams = '?limit=100';
+
+            // Filter by project if one is selected
+            if (selectedProject && selectedProject !== 'all') {
+                queryParams += `&job_name=${encodeURIComponent(selectedProject)}`;
+            }
+
+            const runsResponse = await this.db.request(`/runs${queryParams}`);
             this.allRuns = runsResponse.data.runs;
 
             const runSelector = document.getElementById('run-selector');
@@ -41,10 +50,24 @@ class ReleaseReportsPage {
                 this.allRuns.forEach(run => {
                     const option = document.createElement('option');
                     option.value = run._id;
-                    option.textContent = `${run.name} - ${new Date(run.timestamp).toLocaleString()}`;
+                    // Display format: "JOB_NAME #BUILD_NUMBER" or just run name
+                    const displayName = run.ci_metadata?.job_name && run.ci_metadata?.build_number
+                        ? `${run.ci_metadata.job_name} #${run.ci_metadata.build_number}`
+                        : run.name;
+                    option.textContent = `${displayName} - ${new Date(run.timestamp).toLocaleString()}`;
                     runSelector.appendChild(option);
                 });
             }
+
+            // Listen for project filter changes
+            window.addEventListener('projectFilterChanged', () => {
+                this.loadTestRuns();
+                this.selectedRun = null;
+                this.runTestCases = [];
+                this.selectedSuites.clear();
+                document.getElementById('run-selector').value = '';
+                document.getElementById('suite-checkboxes').innerHTML = '<p class="text-gray-500 text-sm">Select a test run first to see available test suites</p>';
+            });
         } catch (error) {
             console.error('Error loading test runs:', error);
             this.showNotification('Failed to load test runs', 'error');
@@ -155,6 +178,21 @@ class ReleaseReportsPage {
         this.selectedRun = event.target.value;
         if (this.selectedRun) {
             await this.loadTestCasesForRun(this.selectedRun);
+
+            // Auto-fill release info from CI metadata if available
+            const selectedRunData = this.allRuns.find(r => r._id === this.selectedRun);
+            if (selectedRunData && selectedRunData.ci_metadata) {
+                const versionInput = document.getElementById('release-version');
+                const buildInput = document.getElementById('build-number');
+
+                if (selectedRunData.ci_metadata.job_name && !versionInput.value) {
+                    versionInput.value = selectedRunData.ci_metadata.job_name;
+                }
+
+                if (selectedRunData.ci_metadata.build_number && !buildInput.value) {
+                    buildInput.value = `Build #${selectedRunData.ci_metadata.build_number}`;
+                }
+            }
         } else {
             this.runTestCases = [];
             this.suiteStats = {};

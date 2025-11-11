@@ -269,6 +269,15 @@
                     await loadAllSuites();
                     await loadAllRuns();
 
+                    // Listen for project filter changes
+                    window.addEventListener('projectFilterChanged', async () => {
+                        await loadAllRuns();
+                        // Reset selections when project changes
+                        if (selectedSuite) {
+                            await onSuiteChange();
+                        }
+                    });
+
                     // Check for URL parameters
                     const urlParams = new URLSearchParams(window.location.search);
                     const suite = urlParams.get('suite');
@@ -313,7 +322,16 @@
 
             async function loadAllRuns() {
                 try {
-                    const response = await db.request('/runs?limit=100');
+                    // Get selected project from navigation
+                    const selectedProject = window.navigationManager?.getSelectedProject();
+                    let queryParams = '?limit=100';
+
+                    // Filter by project if one is selected
+                    if (selectedProject && selectedProject !== 'all') {
+                        queryParams += `&job_name=${encodeURIComponent(selectedProject)}`;
+                    }
+
+                    const response = await db.request(`/runs${queryParams}`);
                     allRuns = response.data.runs;
                 } catch (error) {
                     logError('Failed to load test runs list', error);
@@ -358,7 +376,13 @@
 
                     runsWithSelectedSuite.forEach((run, index) => {
                         const date = new Date(run.timestamp).toLocaleString();
-                        const runLabel = `${run.name || 'Test Run'} - ${date}`;
+
+                        // Display format: "JOB_NAME #BUILD_NUMBER" or just run name
+                        const displayName = run.ci_metadata?.job_name && run.ci_metadata?.build_number
+                            ? `${run.ci_metadata.job_name} #${run.ci_metadata.build_number}`
+                            : run.name || 'Test Run';
+
+                        const runLabel = `${displayName} - ${date}`;
                         const option1 = new Option(runLabel, run._id);
                         const option2 = new Option(runLabel, run._id);
                         run1Select.add(option1);

@@ -5,6 +5,7 @@ class TestCaseHistoryPage {
         this.testName = null;
         this.testClassname = null;
         this.historyData = [];
+        this.runsCache = {}; // Cache for run details
         this.charts = {};
         this.init();
     }
@@ -44,6 +45,9 @@ class TestCaseHistoryPage {
                 return;
             }
 
+            // Load run details for all unique run_ids
+            await this.loadRunDetails();
+
             // Render all components
             this.updateSummaryCards();
             this.renderTimelineChart();
@@ -54,6 +58,36 @@ class TestCaseHistoryPage {
             logError('Error loading test history', error);
             this.showError('Failed to load test history: ' + error.message);
         }
+    }
+
+    async loadRunDetails() {
+        // Get unique run_ids from history
+        const runIds = [...new Set(this.historyData.map(h => h.run_id).filter(Boolean))];
+
+        // Fetch run details for each unique run_id
+        const runPromises = runIds.map(async (runId) => {
+            try {
+                const response = await this.db.request(`/runs/${runId}`);
+                this.runsCache[runId] = response.data;
+            } catch (error) {
+                console.error(`Failed to load run ${runId}:`, error);
+                this.runsCache[runId] = null;
+            }
+        });
+
+        await Promise.all(runPromises);
+    }
+
+    getRunDisplayName(runId) {
+        const run = this.runsCache[runId];
+        if (!run) return `Run #${runId}`;
+
+        // Display format: "JOB_NAME #BUILD_NUMBER" or just run name
+        if (run.ci_metadata?.job_name && run.ci_metadata?.build_number) {
+            return `${run.ci_metadata.job_name} #${run.ci_metadata.build_number}`;
+        }
+
+        return run.name || `Run #${runId}`;
     }
 
     updateSummaryCards() {
@@ -431,7 +465,7 @@ class TestCaseHistoryPage {
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     <a href="details.html?run=${item.run_id}" class="text-blue-600 hover:text-blue-800">
-                        Run #${item.run_id || 'Unknown'}
+                        ${this.getRunDisplayName(item.run_id) || 'Unknown'}
                     </a>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -492,7 +526,7 @@ class TestCaseHistoryPage {
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     <a href="details.html?run=${item.run_id}" class="text-blue-600 hover:text-blue-800">
-                        Run #${item.run_id || 'Unknown'}
+                        ${this.getRunDisplayName(item.run_id) || 'Unknown'}
                     </a>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">

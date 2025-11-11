@@ -70,6 +70,11 @@ class JUnitDashboard {
             option.addEventListener('click', this.handleSort.bind(this));
         });
 
+        // Listen for project filter changes
+        window.addEventListener('projectFilterChanged', () => {
+            this.loadDashboard();
+        });
+
         // Handle page visibility changes to reload data
         document.addEventListener('visibilitychange', () => {
             if (!document.hidden) {
@@ -160,8 +165,17 @@ class JUnitDashboard {
 
     async loadDashboard() {
         try {
+            // Get selected project from navigation
+            const selectedProject = window.navigationManager?.getSelectedProject();
+            const filters = { limit: 10 };
+
+            // Filter by project if one is selected
+            if (selectedProject && selectedProject !== 'all') {
+                filters.job_name = selectedProject;
+            }
+
             const [testRuns, recentUploads, statistics] = await Promise.all([
-                this.db.getTestRuns(10),
+                this.db.getTestRuns(filters),
                 this.getRecentUploads(),
                 this.db.getTestStatistics()
             ]);
@@ -215,7 +229,13 @@ class JUnitDashboard {
         testRuns.forEach(run => {
             const option = document.createElement('option');
             option.value = run.id;
-            option.textContent = `${run.name} (${new Date(run.timestamp).toLocaleDateString()})`;
+
+            // Display format: "JOB_NAME #BUILD_NUMBER" or just run name
+            const displayName = run.ci_metadata?.job_name && run.ci_metadata?.build_number
+                ? `${run.ci_metadata.job_name} #${run.ci_metadata.build_number}`
+                : run.name;
+
+            option.textContent = `${displayName} (${new Date(run.timestamp).toLocaleDateString()})`;
             runFilter.appendChild(option);
         });
     }
@@ -322,11 +342,17 @@ class JUnitDashboard {
 
         container.innerHTML = testRuns
             .map(
-                run => `
+                run => {
+                    // Display format: "JOB_NAME #BUILD_NUMBER" or just run name
+                    const displayName = run.ci_metadata?.job_name && run.ci_metadata?.build_number
+                        ? `${run.ci_metadata.job_name} #${run.ci_metadata.build_number}`
+                        : run.name;
+
+                    return `
             <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow duration-200" data-run-id="${run.id}">
                 <div class="flex items-start justify-between mb-4">
                     <div class="flex-1">
-                        <h3 class="text-lg font-semibold text-gray-900 mb-1">${run.name}</h3>
+                        <h3 class="text-lg font-semibold text-gray-900 mb-1">${displayName}</h3>
                         <p class="text-sm text-gray-600">${new Date(run.timestamp).toLocaleString()}</p>
                     </div>
                     <div class="flex items-center space-x-2">
@@ -358,7 +384,8 @@ class JUnitDashboard {
                     </button>
                 </div>
             </div>
-        `
+        `;
+                }
             )
             .join('');
     }
