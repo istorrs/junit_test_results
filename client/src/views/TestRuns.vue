@@ -1,70 +1,257 @@
 <template>
   <div class="test-runs">
-    <h1>Test Runs</h1>
-
-    <div v-if="store.loading" class="loading">Loading test runs...</div>
-
-    <div v-else-if="store.error" class="error">
-      {{ store.error }}
-      <Button @click="loadData">Retry</Button>
+    <div class="page-header">
+      <h1>Test Runs</h1>
+      <div class="header-actions">
+        <Button @click="loadData" :loading="store.loading" variant="secondary">
+          Refresh
+        </Button>
+        <Button @click="$router.push('/upload')">
+          Upload New Results
+        </Button>
+      </div>
     </div>
 
-    <div v-else-if="store.runs.length > 0" class="runs-list">
-      <Card
-        v-for="run in store.runs"
-        :key="run.id"
-        clickable
-        @click="selectRun(run)"
-      >
-        <div class="run-header">
-          <h3>{{ run.name || 'Test Run' }}</h3>
-          <span class="timestamp">{{ formatDate(run.timestamp) }}</span>
-        </div>
+    <DataTable
+      :columns="columns"
+      :data="filteredRuns"
+      :loading="store.loading"
+      :row-clickable="true"
+      @row-click="(row: any) => viewRunDetails(row as TestRun)"
+    >
+      <template #filters>
+        <div class="filters-grid">
+          <div class="filter-group">
+            <label>Search</label>
+            <SearchInput v-model="searchQuery" placeholder="Search by name, job, branch..." />
+          </div>
 
-        <div v-if="run.ci_metadata" class="run-metadata">
-          <span v-if="run.ci_metadata.job_name">{{ run.ci_metadata.job_name }}</span>
-          <span v-if="run.ci_metadata.branch">Branch: {{ run.ci_metadata.branch }}</span>
-          <span v-if="run.ci_metadata.build_number">#{{ run.ci_metadata.build_number }}</span>
-        </div>
+          <div class="filter-group">
+            <label>Project/Job</label>
+            <select v-model="selectedProject" class="filter-select">
+              <option value="">All Projects</option>
+              <option v-for="project in projects" :key="project" :value="project">
+                {{ project }}
+              </option>
+            </select>
+          </div>
 
-        <div v-if="run.summary" class="run-summary">
-          <span class="passed">✓ {{ run.summary.passed }}</span>
-          <span class="failed">✗ {{ run.summary.failed }}</span>
-          <span class="skipped">⊘ {{ run.summary.skipped }}</span>
-        </div>
-      </Card>
-    </div>
+          <div class="filter-group">
+            <label>Status</label>
+            <select v-model="selectedStatus" class="filter-select">
+              <option value="">All</option>
+              <option value="passed">Passed</option>
+              <option value="failed">Failed</option>
+              <option value="mixed">Mixed</option>
+            </select>
+          </div>
 
-    <div v-else class="empty">
-      <p>No test runs found</p>
-      <Button @click="$router.push('/upload')">Upload Results</Button>
-    </div>
+          <div class="filter-group">
+            <label>Date Range</label>
+            <input
+              v-model="dateFrom"
+              type="date"
+              class="filter-input"
+              placeholder="From"
+            />
+          </div>
+
+          <div class="filter-group">
+            <label>To</label>
+            <input
+              v-model="dateTo"
+              type="date"
+              class="filter-input"
+              placeholder="To"
+            />
+          </div>
+
+          <div class="filter-group align-end">
+            <Button
+              @click="clearFilters"
+              variant="secondary"
+              size="sm"
+              v-if="hasActiveFilters"
+            >
+              Clear Filters
+            </Button>
+          </div>
+        </div>
+      </template>
+
+      <template #cell-name="{ row }">
+        <div class="run-name">
+          <strong>{{ (row as any).name || `Run ${(row as any).id?.slice(0, 8)}` }}</strong>
+          <div class="run-meta" v-if="(row as any).ci_metadata">
+            <span v-if="(row as any).ci_metadata.job_name" class="meta-tag">
+              {{ (row as any).ci_metadata.job_name }}
+            </span>
+            <span v-if="(row as any).ci_metadata.branch" class="meta-tag branch">
+              🌿 {{ (row as any).ci_metadata.branch }}
+            </span>
+            <span v-if="(row as any).ci_metadata.build_number" class="meta-tag build">
+              #{{ (row as any).ci_metadata.build_number }}
+            </span>
+          </div>
+        </div>
+      </template>
+
+      <template #cell-timestamp="{ value }">
+        <span class="timestamp">{{ formatDate(value as string) }}</span>
+      </template>
+
+      <template #cell-summary="{ row }">
+        <div v-if="(row as any).summary" class="summary-badges">
+          <span class="badge passed">✓ {{ (row as any).summary.passed }}</span>
+          <span class="badge failed">✗ {{ (row as any).summary.failed }}</span>
+          <span v-if="(row as any).summary.errors" class="badge error">⚠ {{ (row as any).summary.errors }}</span>
+          <span v-if="(row as any).summary.skipped" class="badge skipped">⊘ {{ (row as any).summary.skipped }}</span>
+        </div>
+        <span v-else class="no-data">No data</span>
+      </template>
+
+      <template #cell-total="{ row }">
+        <strong>{{ (row as any).summary?.total || 0 }}</strong>
+      </template>
+
+      <template #cell-rate="{ row }">
+        <div v-if="(row as any).summary && (row as any).summary.total > 0" class="success-rate">
+          <span :class="getSuccessRateClass(calculateSuccessRate(row as any))">
+            {{ calculateSuccessRate(row as any) }}%
+          </span>
+        </div>
+        <span v-else class="no-data">-</span>
+      </template>
+    </DataTable>
   </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useTestDataStore } from '../stores/testData'
 import { formatDate } from '../utils/formatters'
 import type { TestRun } from '../api/client'
 import Button from '../components/shared/Button.vue'
-import Card from '../components/shared/Card.vue'
+import DataTable from '../components/shared/DataTable.vue'
+import SearchInput from '../components/shared/SearchInput.vue'
 
 const router = useRouter()
 const store = useTestDataStore()
 
+const searchQuery = ref('')
+const selectedProject = ref('')
+const selectedStatus = ref('')
+const dateFrom = ref('')
+const dateTo = ref('')
+
+const columns = [
+  { key: 'name', label: 'Run Name', sortable: true },
+  { key: 'timestamp', label: 'Date', sortable: true },
+  { key: 'total', label: 'Total Tests', sortable: true },
+  { key: 'summary', label: 'Results', sortable: false },
+  { key: 'rate', label: 'Success Rate', sortable: true },
+]
+
+const projects = computed(() => {
+  const uniqueProjects = new Set<string>()
+  store.runs.forEach(run => {
+    if (run.ci_metadata?.job_name) {
+      uniqueProjects.add(run.ci_metadata.job_name)
+    }
+  })
+  return Array.from(uniqueProjects).sort()
+})
+
+const filteredRuns = computed(() => {
+  let filtered = [...store.runs]
+
+  // Search filter
+  if (searchQuery.value) {
+    const query = searchQuery.value.toLowerCase()
+    filtered = filtered.filter(run => {
+      return (
+        run.name?.toLowerCase().includes(query) ||
+        run.ci_metadata?.job_name?.toLowerCase().includes(query) ||
+        run.ci_metadata?.branch?.toLowerCase().includes(query) ||
+        run.id?.toLowerCase().includes(query)
+      )
+    })
+  }
+
+  // Project filter
+  if (selectedProject.value) {
+    filtered = filtered.filter(run => run.ci_metadata?.job_name === selectedProject.value)
+  }
+
+  // Status filter
+  if (selectedStatus.value) {
+    filtered = filtered.filter(run => {
+      if (!run.summary) return false
+      const rate = calculateSuccessRate(run)
+      if (selectedStatus.value === 'passed') return rate === 100
+      if (selectedStatus.value === 'failed') return rate === 0
+      if (selectedStatus.value === 'mixed') return rate > 0 && rate < 100
+      return true
+    })
+  }
+
+  // Date filters
+  if (dateFrom.value) {
+    const from = new Date(dateFrom.value)
+    filtered = filtered.filter(run => new Date(run.timestamp) >= from)
+  }
+
+  if (dateTo.value) {
+    const to = new Date(dateTo.value)
+    to.setHours(23, 59, 59, 999)
+    filtered = filtered.filter(run => new Date(run.timestamp) <= to)
+  }
+
+  return filtered
+})
+
+const hasActiveFilters = computed(() => {
+  return !!(
+    searchQuery.value ||
+    selectedProject.value ||
+    selectedStatus.value ||
+    dateFrom.value ||
+    dateTo.value
+  )
+})
+
+const calculateSuccessRate = (run: TestRun): number => {
+  if (!run.summary || run.summary.total === 0) return 0
+  return Math.round((run.summary.passed / run.summary.total) * 100)
+}
+
+const getSuccessRateClass = (rate: number): string => {
+  if (rate === 100) return 'rate-perfect'
+  if (rate >= 80) return 'rate-good'
+  if (rate >= 50) return 'rate-medium'
+  return 'rate-poor'
+}
+
+const clearFilters = () => {
+  searchQuery.value = ''
+  selectedProject.value = ''
+  selectedStatus.value = ''
+  dateFrom.value = ''
+  dateTo.value = ''
+}
+
+const viewRunDetails = (run: TestRun) => {
+  store.setCurrentRun(run)
+  router.push(`/cases?run_id=${run.id}`)
+}
+
 const loadData = async () => {
   try {
-    await store.fetchRuns()
+    await store.fetchRuns({ limit: 100 })
   } catch (error) {
     console.error('Failed to load test runs:', error)
   }
-}
-
-const selectRun = (run: TestRun) => {
-  store.setCurrentRun(run)
-  router.push(`/cases?run_id=${run.id}`)
 }
 
 onMounted(() => {
@@ -75,76 +262,160 @@ onMounted(() => {
 <style scoped>
 .test-runs {
   padding: 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
 }
 
 h1 {
   font-size: 2rem;
   font-weight: 700;
-  margin-bottom: 2rem;
   color: #111827;
+  margin: 0;
 }
 
-.runs-list {
+.header-actions {
   display: flex;
-  flex-direction: column;
   gap: 1rem;
 }
 
-.run-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 0.5rem;
+.filters-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  align-items: end;
 }
 
-.run-header h3 {
-  font-size: 1.125rem;
-  font-weight: 600;
-  margin: 0;
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.filter-group.align-end {
+  align-items: flex-end;
+}
+
+.filter-group label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+}
+
+.filter-select,
+.filter-input {
+  padding: 0.5rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  transition: all 0.15s;
+}
+
+.filter-select:focus,
+.filter-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.run-name strong {
+  display: block;
   color: #111827;
+  margin-bottom: 0.25rem;
+}
+
+.run-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.meta-tag {
+  display: inline-block;
+  padding: 0.125rem 0.5rem;
+  background: #f3f4f6;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.meta-tag.branch {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.meta-tag.build {
+  background: #fef3c7;
+  color: #92400e;
 }
 
 .timestamp {
-  font-size: 0.875rem;
   color: #6b7280;
+  font-size: 0.875rem;
 }
 
-.run-metadata {
+.summary-badges {
   display: flex;
-  gap: 1rem;
-  font-size: 0.875rem;
-  color: #6b7280;
-  margin-bottom: 0.75rem;
+  flex-wrap: wrap;
+  gap: 0.5rem;
 }
 
-.run-summary {
-  display: flex;
-  gap: 1.5rem;
-  font-size: 1rem;
+.badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
   font-weight: 600;
 }
 
-.passed {
+.badge.passed {
+  background: #d1fae5;
   color: #10b981;
 }
 
-.failed {
+.badge.failed {
+  background: #fee2e2;
   color: #ef4444;
 }
 
-.skipped {
+.badge.error {
+  background: #fef3c7;
+  color: #f59e0b;
+}
+
+.badge.skipped {
+  background: #f3f4f6;
   color: #6b7280;
 }
 
-.loading,
-.error,
-.empty {
-  text-align: center;
-  padding: 3rem;
-  color: #6b7280;
+.success-rate {
+  font-weight: 600;
 }
 
-.error {
+.rate-perfect {
+  color: #10b981;
+}
+
+.rate-good {
+  color: #3b82f6;
+}
+
+.rate-medium {
+  color: #f59e0b;
+}
+
+.rate-poor {
   color: #ef4444;
+}
+
+.no-data {
+  color: #9ca3af;
+  font-size: 0.875rem;
 }
 </style>

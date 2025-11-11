@@ -81,8 +81,12 @@ const triggerFileInput = () => {
 
 const handleFileSelect = (event: Event) => {
   const target = event.target as HTMLInputElement
-  if (target.files && target.files.length > 0) {
-    selectedFile.value = target.files[0]
+  const files = target.files
+  if (files && files.length > 0) {
+    const file = files[0]
+    if (file) {
+      selectedFile.value = file
+    }
   }
 }
 
@@ -94,12 +98,13 @@ const clearSelection = () => {
 }
 
 const uploadFile = async () => {
-  if (!selectedFile.value) return
+  const file = selectedFile.value
+  if (!file) return
 
   uploadError.value = null
 
   try {
-    await store.uploadFile(selectedFile.value)
+    await store.uploadFile(file)
     showSuccessModal.value = true
     clearSelection()
   } catch (error) {

@@ -100,7 +100,7 @@ class ApiClient {
     return data.data
   }
 
-  private buildQueryString(params: Record<string, unknown>): string {
+  private buildQueryString(params: Record<string, any>): string {
     const filtered = Object.fromEntries(
       Object.entries(params).filter(([, value]) => value !== undefined && value !== null)
     )

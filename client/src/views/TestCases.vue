@@ -1,58 +1,150 @@
 <template>
   <div class="test-cases">
-    <h1>Test Cases</h1>
-
-    <div v-if="store.loading" class="loading">Loading test cases...</div>
-
-    <div v-else-if="store.error" class="error">
-      {{ store.error }}
-      <Button @click="loadData">Retry</Button>
+    <div class="page-header">
+      <h1>Test Cases</h1>
+      <div class="header-actions">
+        <Button @click="loadData" :loading="store.loading" variant="secondary">
+          Refresh
+        </Button>
+        <Button @click="$router.push('/runs')">
+          View Test Runs
+        </Button>
+      </div>
     </div>
 
-    <div v-else-if="store.cases.length > 0" class="cases-list">
-      <Card v-for="testCase in store.cases" :key="testCase.id">
-        <div class="case-header">
-          <div class="case-info">
-            <span :class="['status-icon', testCase.status]">
-              {{ getStatusIcon(testCase.status) }}
-            </span>
-            <h3>{{ testCase.name }}</h3>
+    <DataTable
+      :columns="columns"
+      :data="filteredCases"
+      :loading="store.loading"
+    >
+      <template #filters>
+        <div class="filters-grid">
+          <div class="filter-group">
+            <label>Search</label>
+            <SearchInput v-model="searchQuery" placeholder="Search test names..." />
           </div>
-          <span class="duration">{{ formatDuration(testCase.time * 1000) }}</span>
-        </div>
 
-        <div v-if="testCase.classname || testCase.suite_name" class="case-metadata">
-          <span v-if="testCase.classname">{{ testCase.classname }}</span>
-          <span v-if="testCase.suite_name">{{ testCase.suite_name }}</span>
-        </div>
+          <div class="filter-group">
+            <label>Status</label>
+            <select v-model="selectedStatus" class="filter-select">
+              <option value="">All Statuses</option>
+              <option value="passed">✓ Passed</option>
+              <option value="failed">✗ Failed</option>
+              <option value="error">⚠ Error</option>
+              <option value="skipped">⊘ Skipped</option>
+            </select>
+          </div>
 
-        <div
-          v-if="testCase.error_message && testCase.status === 'failed'"
-          class="error-message"
-        >
-          <strong>{{ testCase.error_type }}</strong>
-          <pre>{{ testCase.error_message }}</pre>
-        </div>
-      </Card>
-    </div>
+          <div class="filter-group">
+            <label>Suite</label>
+            <select v-model="selectedSuite" class="filter-select">
+              <option value="">All Suites</option>
+              <option v-for="suite in suites" :key="suite" :value="suite">
+                {{ suite }}
+              </option>
+            </select>
+          </div>
 
-    <div v-else class="empty">
-      <p>No test cases found</p>
-      <Button @click="$router.push('/runs')">View Test Runs</Button>
-    </div>
+          <div class="filter-group align-end">
+            <Button
+              @click="clearFilters"
+              variant="secondary"
+              size="sm"
+              v-if="hasActiveFilters"
+            >
+              Clear Filters
+            </Button>
+          </div>
+        </div>
+      </template>
+
+      <template #cell-status="{ row }">
+        <span :class="['status-badge', (row as any).status]">
+          {{ getStatusIcon((row as any).status || '') }} {{ (row as any).status }}
+        </span>
+      </template>
+
+      <template #cell-name="{ row }">
+        <div class="test-name">
+          <strong>{{ (row as any).name }}</strong>
+          <div class="test-meta" v-if="(row as any).classname || (row as any).suite_name">
+            <span v-if="(row as any).classname" class="meta-info">{{ (row as any).classname }}</span>
+            <span v-if="(row as any).suite_name" class="meta-info suite">{{ (row as any).suite_name }}</span>
+          </div>
+          <div v-if="(row as any).error_message" class="error-preview">
+            {{ truncateText((row as any).error_message || '', 100) }}
+          </div>
+        </div>
+      </template>
+
+      <template #cell-time="{ value }">
+        <span class="duration">{{ formatDuration(((value as any) || 0) * 1000) }}</span>
+      </template>
+    </DataTable>
   </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useTestDataStore } from '../stores/testData'
-import { formatDuration, getStatusIcon } from '../utils/formatters'
+import { formatDuration, getStatusIcon, truncateText } from '../utils/formatters'
 import Button from '../components/shared/Button.vue'
-import Card from '../components/shared/Card.vue'
+import DataTable from '../components/shared/DataTable.vue'
+import SearchInput from '../components/shared/SearchInput.vue'
 
 const route = useRoute()
 const store = useTestDataStore()
+
+const searchQuery = ref('')
+const selectedStatus = ref('')
+const selectedSuite = ref('')
+
+const columns = [
+  { key: 'status', label: 'Status', sortable: true },
+  { key: 'name', label: 'Test Name', sortable: true },
+  { key: 'time', label: 'Duration', sortable: true },
+]
+
+const suites = computed(() => {
+  const uniqueSuites = new Set<string>()
+  store.cases.forEach(testCase => {
+    if (testCase.suite_name) uniqueSuites.add(testCase.suite_name)
+  })
+  return Array.from(uniqueSuites).sort()
+})
+
+const filteredCases = computed(() => {
+  let filtered = [...store.cases]
+
+  if (searchQuery.value) {
+    const query = searchQuery.value.toLowerCase()
+    filtered = filtered.filter(testCase =>
+      testCase.name?.toLowerCase().includes(query) ||
+      testCase.classname?.toLowerCase().includes(query)
+    )
+  }
+
+  if (selectedStatus.value) {
+    filtered = filtered.filter(testCase => testCase.status === selectedStatus.value)
+  }
+
+  if (selectedSuite.value) {
+    filtered = filtered.filter(testCase => testCase.suite_name === selectedSuite.value)
+  }
+
+  return filtered
+})
+
+const hasActiveFilters = computed(() => {
+  return !!(searchQuery.value || selectedStatus.value || selectedSuite.value)
+})
+
+const clearFilters = () => {
+  searchQuery.value = ''
+  selectedStatus.value = ''
+  selectedSuite.value = ''
+}
 
 const loadData = async () => {
   try {
@@ -71,110 +163,136 @@ onMounted(() => {
 <style scoped>
 .test-cases {
   padding: 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
 }
 
 h1 {
   font-size: 2rem;
   font-weight: 700;
-  margin-bottom: 2rem;
   color: #111827;
+  margin: 0;
 }
 
-.cases-list {
+.header-actions {
   display: flex;
-  flex-direction: column;
   gap: 1rem;
 }
 
-.case-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 0.5rem;
+.filters-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+  align-items: end;
 }
 
-.case-info {
+.filter-group {
   display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  flex: 1;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
-.case-info h3 {
-  font-size: 1rem;
+.filter-group.align-end {
+  align-items: flex-end;
+}
+
+.filter-group label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+}
+
+.filter-select {
+  padding: 0.5rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  transition: all 0.15s;
+}
+
+.filter-select:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
   font-weight: 600;
-  margin: 0;
-  color: #111827;
+  text-transform: capitalize;
 }
 
-.status-icon {
-  font-size: 1.25rem;
-  width: 1.5rem;
-  text-align: center;
-}
-
-.status-icon.passed {
+.status-badge.passed {
+  background: #d1fae5;
   color: #10b981;
 }
 
-.status-icon.failed {
+.status-badge.failed {
+  background: #fee2e2;
   color: #ef4444;
 }
 
-.status-icon.error {
+.status-badge.error {
+  background: #fef3c7;
   color: #f59e0b;
 }
 
-.status-icon.skipped {
+.status-badge.skipped {
+  background: #f3f4f6;
   color: #6b7280;
 }
 
-.duration {
-  font-size: 0.875rem;
-  color: #6b7280;
-  font-weight: 500;
+.test-name strong {
+  display: block;
+  color: #111827;
+  margin-bottom: 0.25rem;
 }
 
-.case-metadata {
+.test-meta {
   display: flex;
-  gap: 1rem;
-  font-size: 0.875rem;
-  color: #6b7280;
-  margin-bottom: 0.5rem;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
 }
 
-.error-message {
-  margin-top: 1rem;
-  padding: 1rem;
-  background: #fef2f2;
-  border-left: 4px solid #ef4444;
+.meta-info {
+  font-size: 0.75rem;
+  color: #6b7280;
+  padding: 0.125rem 0.5rem;
+  background: #f3f4f6;
   border-radius: 0.25rem;
 }
 
-.error-message strong {
-  display: block;
-  color: #dc2626;
-  margin-bottom: 0.5rem;
+.meta-info.suite {
+  background: #dbeafe;
+  color: #1e40af;
 }
 
-.error-message pre {
-  font-size: 0.875rem;
+.error-preview {
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  background: #fee2e2;
+  border-left: 3px solid #ef4444;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
   color: #991b1b;
-  margin: 0;
-  white-space: pre-wrap;
-  word-wrap: break-word;
-  font-family: 'Courier New', monospace;
+  font-family: monospace;
 }
 
-.loading,
-.error,
-.empty {
-  text-align: center;
-  padding: 3rem;
+.duration {
   color: #6b7280;
-}
-
-.error {
-  color: #ef4444;
+  font-variant-numeric: tabular-nums;
 }
 </style>

@@ -102,7 +102,7 @@ interface Column {
 
 interface Props {
   columns: Column[]
-  data: Record<string, unknown>[]
+  data: Record<string, any>[]
   loading?: boolean
   paginate?: boolean
   pageSize?: number
@@ -117,7 +117,7 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 defineEmits<{
-  'row-click': [row: Record<string, unknown>]
+  'row-click': [row: Record<string, any>]
 }>()
 
 const sortKey = ref<string>('')
@@ -134,7 +134,7 @@ const handleSort = (key: string) => {
   currentPage.value = 1
 }
 
-const getCellValue = (row: Record<string, unknown>, key: string) => {
+const getCellValue = (row: Record<string, any>, key: string) => {
   return row[key]
 }
 
@@ -146,6 +146,8 @@ const sortedData = computed(() => {
     const bVal = getCellValue(b, sortKey.value)
 
     if (aVal === bVal) return 0
+    if (aVal == null) return 1
+    if (bVal == null) return -1
 
     const comparison = aVal > bVal ? 1 : -1
     return sortOrder.value === 'asc' ? comparison : -comparison

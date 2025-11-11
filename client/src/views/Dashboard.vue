@@ -204,7 +204,7 @@ const recentRunsData = computed(() => {
   const runs = store.runs.slice(0, 10).reverse()
 
   return {
-    xAxisData: runs.map((run, index) => `Run ${index + 1}`),
+    xAxisData: runs.map((_run, index) => `Run ${index + 1}`),
     series: [
       {
         name: 'Passed',
