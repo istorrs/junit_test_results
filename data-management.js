@@ -109,7 +109,7 @@ class DataManagement {
         try {
             // Get selected project from navigation
             const selectedProject = window.navigationManager?.getSelectedProject();
-            const filters = { limit: 1000 };
+            const filters = { limit: window.limitsConfig.get('dataManagementRuns') };
 
             // Filter by project if one is selected
             if (selectedProject && selectedProject !== 'all') {

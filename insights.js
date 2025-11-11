@@ -101,7 +101,7 @@ class InsightsPanel {
                 return !previousFailed.has(key);
             });
 
-            return newFailures.slice(0, 5); // Return top 5
+            return newFailures.slice(0, window.limitsConfig.get('insightsNewFailures'));
         } catch (error) {
             console.error('Error detecting new failures:', error);
             return [];
@@ -115,10 +115,10 @@ class InsightsPanel {
             // Enrich with recent history to calculate failure rate
             // Process sequentially to avoid overwhelming the API
             const enrichedTests = [];
-            for (const test of flakyTests.slice(0, 5)) {
+            for (const test of flakyTests.slice(0, window.limitsConfig.get('insightsFlakyTests'))) {
                 try {
                     const history = await this.db.getTestCaseHistory(test.name, test.classname);
-                    const recentHistory = history.slice(0, 10);
+                    const recentHistory = history.slice(0, window.limitsConfig.get('insightsFlakyHistory'));
                     const failureCount = recentHistory.filter(
                         h => h.status === 'failed' || h.status === 'error'
                     ).length;
@@ -160,7 +160,7 @@ class InsightsPanel {
             const slowestTests = recentCases
                 .filter(tc => tc.time > 0)
                 .sort((a, b) => b.time - a.time)
-                .slice(0, 20);
+                .slice(0, window.limitsConfig.get('insightsSlowTests'));
 
             const regressions = [];
 
@@ -176,8 +176,8 @@ class InsightsPanel {
                         continue;
                     }
 
-                    // Compare recent 3 runs vs previous 5 runs
-                    const recent = history.slice(0, 3);
+                    // Compare recent runs vs previous runs
+                    const recent = history.slice(0, window.limitsConfig.get('insightsRecentRuns'));
                     const previous = history.slice(3, 8);
 
                     const recentAvg =
@@ -208,7 +208,7 @@ class InsightsPanel {
 
             return regressions
                 .sort((a, b) => parseFloat(b.percentageChange) - parseFloat(a.percentageChange))
-                .slice(0, 3);
+                .slice(0, window.limitsConfig.get('insightsUnhealthySuites'));
         } catch (error) {
             console.error('Error detecting performance regressions:', error);
             return [];
@@ -239,7 +239,7 @@ class InsightsPanel {
                 .filter(suite => parseFloat(suite.successRate) < 80)
                 .sort((a, b) => parseFloat(a.successRate) - parseFloat(b.successRate));
 
-            return unhealthySuites.slice(0, 3);
+            return unhealthySuites.slice(0, window.limitsConfig.get('insightsUnhealthySuites'));
         } catch (error) {
             console.error('Error detecting unhealthy suites:', error);
             return [];

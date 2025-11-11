@@ -87,6 +87,61 @@ class JUnitDashboard {
         window.addEventListener('focus', () => {
             this.loadDashboard();
         });
+
+        // Limits settings modal
+        this.setupLimitsSettings();
+
+        // Listen for limits changes to reload dashboard
+        window.addEventListener('limitsChanged', () => {
+            this.loadDashboard();
+        });
+    }
+
+    setupLimitsSettings() {
+        const settingsBtn = document.getElementById('limits-settings-btn');
+        const settingsModal = document.getElementById('limits-settings-modal');
+        const closeBtn = document.getElementById('close-limits-modal');
+        const contentDiv = document.getElementById('limits-settings-content');
+
+        if (!settingsBtn || !settingsModal || !contentDiv) return;
+
+        // Create settings panels
+        const dashboardPanel = window.limitsConfig.createSettingsPanel([
+            { key: 'dashboardRecentRuns', label: 'Recent Test Runs', description: 'Number of recent test runs to display' },
+            { key: 'dashboardTestCases', label: 'Test Cases', description: 'Maximum test cases to fetch' },
+            { key: 'dashboardTrends', label: 'Trend Data Points', description: 'Number of historical data points for trends' }
+        ], 'Dashboard Limits');
+
+        const insightsPanel = window.limitsConfig.createSettingsPanel([
+            { key: 'insightsNewFailures', label: 'New Failures', description: 'Number of new failures to show' },
+            { key: 'insightsFlakyTests', label: 'Flaky Tests', description: 'Number of flaky tests to analyze' },
+            { key: 'insightsFlakyHistory', label: 'Flaky History Window', description: 'Number of runs to check for flakiness' },
+            { key: 'insightsSlowTests', label: 'Slow Tests', description: 'Number of slowest tests to analyze' },
+            { key: 'insightsRecentRuns', label: 'Recent Runs Comparison', description: 'Number of recent runs to compare' },
+            { key: 'insightsUnhealthySuites', label: 'Unhealthy Suites', description: 'Number of unhealthy suites to show' }
+        ], 'Insights Limits');
+
+        contentDiv.innerHTML = '';
+        contentDiv.appendChild(dashboardPanel);
+        contentDiv.appendChild(document.createElement('div')).className = 'my-4';
+        contentDiv.appendChild(insightsPanel);
+
+        // Open modal
+        settingsBtn.addEventListener('click', () => {
+            settingsModal.classList.remove('hidden');
+        });
+
+        // Close modal
+        closeBtn.addEventListener('click', () => {
+            settingsModal.classList.add('hidden');
+        });
+
+        // Close on backdrop click
+        settingsModal.addEventListener('click', (e) => {
+            if (e.target === settingsModal) {
+                settingsModal.classList.add('hidden');
+            }
+        });
     }
 
     handleDragOver(event) {
@@ -175,7 +230,7 @@ class JUnitDashboard {
         try {
             // Get selected project from navigation
             const selectedProject = window.navigationManager?.getSelectedProject();
-            const filters = { limit: 10 };
+            const filters = { limit: window.limitsConfig.get('dashboardRecentRuns') };
 
             // Filter by project if one is selected
             if (selectedProject && selectedProject !== 'all') {
@@ -256,7 +311,7 @@ class JUnitDashboard {
 
         try {
             // Build filters for fetching test cases
-            const filters = { limit: 10000 }; // Increase limit to get all suites
+            const filters = { limit: window.limitsConfig.get('dashboardTestCases') };
 
             // If a run is selected, only show suites from that run
             if (this.currentFilters.run_id) {
@@ -610,7 +665,7 @@ class JUnitDashboard {
 
         try {
             // Fetch real trend data from API
-            const trends = await this.db.getTrends({ limit: 30 });
+            const trends = await this.db.getTrends({ limit: window.limitsConfig.get('dashboardTrends') });
 
             // If no data, show empty state
             if (!trends || trends.length === 0) {

@@ -179,8 +179,8 @@ class TestCaseHistoryPage {
 
         const chart = echarts.init(chartContainer);
 
-        // Prepare data - take last 30 runs
-        const recentData = this.historyData.slice(0, 30).reverse();
+        // Prepare data - take recent runs
+        const recentData = this.historyData.slice(0, window.limitsConfig.get('historyRecentData')).reverse();
         const dates = recentData.map(h => new Date(h.timestamp).toLocaleDateString());
 
         // Create series data with colors based on status
@@ -270,8 +270,8 @@ class TestCaseHistoryPage {
 
         const chart = echarts.init(chartContainer);
 
-        // Prepare data - take last 30 runs
-        const recentData = this.historyData.slice(0, 30).reverse();
+        // Prepare data - take recent runs
+        const recentData = this.historyData.slice(0, window.limitsConfig.get('historyRecentData')).reverse();
         const dates = recentData.map(h => new Date(h.timestamp).toLocaleDateString());
         const durations = recentData.map(h => (h.time || 0).toFixed(3));
 
@@ -283,8 +283,9 @@ class TestCaseHistoryPage {
         const stdDev = Math.sqrt(variance);
 
         // Detect performance trend
-        const recentAvg = durations.slice(-5).reduce((sum, d) => sum + parseFloat(d), 0) / 5;
-        const oldAvg = durations.slice(0, 5).reduce((sum, d) => sum + parseFloat(d), 0) / 5;
+        const comparisonWindow = window.limitsConfig.get('historyComparisonWindow');
+        const recentAvg = durations.slice(-comparisonWindow).reduce((sum, d) => sum + parseFloat(d), 0) / comparisonWindow;
+        const oldAvg = durations.slice(0, comparisonWindow).reduce((sum, d) => sum + parseFloat(d), 0) / comparisonWindow;
         const trendPercentage = oldAvg > 0 ? (((recentAvg - oldAvg) / oldAvg) * 100).toFixed(1) : 0;
 
         // Update trend indicator
@@ -425,7 +426,7 @@ class TestCaseHistoryPage {
         // Sort by count
         const sortedFailures = Object.entries(failureGroups)
             .sort((a, b) => b[1].count - a[1].count)
-            .slice(0, 5);
+            .slice(0, window.limitsConfig.get('historyComparisonWindow'));
 
         const content = document.getElementById('failure-analysis-content');
         content.innerHTML = `
