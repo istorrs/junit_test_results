@@ -40,7 +40,7 @@ router.get('/', async (req, res, next) => {
 
         const total = await TestCase.countDocuments(matchQuery);
 
-        // Use aggregation to join with TestResult
+        // Use aggregation to join with TestResult and TestRun
         const cases = await TestCase.aggregate([
             { $match: matchQuery },
             {
@@ -55,6 +55,35 @@ router.get('/', async (req, res, next) => {
                 $unwind: {
                     path: '$result',
                     preserveNullAndEmptyArrays: true
+                }
+            },
+            {
+                $lookup: {
+                    from: 'testruns',
+                    localField: 'run_id',
+                    foreignField: '_id',
+                    as: 'run'
+                }
+            },
+            {
+                $unwind: {
+                    path: '$run',
+                    preserveNullAndEmptyArrays: true
+                }
+            },
+            {
+                $addFields: {
+                    // Add run's timestamp as the test execution time
+                    timestamp: '$run.timestamp',
+                    run_name: '$run.name',
+                    run_source: '$run.source',
+                    run_ci_metadata: '$run.ci_metadata'
+                }
+            },
+            {
+                $project: {
+                    // Exclude the full run object to reduce payload size
+                    run: 0
                 }
             },
             { $sort: { 'result.timestamp': -1 } },
