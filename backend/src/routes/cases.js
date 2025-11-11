@@ -86,7 +86,7 @@ router.get('/', async (req, res, next) => {
                     run: 0
                 }
             },
-            { $sort: { 'result.timestamp': -1 } },
+            { $sort: { timestamp: -1 } },
             { $skip: skip },
             { $limit: limit }
         ]);

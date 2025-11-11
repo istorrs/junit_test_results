@@ -37,12 +37,34 @@ class TestCaseHistoryPage {
 
     async loadTestHistory() {
         try {
-            // Fetch history data from API
-            this.historyData = await this.db.getTestCaseHistory(this.testName, this.testClassname);
+            // Fetch history data from API with limit
+            const HISTORY_LIMIT = 100;
+            this.historyData = await this.db.getTestCaseHistory(
+                this.testName,
+                this.testClassname,
+                HISTORY_LIMIT
+            );
 
             if (!this.historyData || this.historyData.length === 0) {
                 this.showError('No history found for this test case');
                 return;
+            }
+
+            // Warn if we hit the limit
+            if (this.historyData.length >= HISTORY_LIMIT) {
+                const warningMsg = `⚠️ WARNING: History limit (${HISTORY_LIMIT}) reached. Only showing the last ${this.historyData.length} executions. There may be more historical data not displayed.`;
+                console.warn(warningMsg);
+                logError(warningMsg, {
+                    testName: this.testName,
+                    classname: this.testClassname,
+                    loadedCount: this.historyData.length,
+                    limit: HISTORY_LIMIT
+                });
+
+                // Show a banner or notification
+                this.showWarning(
+                    `Showing last ${HISTORY_LIMIT} executions. Additional history may exist but is not displayed due to system limits.`
+                );
             }
 
             // Load run details for all unique run_ids
@@ -65,7 +87,7 @@ class TestCaseHistoryPage {
         const runIds = [...new Set(this.historyData.map(h => h.run_id).filter(Boolean))];
 
         // Fetch run details for each unique run_id
-        const runPromises = runIds.map(async (runId) => {
+        const runPromises = runIds.map(async runId => {
             try {
                 const response = await this.db.request(`/runs/${runId}`);
                 this.runsCache[runId] = response.data;
@@ -585,11 +607,15 @@ class TestCaseHistoryPage {
         this.showNotification(message, 'success');
     }
 
+    showWarning(message) {
+        this.showNotification(message, 'warning');
+    }
+
     showNotification(message, type) {
         const notification = document.createElement('div');
-        notification.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 ${
-            type === 'error' ? 'bg-red-500 text-white' : 'bg-green-500 text-white'
-        }`;
+        const bgColor =
+            type === 'error' ? 'bg-red-500' : type === 'warning' ? 'bg-yellow-500' : 'bg-green-500';
+        notification.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 ${bgColor} text-white`;
         notification.textContent = message;
 
         document.body.appendChild(notification);

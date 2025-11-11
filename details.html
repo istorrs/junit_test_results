@@ -157,7 +157,9 @@
     </head>
     <body>
         <!-- Navigation (populated by navigation.js) -->
-        <nav class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 sticky top-0 z-40"></nav>
+        <nav
+            class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 sticky top-0 z-40"
+        ></nav>
 
         <!-- Header -->
         <div class="bg-white shadow-sm">
@@ -189,6 +191,40 @@
 
         <!-- Main Content -->
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <!-- Warning Banner (hidden by default, shown when limit is hit) -->
+            <div
+                id="limit-warning-banner"
+                class="bg-red-50 border-l-4 border-red-500 p-4 mb-6 rounded-r-lg"
+                style="display: none"
+            >
+                <div class="flex items-start">
+                    <div class="flex-shrink-0">
+                        <svg
+                            class="h-6 w-6 text-red-500"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                            />
+                        </svg>
+                    </div>
+                    <div class="ml-3 flex-1">
+                        <h3 class="text-sm font-medium text-red-800">System Limit Reached</h3>
+                        <div class="mt-2 text-sm text-red-700">
+                            <p id="limit-warning-message">
+                                Only a subset of test cases could be loaded. Some tests may not be
+                                visible when expanding test suites.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Summary Cards -->
             <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
                 <div class="metric-card rounded-lg p-6 text-center">
@@ -338,9 +374,14 @@
                         console.log('[TestDetailsPage.init] Run ID from URL:', this.runId);
 
                         if (this.runId) {
-                            console.log('[TestDetailsPage.init] Loading test run details for ID:', this.runId);
+                            console.log(
+                                '[TestDetailsPage.init] Loading test run details for ID:',
+                                this.runId
+                            );
                             await this.loadTestRunDetails();
-                            console.log('[TestDetailsPage.init] Test run details loaded successfully');
+                            console.log(
+                                '[TestDetailsPage.init] Test run details loaded successfully'
+                            );
                         } else {
                             console.warn('[TestDetailsPage.init] No run ID in URL');
                             this.showError('No test run specified');
@@ -358,21 +399,28 @@
                 getRunIdFromUrl() {
                     const urlParams = new URLSearchParams(window.location.search);
                     const runId = urlParams.get('run') || null;
-                    console.log('[TestDetailsPage.getRunIdFromUrl] URL search params:', window.location.search);
+                    console.log(
+                        '[TestDetailsPage.getRunIdFromUrl] URL search params:',
+                        window.location.search
+                    );
                     console.log('[TestDetailsPage.getRunIdFromUrl] Extracted run ID:', runId);
                     return runId;
                 }
 
                 async loadTestRunDetails() {
-                    console.log('[TestDetailsPage.loadTestRunDetails] Starting to load test run details');
+                    console.log(
+                        '[TestDetailsPage.loadTestRunDetails] Starting to load test run details'
+                    );
                     console.log('[TestDetailsPage.loadTestRunDetails] Run ID:', this.runId);
 
                     try {
-                        console.log('[TestDetailsPage.loadTestRunDetails] Fetching data from API...');
+                        console.log(
+                            '[TestDetailsPage.loadTestRunDetails] Fetching data from API...'
+                        );
                         const [testRun, testSuites, testCases, statistics] = await Promise.all([
                             this.getTestRun(this.runId),
                             this.db.getTestSuites(this.runId),
-                            this.db.getTestCases({ run_id: this.runId }),
+                            this.db.getTestCases({ run_id: this.runId, limit: 1000 }),
                             this.db.getTestStatistics(this.runId)
                         ]);
 
@@ -382,10 +430,49 @@
                         console.log('  - testCases count:', testCases?.length || 0);
                         console.log('  - statistics:', statistics);
 
+                        // Check if we hit the limit and warn loudly
+                        const LIMIT = 1000;
+                        if (testCases && testCases.length >= LIMIT) {
+                            const errorMsg = `⚠️ CRITICAL WARNING: Test case limit (${LIMIT}) reached! Only ${testCases.length} out of ${statistics.total} total tests loaded. Some test cases may not be visible. This is a system limitation that needs to be addressed.`;
+                            console.error(errorMsg);
+                            logError(errorMsg, {
+                                loadedCount: testCases.length,
+                                totalCount: statistics.total,
+                                limit: LIMIT,
+                                runId: this.runId
+                            });
+
+                            // Show visual warning banner
+                            const warningBanner = document.getElementById('limit-warning-banner');
+                            const warningMessage = document.getElementById('limit-warning-message');
+                            if (warningBanner && warningMessage) {
+                                warningMessage.textContent = `⚠️ CRITICAL: Only ${testCases.length} out of ${statistics.total} total tests could be loaded due to system limit (${LIMIT}). Some test cases will not be visible when expanding test suites. This issue must be addressed.`;
+                                warningBanner.style.display = 'block';
+                            }
+
+                            // Also show alert
+                            alert(
+                                `⚠️ WARNING: Only ${testCases.length} out of ${statistics.total} tests could be loaded due to system limits. Some tests may not be visible in suite expansions.`
+                            );
+                        }
+
+                        // Log if we're getting close to the limit (>80%)
+                        if (
+                            testCases &&
+                            testCases.length > LIMIT * 0.8 &&
+                            testCases.length < LIMIT
+                        ) {
+                            console.warn(
+                                `⚠️ WARNING: Approaching test case limit. Loaded ${testCases.length} out of ${LIMIT} maximum. Total tests in run: ${statistics.total}`
+                            );
+                        }
+
                         this.testSuites = testSuites;
                         this.testCases = testCases;
 
-                        console.log('[TestDetailsPage.loadTestRunDetails] Updating UI components...');
+                        console.log(
+                            '[TestDetailsPage.loadTestRunDetails] Updating UI components...'
+                        );
                         this.updateRunInfo(testRun);
                         console.log('[TestDetailsPage.loadTestRunDetails] - Run info updated');
 
@@ -399,12 +486,18 @@
                         console.log('[TestDetailsPage.loadTestRunDetails] - Test cases rendered');
 
                         this.initializePerformanceChart();
-                        console.log('[TestDetailsPage.loadTestRunDetails] - Performance chart initialized');
+                        console.log(
+                            '[TestDetailsPage.loadTestRunDetails] - Performance chart initialized'
+                        );
 
                         this.renderFailurePatterns();
-                        console.log('[TestDetailsPage.loadTestRunDetails] - Failure patterns rendered');
+                        console.log(
+                            '[TestDetailsPage.loadTestRunDetails] - Failure patterns rendered'
+                        );
 
-                        console.log('[TestDetailsPage.loadTestRunDetails] All data loaded and rendered successfully');
+                        console.log(
+                            '[TestDetailsPage.loadTestRunDetails] All data loaded and rendered successfully'
+                        );
                     } catch (error) {
                         logError('Failed to load test run details from API', error);
                         throw error;
@@ -421,7 +514,10 @@
                 updateRunInfo(testRun) {
                     console.log('[TestDetailsPage.updateRunInfo] Updating run info with:', testRun);
                     const runInfoElement = document.getElementById('run-info');
-                    console.log('[TestDetailsPage.updateRunInfo] Run info element:', runInfoElement);
+                    console.log(
+                        '[TestDetailsPage.updateRunInfo] Run info element:',
+                        runInfoElement
+                    );
 
                     if (runInfoElement && testRun) {
                         const date = new Date(testRun.timestamp).toLocaleString();
@@ -434,7 +530,10 @@
                 }
 
                 updateSummaryCards(stats) {
-                    console.log('[TestDetailsPage.updateSummaryCards] Updating summary cards with:', stats);
+                    console.log(
+                        '[TestDetailsPage.updateSummaryCards] Updating summary cards with:',
+                        stats
+                    );
                     const elements = {
                         total: document.getElementById('total-tests-summary'),
                         passed: document.getElementById('passed-tests-summary'),
@@ -451,16 +550,25 @@
 
                     if (elements.total) {
                         elements.total.textContent = stats.total;
-                        console.log('[TestDetailsPage.updateSummaryCards] Total set to:', stats.total);
+                        console.log(
+                            '[TestDetailsPage.updateSummaryCards] Total set to:',
+                            stats.total
+                        );
                     }
                     if (elements.passed) {
                         elements.passed.textContent = stats.passed;
-                        console.log('[TestDetailsPage.updateSummaryCards] Passed set to:', stats.passed);
+                        console.log(
+                            '[TestDetailsPage.updateSummaryCards] Passed set to:',
+                            stats.passed
+                        );
                     }
                     if (elements.failed) {
                         const failedCount = stats.failed + stats.error;
                         elements.failed.textContent = failedCount;
-                        console.log('[TestDetailsPage.updateSummaryCards] Failed set to:', failedCount);
+                        console.log(
+                            '[TestDetailsPage.updateSummaryCards] Failed set to:',
+                            failedCount
+                        );
                     }
                     if (elements.time) {
                         const timeText = `${stats.total_time.toFixed(2)}s`;
@@ -470,8 +578,13 @@
                 }
 
                 renderTestSuites() {
-                    console.log('[TestDetailsPage.renderTestSuites] Starting to render test suites');
-                    console.log('[TestDetailsPage.renderTestSuites] Number of suites:', this.testSuites.length);
+                    console.log(
+                        '[TestDetailsPage.renderTestSuites] Starting to render test suites'
+                    );
+                    console.log(
+                        '[TestDetailsPage.renderTestSuites] Number of suites:',
+                        this.testSuites.length
+                    );
 
                     const container = document.getElementById('test-suites-container');
                     const filter = document.getElementById('suite-filter');
@@ -480,7 +593,9 @@
                     console.log('[TestDetailsPage.renderTestSuites] Filter element:', filter);
 
                     if (!container) {
-                        console.warn('[TestDetailsPage.renderTestSuites] Container not found, aborting');
+                        console.warn(
+                            '[TestDetailsPage.renderTestSuites] Container not found, aborting'
+                        );
                         return;
                     }
 
@@ -494,10 +609,18 @@
                             option.textContent = suite.name;
                             filter.appendChild(option);
                         });
-                        console.log('[TestDetailsPage.renderTestSuites] Suite filter populated with', this.testSuites.length, 'options');
+                        console.log(
+                            '[TestDetailsPage.renderTestSuites] Suite filter populated with',
+                            this.testSuites.length,
+                            'options'
+                        );
                     }
 
-                    console.log('[TestDetailsPage.renderTestSuites] Generating HTML for', this.testSuites.length, 'suites');
+                    console.log(
+                        '[TestDetailsPage.renderTestSuites] Generating HTML for',
+                        this.testSuites.length,
+                        'suites'
+                    );
                     container.innerHTML = this.testSuites
                         .map(
                             suite => `
@@ -528,17 +651,25 @@
                 `
                         )
                         .join('');
-                    console.log('[TestDetailsPage.renderTestSuites] HTML rendered, length:', container.innerHTML.length);
+                    console.log(
+                        '[TestDetailsPage.renderTestSuites] HTML rendered, length:',
+                        container.innerHTML.length
+                    );
                 }
 
                 renderTestCases() {
                     console.log('[TestDetailsPage.renderTestCases] Starting to render test cases');
-                    console.log('[TestDetailsPage.renderTestCases] Number of test cases:', this.testCases.length);
+                    console.log(
+                        '[TestDetailsPage.renderTestCases] Number of test cases:',
+                        this.testCases.length
+                    );
                     const container = document.getElementById('test-cases-container');
                     console.log('[TestDetailsPage.renderTestCases] Container element:', container);
 
                     if (!container) {
-                        console.warn('[TestDetailsPage.renderTestCases] Container not found, aborting');
+                        console.warn(
+                            '[TestDetailsPage.renderTestCases] Container not found, aborting'
+                        );
                         return;
                     }
 
@@ -579,14 +710,24 @@
                 }
 
                 initializePerformanceChart() {
-                    console.log('[TestDetailsPage.initializePerformanceChart] Starting chart initialization');
-                    console.log('[TestDetailsPage.initializePerformanceChart] Number of test cases available:', this.testCases.length);
+                    console.log(
+                        '[TestDetailsPage.initializePerformanceChart] Starting chart initialization'
+                    );
+                    console.log(
+                        '[TestDetailsPage.initializePerformanceChart] Number of test cases available:',
+                        this.testCases.length
+                    );
 
                     const chartContainer = document.getElementById('performance-chart');
-                    console.log('[TestDetailsPage.initializePerformanceChart] Chart container element:', chartContainer);
+                    console.log(
+                        '[TestDetailsPage.initializePerformanceChart] Chart container element:',
+                        chartContainer
+                    );
 
                     if (!chartContainer) {
-                        console.warn('[TestDetailsPage.initializePerformanceChart] Chart container not found, aborting');
+                        console.warn(
+                            '[TestDetailsPage.initializePerformanceChart] Chart container not found, aborting'
+                        );
                         return;
                     }
 
@@ -596,21 +737,31 @@
 
                     // Dispose existing chart if it exists
                     if (this.performanceChart) {
-                        console.log('[TestDetailsPage.initializePerformanceChart] Disposing existing chart');
+                        console.log(
+                            '[TestDetailsPage.initializePerformanceChart] Disposing existing chart'
+                        );
                         this.performanceChart.dispose();
                     }
 
                     // Initialize chart with theme-aware colors
-                    console.log('[TestDetailsPage.initializePerformanceChart] Initializing ECharts instance');
+                    console.log(
+                        '[TestDetailsPage.initializePerformanceChart] Initializing ECharts instance'
+                    );
                     this.performanceChart = echarts.init(chartContainer);
-                    console.log('[TestDetailsPage.initializePerformanceChart] ECharts instance created:', this.performanceChart);
+                    console.log(
+                        '[TestDetailsPage.initializePerformanceChart] ECharts instance created:',
+                        this.performanceChart
+                    );
 
                     // Prepare data - sort by execution time descending to show slowest tests first
                     const sortedTests = [...this.testCases]
                         .sort((a, b) => b.time - a.time)
                         .slice(0, 20);
 
-                    console.log('[TestDetailsPage.initializePerformanceChart] Top 20 slowest tests:', sortedTests.length);
+                    console.log(
+                        '[TestDetailsPage.initializePerformanceChart] Top 20 slowest tests:',
+                        sortedTests.length
+                    );
                     if (sortedTests.length > 0) {
                         console.log('[TestDetailsPage.initializePerformanceChart] Slowest test:', {
                             name: sortedTests[0].name,
@@ -625,8 +776,14 @@
                     const testNames = sortedTests.map(test => test.name.substring(0, 20) + '...');
                     const executionTimes = sortedTests.map(test => test.time);
 
-                    console.log('[TestDetailsPage.initializePerformanceChart] Test names array length:', testNames.length);
-                    console.log('[TestDetailsPage.initializePerformanceChart] Execution times array length:', executionTimes.length);
+                    console.log(
+                        '[TestDetailsPage.initializePerformanceChart] Test names array length:',
+                        testNames.length
+                    );
+                    console.log(
+                        '[TestDetailsPage.initializePerformanceChart] Execution times array length:',
+                        executionTimes.length
+                    );
 
                     // Color bars based on performance (execution time) - fast = green, slow = red
                     const maxTime = Math.max(...executionTimes);
@@ -713,17 +870,33 @@
                         ]
                     };
 
-                    console.log('[TestDetailsPage.initializePerformanceChart] Setting chart options');
-                    console.log('[TestDetailsPage.initializePerformanceChart] Chart option series data length:', option.series[0].data.length);
-                    console.log('[TestDetailsPage.initializePerformanceChart] Sample data points:', option.series[0].data.slice(0, 3));
+                    console.log(
+                        '[TestDetailsPage.initializePerformanceChart] Setting chart options'
+                    );
+                    console.log(
+                        '[TestDetailsPage.initializePerformanceChart] Chart option series data length:',
+                        option.series[0].data.length
+                    );
+                    console.log(
+                        '[TestDetailsPage.initializePerformanceChart] Sample data points:',
+                        option.series[0].data.slice(0, 3)
+                    );
 
                     this.performanceChart.setOption(option);
-                    console.log('[TestDetailsPage.initializePerformanceChart] Chart options set successfully');
-                    console.log('[TestDetailsPage.initializePerformanceChart] Chart should now be visible with', executionTimes.length, 'bars');
+                    console.log(
+                        '[TestDetailsPage.initializePerformanceChart] Chart options set successfully'
+                    );
+                    console.log(
+                        '[TestDetailsPage.initializePerformanceChart] Chart should now be visible with',
+                        executionTimes.length,
+                        'bars'
+                    );
 
                     // Set up resize handler (only once)
                     if (!this.resizeHandler) {
-                        console.log('[TestDetailsPage.initializePerformanceChart] Setting up resize handler');
+                        console.log(
+                            '[TestDetailsPage.initializePerformanceChart] Setting up resize handler'
+                        );
                         this.resizeHandler = () => {
                             if (this.performanceChart) {
                                 this.performanceChart.resize();
@@ -733,10 +906,14 @@
                     }
 
                     // Re-render chart on theme change
-                    console.log('[TestDetailsPage.initializePerformanceChart] Setting up theme change listener');
+                    console.log(
+                        '[TestDetailsPage.initializePerformanceChart] Setting up theme change listener'
+                    );
                     this.setupThemeChangeListener();
 
-                    console.log('[TestDetailsPage.initializePerformanceChart] Chart initialization complete');
+                    console.log(
+                        '[TestDetailsPage.initializePerformanceChart] Chart initialization complete'
+                    );
                 }
 
                 setupThemeChangeListener() {
@@ -856,6 +1033,12 @@
                 }
 
                 toggleSuite(suiteId) {
+                    console.log(
+                        '[TestDetailsPage.toggleSuite] Called with suiteId:',
+                        suiteId,
+                        'type:',
+                        typeof suiteId
+                    );
                     const content = document.getElementById(`suite-content-${suiteId}`);
                     const arrow = document.getElementById(`suite-arrow-${suiteId}`);
                     const testsContainer = document.getElementById(`suite-tests-${suiteId}`);
@@ -872,8 +1055,28 @@
 
                             // Load test cases for this suite
                             if (testsContainer) {
+                                console.log(
+                                    '[TestDetailsPage.toggleSuite] Total test cases:',
+                                    this.testCases.length
+                                );
+                                console.log(
+                                    '[TestDetailsPage.toggleSuite] Sample test case suite_id:',
+                                    this.testCases[0]?.suite_id,
+                                    'type:',
+                                    typeof this.testCases[0]?.suite_id
+                                );
+
+                                // Convert both to strings for comparison
+                                const suiteIdStr = String(suiteId);
                                 const suiteTests = this.testCases.filter(
-                                    test => test.suite_id === suiteId
+                                    test => String(test.suite_id) === suiteIdStr
+                                );
+
+                                console.log(
+                                    '[TestDetailsPage.toggleSuite] Found',
+                                    suiteTests.length,
+                                    'test cases for suite',
+                                    suiteIdStr
                                 );
                                 testsContainer.innerHTML = suiteTests
                                     .map(
@@ -1110,7 +1313,9 @@
                 console.log('[details.html] Current URL:', window.location.href);
                 console.log('[details.html] URL params:', window.location.search);
                 window.detailsPage = new TestDetailsPage();
-                console.log('[details.html] TestDetailsPage instance created and assigned to window.detailsPage');
+                console.log(
+                    '[details.html] TestDetailsPage instance created and assigned to window.detailsPage'
+                );
             });
         </script>
     </body>
