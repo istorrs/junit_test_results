@@ -95,9 +95,31 @@ class JUnitAPIClient {
     }
 
     // Get test runs (replaces getTestRuns)
-    async getTestRuns(limit = 50, offset = 0) {
-        const page = Math.floor(offset / limit) + 1;
-        const response = await this.request(`/runs?limit=${limit}&page=${page}`);
+    async getTestRuns(filtersOrLimit = 50, offset = 0) {
+        let params = new URLSearchParams();
+
+        // Support both old signature getTestRuns(limit, offset) and new signature getTestRuns(filters)
+        if (typeof filtersOrLimit === 'object') {
+            // New signature: filters object
+            const filters = filtersOrLimit;
+            if (filters.limit) params.append('limit', filters.limit);
+            if (filters.offset) {
+                const page = Math.floor(filters.offset / (filters.limit || 50)) + 1;
+                params.append('page', page);
+            }
+            if (filters.job_name) params.append('job_name', filters.job_name);
+            if (filters.branch) params.append('branch', filters.branch);
+            if (filters.from_date) params.append('from_date', filters.from_date);
+            if (filters.to_date) params.append('to_date', filters.to_date);
+        } else {
+            // Old signature: limit and offset as separate parameters
+            const limit = filtersOrLimit;
+            const page = Math.floor(offset / limit) + 1;
+            params.append('limit', limit);
+            params.append('page', page);
+        }
+
+        const response = await this.request(`/runs?${params.toString()}`);
 
         // Transform API response to match frontend expectations
         return response.data.runs.map(run => ({
