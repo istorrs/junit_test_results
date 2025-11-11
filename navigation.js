@@ -117,50 +117,49 @@ class NavigationManager {
                     <!-- Logo -->
                     <div class="flex items-center">
                         <div class="flex-shrink-0">
-                            <h1 class="text-xl font-bold text-gray-900">JUnit Dashboard</h1>
+                            <h1 class="text-lg font-bold text-gray-900 whitespace-nowrap">JUnit</h1>
                         </div>
                     </div>
 
                     <!-- Desktop Navigation -->
-                    <div class="hidden md:flex items-center space-x-6 desktop-nav">
-                        <a href="index.html" class="nav-link ${this.currentPage === 'dashboard' ? 'active text-gray-900' : 'text-gray-600 hover:text-gray-900'} font-medium">
+                    <div class="hidden lg:flex items-center space-x-3 desktop-nav">
+                        <a href="index.html" class="nav-link ${this.currentPage === 'dashboard' ? 'active text-gray-900' : 'text-gray-600 hover:text-gray-900'} text-sm font-medium whitespace-nowrap">
                             Dashboard
                         </a>
-                        <a href="flaky-tests.html" class="nav-link ${this.currentPage === 'flaky' ? 'active text-gray-900' : 'text-gray-600 hover:text-gray-900'} font-medium">
+                        <a href="flaky-tests.html" class="nav-link ${this.currentPage === 'flaky' ? 'active text-gray-900' : 'text-gray-600 hover:text-gray-900'} text-sm font-medium whitespace-nowrap">
                             Flaky Tests
                         </a>
-                        <a href="performance-analysis.html" class="nav-link ${this.currentPage === 'performance' ? 'active text-gray-900' : 'text-gray-600 hover:text-gray-900'} font-medium">
+                        <a href="performance-analysis.html" class="nav-link ${this.currentPage === 'performance' ? 'active text-gray-900' : 'text-gray-600 hover:text-gray-900'} text-sm font-medium whitespace-nowrap">
                             Performance
                         </a>
-                        <a href="compare-runs.html" class="nav-link ${this.currentPage === 'compare' ? 'active text-gray-900' : 'text-gray-600 hover:text-gray-900'} font-medium">
+                        <a href="compare-runs.html" class="nav-link ${this.currentPage === 'compare' ? 'active text-gray-900' : 'text-gray-600 hover:text-gray-900'} text-sm font-medium whitespace-nowrap">
                             Compare Runs
                         </a>
-                        <a href="reports.html" class="nav-link ${this.currentPage === 'reports' ? 'active text-gray-900' : 'text-gray-600 hover:text-gray-900'} font-medium">
+                        <a href="reports.html" class="nav-link ${this.currentPage === 'reports' ? 'active text-gray-900' : 'text-gray-600 hover:text-gray-900'} text-sm font-medium whitespace-nowrap">
                             Reports
                         </a>
-                        <a href="data-management.html" class="nav-link ${this.currentPage === 'data' ? 'active text-gray-900' : 'text-gray-600 hover:text-gray-900'} font-medium">
-                            Data Management
+                        <a href="data-management.html" class="nav-link ${this.currentPage === 'data' ? 'active text-gray-900' : 'text-gray-600 hover:text-gray-900'} text-sm font-medium whitespace-nowrap">
+                            Data
                         </a>
-                        <a href="debug-console.html" class="nav-link ${this.currentPage === 'debug' ? 'active text-gray-900' : 'text-gray-600 hover:text-gray-900'} font-medium text-sm opacity-60 hover:opacity-100" title="Debug Console">
+                        <a href="debug-console.html" class="nav-link ${this.currentPage === 'debug' ? 'active text-gray-900' : 'text-gray-600 hover:text-gray-900'} text-sm font-medium opacity-60 hover:opacity-100" title="Debug Console">
                             🔧
                         </a>
 
                         <!-- Project Filter -->
-                        <div class="flex items-center gap-2 px-3 py-1 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <div class="flex items-center gap-1 px-2 py-1 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
                             <svg class="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
                             </svg>
-                            <select id="project-filter" class="bg-transparent border-none text-sm font-medium text-gray-700 dark:text-gray-300 focus:ring-0 pr-8">
+                            <select id="project-filter" class="bg-transparent border-none text-xs font-medium text-gray-700 dark:text-gray-300 focus:ring-0 pr-6">
                                 <option value="all">All Projects</option>
                             </select>
                         </div>
 
                         <!-- Search Button -->
-                        <button onclick="window.globalSearch?.open()" class="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 px-3 py-2 rounded-md text-sm font-medium flex items-center" title="Global Search">
-                            <svg class="w-5 h-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <button onclick="window.globalSearch?.open()" class="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 p-2 rounded-md" title="Global Search (Ctrl+/)">
+                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                             </svg>
-                            <span class="hidden lg:inline">Search</span> <kbd class="ml-1 px-2 py-1 text-xs bg-gray-100 dark:bg-gray-700 rounded hidden lg:inline">Ctrl+/</kbd>
                         </button>
 
                         <!-- Theme Toggle -->
@@ -174,7 +173,7 @@ class NavigationManager {
                     </div>
 
                     <!-- Mobile Menu Button -->
-                    <div class="md:hidden flex items-center space-x-2">
+                    <div class="lg:hidden flex items-center space-x-2">
                         <!-- Theme Toggle (Mobile) -->
                         <button data-theme-toggle class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" title="Toggle theme">
                             <span data-theme-icon>
