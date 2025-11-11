@@ -13,9 +13,6 @@ class NavigationManager {
         if (path.includes('index.html') || path === '/' || path.endsWith('/')) {
             return 'dashboard';
         }
-        if (path.includes('details.html')) {
-            return 'details';
-        }
         if (path.includes('flaky-tests.html')) {
             return 'flaky';
         }
@@ -129,9 +126,6 @@ class NavigationManager {
                         <a href="index.html" class="nav-link ${this.currentPage === 'dashboard' ? 'active text-gray-900' : 'text-gray-600 hover:text-gray-900'} font-medium">
                             Dashboard
                         </a>
-                        <a href="details.html" class="nav-link ${this.currentPage === 'details' ? 'active text-gray-900' : 'text-gray-600 hover:text-gray-900'} font-medium">
-                            Details
-                        </a>
                         <a href="flaky-tests.html" class="nav-link ${this.currentPage === 'flaky' ? 'active text-gray-900' : 'text-gray-600 hover:text-gray-900'} font-medium">
                             Flaky Tests
                         </a>
@@ -202,7 +196,6 @@ class NavigationManager {
                 <!-- Mobile Menu -->
                 <div id="mobile-menu" class="mobile-menu">
                     <a href="index.html" class="${this.currentPage === 'dashboard' ? 'active' : ''}">Dashboard</a>
-                    <a href="details.html" class="${this.currentPage === 'details' ? 'active' : ''}">Details</a>
                     <a href="flaky-tests.html" class="${this.currentPage === 'flaky' ? 'active' : ''}">Flaky Tests</a>
                     <a href="performance-analysis.html" class="${this.currentPage === 'performance' ? 'active' : ''}">Performance</a>
                     <a href="compare-runs.html" class="${this.currentPage === 'compare' ? 'active' : ''}">Compare Runs</a>
