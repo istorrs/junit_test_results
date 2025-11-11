@@ -259,25 +259,6 @@
                 <div id="performance-chart" style="height: 300px"></div>
             </div>
 
-            <!-- Test Suites -->
-            <div class="mb-8">
-                <div class="flex items-center justify-between mb-6">
-                    <h2 class="text-2xl font-bold text-gray-900">Test Suites</h2>
-                    <button
-                        id="toggle-all-suites"
-                        class="flex items-center space-x-1 px-3 py-1.5 text-sm font-medium text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors"
-                    >
-                        <svg id="toggle-icon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-                        </svg>
-                        <span id="toggle-text">Expand All</span>
-                    </button>
-                </div>
-                <div id="test-suites-container">
-                    <!-- Test suites will be populated here -->
-                </div>
-            </div>
-
             <!-- Failure Patterns Analysis -->
             <div
                 id="failure-patterns-section"
@@ -300,39 +281,48 @@
                 </div>
             </div>
 
-            <!-- Test Case List -->
+            <!-- Test Suites & Cases (Tree View) -->
             <div class="bg-white rounded-lg shadow-sm border border-gray-200">
                 <div class="px-6 py-4 border-b border-gray-200">
-                    <div class="flex items-center justify-between">
-                        <h3 class="text-lg font-semibold text-gray-900">Test Cases</h3>
-                        <div class="flex items-center space-x-4">
-                            <select
-                                id="suite-filter"
-                                class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            >
-                                <option value="all">All Suites</option>
-                            </select>
-                            <select
-                                id="status-filter"
-                                class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            >
-                                <option value="all">All Status</option>
-                                <option value="passed">Passed</option>
-                                <option value="failed">Failed</option>
-                                <option value="error">Error</option>
-                                <option value="skipped">Skipped</option>
-                            </select>
-                            <input
-                                type="text"
-                                id="test-search"
-                                placeholder="Search tests..."
-                                class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            />
-                        </div>
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold text-gray-900">Test Suites & Cases</h3>
+                        <button
+                            id="toggle-all-suites"
+                            class="flex items-center space-x-1 px-3 py-1.5 text-sm font-medium text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors"
+                        >
+                            <svg id="toggle-icon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                            </svg>
+                            <span id="toggle-text">Expand All</span>
+                        </button>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <select
+                            id="suite-filter"
+                            class="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        >
+                            <option value="all">All Suites</option>
+                        </select>
+                        <select
+                            id="status-filter"
+                            class="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        >
+                            <option value="all">All Status</option>
+                            <option value="passed">Passed</option>
+                            <option value="failed">Failed</option>
+                            <option value="error">Error</option>
+                            <option value="skipped">Skipped</option>
+                        </select>
+                        <input
+                            type="text"
+                            id="test-search"
+                            placeholder="Search tests..."
+                            class="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        />
                     </div>
                 </div>
-                <div id="test-cases-container" class="divide-y divide-gray-200">
-                    <!-- Test cases will be populated here -->
+                <div id="test-suites-tree-container">
+                    <!-- Test suites tree will be populated here -->
                 </div>
             </div>
         </div>
@@ -481,11 +471,8 @@
                         this.updateSummaryCards(statistics);
                         console.log('[TestDetailsPage.loadTestRunDetails] - Summary cards updated');
 
-                        this.renderTestSuites();
-                        console.log('[TestDetailsPage.loadTestRunDetails] - Test suites rendered');
-
-                        this.renderTestCases();
-                        console.log('[TestDetailsPage.loadTestRunDetails] - Test cases rendered');
+                        this.renderSuitesTree();
+                        console.log('[TestDetailsPage.loadTestRunDetails] - Test suites tree rendered');
 
                         this.initializePerformanceChart();
                         console.log(
@@ -579,31 +566,21 @@
                     }
                 }
 
-                renderTestSuites() {
-                    console.log(
-                        '[TestDetailsPage.renderTestSuites] Starting to render test suites'
-                    );
-                    console.log(
-                        '[TestDetailsPage.renderTestSuites] Number of suites:',
-                        this.testSuites.length
-                    );
+                renderSuitesTree() {
+                    console.log('[TestDetailsPage.renderSuitesTree] Starting to render suites tree');
+                    console.log('[TestDetailsPage.renderSuitesTree] Number of suites:', this.testSuites.length);
+                    console.log('[TestDetailsPage.renderSuitesTree] Number of test cases:', this.testCases.length);
 
-                    const container = document.getElementById('test-suites-container');
+                    const container = document.getElementById('test-suites-tree-container');
                     const filter = document.getElementById('suite-filter');
 
-                    console.log('[TestDetailsPage.renderTestSuites] Container element:', container);
-                    console.log('[TestDetailsPage.renderTestSuites] Filter element:', filter);
-
                     if (!container) {
-                        console.warn(
-                            '[TestDetailsPage.renderTestSuites] Container not found, aborting'
-                        );
+                        console.warn('[TestDetailsPage.renderSuitesTree] Container not found, aborting');
                         return;
                     }
 
-                    // Populate suite filter
+                    // Populate suite filter dropdown
                     if (filter) {
-                        console.log('[TestDetailsPage.renderTestSuites] Populating suite filter');
                         filter.innerHTML = '<option value="all">All Suites</option>';
                         this.testSuites.forEach(suite => {
                             const option = document.createElement('option');
@@ -611,104 +588,88 @@
                             option.textContent = suite.name;
                             filter.appendChild(option);
                         });
-                        console.log(
-                            '[TestDetailsPage.renderTestSuites] Suite filter populated with',
-                            this.testSuites.length,
-                            'options'
-                        );
                     }
 
-                    console.log(
-                        '[TestDetailsPage.renderTestSuites] Generating HTML for',
-                        this.testSuites.length,
-                        'suites'
-                    );
+                    // Group test cases by suite_id
+                    const testsBySuite = {};
+                    this.testCases.forEach(testCase => {
+                        if (!testsBySuite[testCase.suite_id]) {
+                            testsBySuite[testCase.suite_id] = [];
+                        }
+                        testsBySuite[testCase.suite_id].push(testCase);
+                    });
+
+                    // Render tree: suites with their test cases underneath
                     container.innerHTML = this.testSuites
-                        .map(
-                            suite => `
-                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
-                        <div class="px-6 py-4 border-b border-gray-200 cursor-pointer" onclick="detailsPage.toggleSuite('${suite.id}')">
-                            <div class="flex items-center justify-between">
-                                <div>
-                                    <h4 class="text-lg font-semibold text-gray-900">${suite.name}</h4>
-                                    <p class="text-sm text-gray-600">${suite.tests} tests • ${suite.time.toFixed(2)}s</p>
+                        .map(suite => {
+                            const suiteTests = testsBySuite[suite.id] || [];
+                            const passedCount = suiteTests.filter(t => t.status === 'passed').length;
+                            const failedCount = suiteTests.filter(t => t.status === 'failed').length;
+                            const errorCount = suiteTests.filter(t => t.status === 'error').length;
+                            const skippedCount = suiteTests.filter(t => t.status === 'skipped').length;
+
+                            return `
+                                <div class="suite-tree-item border-b border-gray-200" data-suite-id="${suite.id}">
+                                    <!-- Suite Header -->
+                                    <div class="px-6 py-4 cursor-pointer hover:bg-gray-50" onclick="detailsPage.toggleSuite('${suite.id}')">
+                                        <div class="flex items-center justify-between">
+                                            <div class="flex items-center space-x-3">
+                                                <svg class="w-5 h-5 text-gray-400 transform transition-transform" id="suite-arrow-${suite.id}">
+                                                    <path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                                </svg>
+                                                <div>
+                                                    <h4 class="text-base font-semibold text-gray-900">${suite.name}</h4>
+                                                    <p class="text-sm text-gray-600">${suite.tests} tests • ${suite.time.toFixed(2)}s</p>
+                                                </div>
+                                            </div>
+                                            <div class="flex items-center space-x-2">
+                                                ${passedCount > 0 ? `<span class="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">${passedCount} passed</span>` : ''}
+                                                ${failedCount > 0 ? `<span class="px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800">${failedCount} failed</span>` : ''}
+                                                ${errorCount > 0 ? `<span class="px-2 py-1 text-xs font-medium rounded-full bg-orange-100 text-orange-800">${errorCount} errors</span>` : ''}
+                                                ${skippedCount > 0 ? `<span class="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800">${skippedCount} skipped</span>` : ''}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Suite Test Cases (Collapsible) -->
+                                    <div class="expandable-content" id="suite-content-${suite.id}">
+                                        <div class="bg-gray-50 px-6 py-4 space-y-3">
+                                            ${suiteTests.map(testCase => `
+                                                <div class="test-case-card ${testCase.status} bg-white p-4 rounded border border-gray-200" data-test-case-id="${testCase.id}">
+                                                    <div class="flex items-start justify-between mb-2">
+                                                        <div class="flex-1">
+                                                            <h5 class="text-sm font-medium text-gray-900 mb-1">${testCase.name}</h5>
+                                                            <p class="text-xs text-gray-600">${testCase.classname}</p>
+                                                        </div>
+                                                        <div class="text-right">
+                                                            <div class="text-sm font-medium text-gray-900">${testCase.time.toFixed(3)}s</div>
+                                                            <div class="text-xs text-gray-600">${testCase.assertions || 0} assertions</div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="flex items-center justify-between">
+                                                        <div class="flex items-center space-x-2">
+                                                            <span class="status-badge ${testCase.status}">${testCase.status}</span>
+                                                            ${testCase.is_flaky ? '<span class="status-badge bg-yellow-100 text-yellow-800">⚠️ FLAKY</span>' : ''}
+                                                        </div>
+                                                        <div class="flex gap-2">
+                                                            <button class="text-green-600 hover:text-green-800 text-xs font-medium" onclick="detailsPage.viewTestHistory('${testCase.name.replace(/'/g, "\\'")}', '${testCase.classname.replace(/'/g, "\\'")}')">
+                                                                📊 History
+                                                            </button>
+                                                            <button class="text-blue-600 hover:text-blue-800 text-xs font-medium" onclick="detailsPage.viewTestDetails('${testCase.id}')">
+                                                                Details →
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            `).join('')}
+                                        </div>
+                                    </div>
                                 </div>
-                                <div class="flex items-center space-x-2">
-                                    ${suite.failures > 0 ? `<span class="px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800">${suite.failures} failed</span>` : ''}
-                                    ${suite.errors > 0 ? `<span class="px-2 py-1 text-xs font-medium rounded-full bg-orange-100 text-orange-800">${suite.errors} errors</span>` : ''}
-                                    <svg class="w-5 h-5 text-gray-400 transform transition-transform" id="suite-arrow-${suite.id}">
-                                        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-                                    </svg>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="expandable-content" id="suite-content-${suite.id}">
-                            <div class="p-6">
-                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="suite-tests-${suite.id}">
-                                    <!-- Test cases will be populated here -->
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                `
-                        )
+                            `;
+                        })
                         .join('');
-                    console.log(
-                        '[TestDetailsPage.renderTestSuites] HTML rendered, length:',
-                        container.innerHTML.length
-                    );
-                }
 
-                renderTestCases() {
-                    console.log('[TestDetailsPage.renderTestCases] Starting to render test cases');
-                    console.log(
-                        '[TestDetailsPage.renderTestCases] Number of test cases:',
-                        this.testCases.length
-                    );
-                    const container = document.getElementById('test-cases-container');
-                    console.log('[TestDetailsPage.renderTestCases] Container element:', container);
-
-                    if (!container) {
-                        console.warn(
-                            '[TestDetailsPage.renderTestCases] Container not found, aborting'
-                        );
-                        return;
-                    }
-
-                    container.innerHTML = this.testCases
-                        .map(
-                            testCase => `
-                    <div class="test-case-card ${testCase.status} p-6" data-test-case-id="${testCase.id}">
-                        <div class="flex items-start justify-between mb-3">
-                            <div class="flex-1">
-                                <h4 class="text-sm font-semibold text-gray-900 mb-1">${testCase.name}</h4>
-                                <p class="text-xs text-gray-600 mb-2">${testCase.classname}</p>
-                                <span class="status-badge ${testCase.status}">${testCase.status}</span>
-                                ${testCase.is_flaky ? '<span class="status-badge bg-yellow-100 text-yellow-800 ml-2">⚠️ FLAKY</span>' : ''}
-                            </div>
-                            <div class="text-right">
-                                <div class="text-sm font-medium text-gray-900">${testCase.time.toFixed(3)}s</div>
-                                <div class="text-xs text-gray-600">${testCase.assertions} assertions</div>
-                            </div>
-                        </div>
-                        <div class="flex items-center justify-between">
-                            <div class="text-xs text-gray-500">
-                                ${testCase.file ? `File: ${testCase.file}` : ''}
-                                ${testCase.line ? `Line: ${testCase.line}` : ''}
-                            </div>
-                            <div class="flex gap-2">
-                                <button class="text-green-600 hover:text-green-800 text-xs font-medium" onclick="detailsPage.viewTestHistory('${testCase.name.replace(/'/g, "\\'")}', '${testCase.classname.replace(/'/g, "\\'")}')">
-                                    📊 History
-                                </button>
-                                <button class="text-blue-600 hover:text-blue-800 text-xs font-medium" onclick="detailsPage.viewTestDetails('${testCase.id}')">
-                                    Details →
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                `
-                        )
-                        .join('');
+                    console.log('[TestDetailsPage.renderSuitesTree] Tree rendered successfully');
                 }
 
                 initializePerformanceChart() {
@@ -973,77 +934,75 @@
                     const searchTerm = document.getElementById('test-search').value.toLowerCase();
                     const suiteFilter = document.getElementById('suite-filter').value;
 
-                    let filteredCases = this.testCases;
+                    console.log('[filterTestCases] Filters:', { statusFilter, searchTerm, suiteFilter });
 
-                    if (statusFilter !== 'all') {
-                        filteredCases = filteredCases.filter(test => test.status === statusFilter);
-                    }
+                    // Get all suite items
+                    const suiteItems = document.querySelectorAll('.suite-tree-item');
 
-                    if (searchTerm) {
-                        filteredCases = filteredCases.filter(
-                            test =>
-                                test.name.toLowerCase().includes(searchTerm) ||
-                                test.classname.toLowerCase().includes(searchTerm)
-                        );
-                    }
+                    suiteItems.forEach(suiteItem => {
+                        const suiteId = suiteItem.dataset.suiteId;
 
-                    if (suiteFilter !== 'all') {
-                        filteredCases = filteredCases.filter(test => test.suite_id === suiteFilter);
-                    }
+                        // If suite filter is active, hide/show entire suites
+                        if (suiteFilter !== 'all') {
+                            if (suiteId === suiteFilter) {
+                                suiteItem.style.display = '';
+                            } else {
+                                suiteItem.style.display = 'none';
+                                return; // Skip filtering test cases in hidden suites
+                            }
+                        } else {
+                            suiteItem.style.display = '';
+                        }
 
-                    this.renderFilteredTestCases(filteredCases);
-                }
+                        // Filter test cases within visible suites
+                        const testCaseCards = suiteItem.querySelectorAll('.test-case-card');
+                        let visibleTestsCount = 0;
 
-                renderFilteredTestCases(testCases) {
-                    const container = document.getElementById('test-cases-container');
-                    if (!container) return;
+                        testCaseCards.forEach(card => {
+                            const testId = card.dataset.testCaseId;
+                            const testCase = this.testCases.find(t => t.id === testId);
 
-                    container.innerHTML = testCases
-                        .map(
-                            testCase => `
-                    <div class="test-case-card ${testCase.status} p-6" data-test-case-id="${testCase.id}">
-                        <div class="flex items-start justify-between mb-3">
-                            <div class="flex-1">
-                                <h4 class="text-sm font-semibold text-gray-900 mb-1">${testCase.name}</h4>
-                                <p class="text-xs text-gray-600 mb-2">${testCase.classname}</p>
-                                <span class="status-badge ${testCase.status}">${testCase.status}</span>
-                                ${testCase.is_flaky ? '<span class="status-badge bg-yellow-100 text-yellow-800 ml-2">⚠️ FLAKY</span>' : ''}
-                            </div>
-                            <div class="text-right">
-                                <div class="text-sm font-medium text-gray-900">${testCase.time.toFixed(3)}s</div>
-                                <div class="text-xs text-gray-600">${testCase.assertions} assertions</div>
-                            </div>
-                        </div>
-                        <div class="flex items-center justify-between">
-                            <div class="text-xs text-gray-500">
-                                ${testCase.file ? `File: ${testCase.file}` : ''}
-                                ${testCase.line ? `Line: ${testCase.line}` : ''}
-                            </div>
-                            <div class="flex gap-2">
-                                <button class="text-green-600 hover:text-green-800 text-xs font-medium" onclick="detailsPage.viewTestHistory('${testCase.name.replace(/'/g, "\\'")}', '${testCase.classname.replace(/'/g, "\\'")}')">
-                                    📊 History
-                                </button>
-                                <button class="text-blue-600 hover:text-blue-800 text-xs font-medium" onclick="detailsPage.viewTestDetails('${testCase.id}')">
-                                    Details →
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                `
-                        )
-                        .join('');
+                            if (!testCase) {
+                                card.style.display = 'none';
+                                return;
+                            }
+
+                            let shouldShow = true;
+
+                            // Apply status filter
+                            if (statusFilter !== 'all' && testCase.status !== statusFilter) {
+                                shouldShow = false;
+                            }
+
+                            // Apply search filter
+                            if (searchTerm) {
+                                const matchesSearch =
+                                    testCase.name.toLowerCase().includes(searchTerm) ||
+                                    testCase.classname.toLowerCase().includes(searchTerm);
+                                if (!matchesSearch) {
+                                    shouldShow = false;
+                                }
+                            }
+
+                            if (shouldShow) {
+                                card.style.display = '';
+                                visibleTestsCount++;
+                            } else {
+                                card.style.display = 'none';
+                            }
+                        });
+
+                        // Hide suite if no visible test cases
+                        if (visibleTestsCount === 0 && (statusFilter !== 'all' || searchTerm)) {
+                            suiteItem.style.display = 'none';
+                        }
+                    });
                 }
 
                 toggleSuite(suiteId) {
-                    console.log(
-                        '[TestDetailsPage.toggleSuite] Called with suiteId:',
-                        suiteId,
-                        'type:',
-                        typeof suiteId
-                    );
+                    console.log('[TestDetailsPage.toggleSuite] Toggling suite:', suiteId);
                     const content = document.getElementById(`suite-content-${suiteId}`);
                     const arrow = document.getElementById(`suite-arrow-${suiteId}`);
-                    const testsContainer = document.getElementById(`suite-tests-${suiteId}`);
 
                     if (content && arrow) {
                         const isExpanded = content.classList.contains('expanded');
@@ -1054,48 +1013,6 @@
                         } else {
                             content.classList.add('expanded');
                             arrow.style.transform = 'rotate(180deg)';
-
-                            // Load test cases for this suite
-                            if (testsContainer) {
-                                console.log(
-                                    '[TestDetailsPage.toggleSuite] Total test cases:',
-                                    this.testCases.length
-                                );
-                                console.log(
-                                    '[TestDetailsPage.toggleSuite] Sample test case suite_id:',
-                                    this.testCases[0]?.suite_id,
-                                    'type:',
-                                    typeof this.testCases[0]?.suite_id
-                                );
-
-                                // Convert both to strings for comparison
-                                const suiteIdStr = String(suiteId);
-                                const suiteTests = this.testCases.filter(
-                                    test => String(test.suite_id) === suiteIdStr
-                                );
-
-                                console.log(
-                                    '[TestDetailsPage.toggleSuite] Found',
-                                    suiteTests.length,
-                                    'test cases for suite',
-                                    suiteIdStr
-                                );
-                                testsContainer.innerHTML = suiteTests
-                                    .map(
-                                        test => `
-                                <div class="bg-gray-50 rounded-lg p-3">
-                                    <div class="flex items-center justify-between mb-2">
-                                        <h5 class="text-sm font-medium text-gray-900 truncate">${test.name}</h5>
-                                        <span class="status-badge ${test.status}">${test.status}</span>
-                                    </div>
-                                    <div class="text-xs text-gray-600">
-                                        Time: ${test.time.toFixed(3)}s
-                                    </div>
-                                </div>
-                            `
-                                    )
-                                    .join('');
-                            }
                         }
                     }
                 }
@@ -1138,6 +1055,7 @@
                         this.allSuitesExpanded = true;
                     }
                 }
+
 
                 async renderFailurePatterns() {
                     const section = document.getElementById('failure-patterns-section');
