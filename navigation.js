@@ -46,10 +46,6 @@ class NavigationManager {
     async loadProjects() {
         try {
             const apiClient = new JUnitAPIClient();
-            // Skip if API is not available (file:// protocol)
-            if (!apiClient.baseURL) {
-                return;
-            }
             const response = await apiClient.request('/runs/projects');
             this.projects = response.data.projects || [];
             this.populateProjectFilter();

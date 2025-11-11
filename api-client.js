@@ -17,16 +17,9 @@ class JUnitAPIClient {
             return JUNIT_API_URL;
         }
 
-        // Check if opened as file:// (not served by web server)
-        const protocol = window.location.protocol;
-        if (protocol === 'file:') {
-            console.error('⚠️ Application opened as local file. Please serve via web server.');
-            this.showFileProtocolError();
-            return null; // Return null to prevent API calls
-        }
-
         // Docker deployment: API is behind Nginx on same host
         // This works for both localhost and remote servers
+        const protocol = window.location.protocol;
         const hostname = window.location.hostname;
         const port = window.location.port;
 
@@ -37,63 +30,7 @@ class JUnitAPIClient {
         return `${protocol}//${hostname}${portPart}/api/v1`;
     }
 
-    showFileProtocolError() {
-        // Show error immediately on page load
-        setTimeout(() => {
-            const errorDiv = document.createElement('div');
-            errorDiv.id = 'file-protocol-error';
-            errorDiv.style.cssText = `
-                position: fixed;
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%);
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                color: white;
-                padding: 30px 40px;
-                border-radius: 12px;
-                box-shadow: 0 10px 40px rgba(0,0,0,0.3);
-                z-index: 100000;
-                font-family: system-ui, -apple-system, sans-serif;
-                max-width: 600px;
-                text-align: center;
-            `;
-            errorDiv.innerHTML = `
-                <div style="font-size: 48px; margin-bottom: 20px;">🚀</div>
-                <h2 style="margin: 0 0 15px 0; font-size: 24px; font-weight: 600;">
-                    JUnit Test Results Dashboard
-                </h2>
-                <p style="margin: 0 0 20px 0; font-size: 16px; opacity: 0.95; line-height: 1.6;">
-                    This application requires a web server to function properly.<br>
-                    Please start the application using Docker or a web server.
-                </p>
-                <div style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 8px; margin-bottom: 20px;">
-                    <p style="margin: 0 0 10px 0; font-weight: 600;">Quick Start with Docker:</p>
-                    <code style="display: block; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 4px; font-family: monospace; font-size: 14px; text-align: left;">
-                        docker-compose up -d<br>
-                        # Then open: http://localhost
-                    </code>
-                </div>
-                <div style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 8px;">
-                    <p style="margin: 0 0 10px 0; font-weight: 600;">Or use a simple web server:</p>
-                    <code style="display: block; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 4px; font-family: monospace; font-size: 14px; text-align: left;">
-                        python3 -m http.server 8080<br>
-                        # Then open: http://localhost:8080
-                    </code>
-                </div>
-                <p style="margin: 20px 0 0 0; font-size: 12px; opacity: 0.8;">
-                    See README.md for full installation instructions
-                </p>
-            `;
-            document.body.appendChild(errorDiv);
-        }, 100);
-    }
-
     async request(endpoint, options = {}) {
-        // If baseURL is null (file:// protocol), don't make requests
-        if (!this.baseURL) {
-            throw new Error('API not available: Application must be served via web server (not file://)');
-        }
-
         const url = `${this.baseURL}${endpoint}`;
 
         try {
