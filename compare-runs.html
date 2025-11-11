@@ -1,11 +1,18 @@
 <!doctype html>
 <html lang="en">
+    <!-- Updated: 2025-11-10 - Redesigned with test suite filter for meaningful comparisons -->
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <script src="error-boundary.js"></script>
         <script src="console-capture.js"></script>
         <title>Compare Test Runs - JUnit Dashboard</title>
         <script src="https://cdn.tailwindcss.com"></script>
+        <script>
+            tailwind.config = {
+                darkMode: 'class'
+            };
+        </script>
         <link
             href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
             rel="stylesheet"
@@ -43,50 +50,7 @@
     </head>
     <body class="bg-gray-50 dark:bg-gray-900">
         <!-- Navigation -->
-        <nav class="bg-white dark:bg-gray-800 shadow-lg border-b border-gray-200 dark:border-gray-700">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div class="flex justify-between h-16">
-                    <div class="flex space-x-8">
-                        <a
-                            href="index.html"
-                            class="nav-link inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400"
-                        >
-                            Dashboard
-                        </a>
-                        <a
-                            href="details.html"
-                            class="nav-link inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400"
-                        >
-                            Test Details
-                        </a>
-                        <a
-                            href="flaky-tests.html"
-                            class="nav-link inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400"
-                        >
-                            Flaky Tests
-                        </a>
-                        <a
-                            href="performance-analysis.html"
-                            class="nav-link inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400"
-                        >
-                            Performance
-                        </a>
-                        <a
-                            href="compare-runs.html"
-                            class="nav-link active inline-flex items-center px-1 pt-1 text-sm font-medium text-blue-600 dark:text-blue-400"
-                        >
-                            Compare Runs
-                        </a>
-                        <a
-                            href="reports.html"
-                            class="nav-link inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400"
-                        >
-                            Reports
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </nav>
+        <nav class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 sticky top-0 z-40"></nav>
 
         <!-- Main Content -->
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -94,49 +58,104 @@
             <div class="mb-8">
                 <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Compare Test Runs</h1>
                 <p class="mt-2 text-gray-600 dark:text-gray-400">
-                    Analyze differences between two test runs
+                    Compare the same test suite across different test runs for meaningful analysis
                 </p>
             </div>
 
-            <!-- Run Selection -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Baseline Run (Earlier)
-                    </label>
-                    <select
-                        id="run1Select"
-                        class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
-                    >
-                        <option value="">Select a test run...</option>
-                    </select>
-                </div>
-
-                <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Current Run (Later)
-                    </label>
-                    <select
-                        id="run2Select"
-                        class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
-                    >
-                        <option value="">Select a test run...</option>
-                    </select>
+            <!-- Info Box -->
+            <div class="bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500 p-4 mb-8">
+                <div class="flex items-start">
+                    <div class="flex-shrink-0">
+                        <svg class="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                        </svg>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm text-blue-700 dark:text-blue-300">
+                            <strong>Note:</strong> Each test run may contain multiple test suites (test classes).
+                            To get meaningful comparisons, first select which test suite you want to analyze,
+                            then choose two runs that contain that suite.
+                        </p>
+                    </div>
                 </div>
             </div>
 
-            <div class="flex justify-center mb-8">
-                <button
-                    id="compareBtn"
-                    onclick="compareRuns()"
-                    class="px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+            <!-- Step 1: Test Suite Selection -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-6">
+                <div class="flex items-center mb-4">
+                    <span class="flex-shrink-0 w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold mr-3">1</span>
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Select Test Suite to Compare</h3>
+                </div>
+                <select
+                    id="suiteSelect"
+                    onchange="onSuiteChange()"
+                    class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
                 >
-                    Compare Runs
-                </button>
+                    <option value="">Choose a test suite/class...</option>
+                </select>
+                <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                    Select which test suite/class you want to compare across runs
+                </p>
+            </div>
+
+            <!-- Step 2: Run Selection -->
+            <div id="runSelectionSection" class="hidden">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                        <div class="flex items-center mb-4">
+                            <span class="flex-shrink-0 w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold mr-3">2</span>
+                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Baseline Run (Earlier)</h3>
+                        </div>
+                        <select
+                            id="run1Select"
+                            class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                        >
+                            <option value="">Select baseline run...</option>
+                        </select>
+                    </div>
+
+                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                        <div class="flex items-center mb-4">
+                            <span class="flex-shrink-0 w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold mr-3">3</span>
+                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Current Run (Later)</h3>
+                        </div>
+                        <select
+                            id="run2Select"
+                            class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                        >
+                            <option value="">Select current run...</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="flex justify-center mb-8">
+                    <button
+                        id="compareBtn"
+                        onclick="compareRuns()"
+                        class="px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center"
+                    >
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                        </svg>
+                        Compare Runs
+                    </button>
+                </div>
             </div>
 
             <!-- Results Container -->
             <div id="resultsContainer" class="hidden">
+                <!-- Suite Badge -->
+                <div class="mb-6 flex items-center justify-center">
+                    <div class="inline-flex items-center px-4 py-2 bg-blue-100 dark:bg-blue-900/30 rounded-full">
+                        <svg class="w-5 h-5 text-blue-600 dark:text-blue-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M7 3a1 1 0 000 2h6a1 1 0 100-2H7zM4 7a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1zM2 11a2 2 0 012-2h12a2 2 0 012 2v4a2 2 0 01-2 2H4a2 2 0 01-2-2v-4z"/>
+                        </svg>
+                        <span class="text-sm font-medium text-blue-900 dark:text-blue-200">
+                            Comparing: <span id="selectedSuiteName" class="code-font font-bold"></span>
+                        </span>
+                    </div>
+                </div>
+
                 <!-- Summary Comparison -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                     <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
@@ -220,66 +239,181 @@
             </div>
 
             <!-- Empty State -->
-            <div id="emptyState" class="text-center py-12">
+            <div id="emptyState" class="text-center py-12 hidden">
                 <div class="text-6xl mb-4">🔍</div>
                 <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                    Select Two Runs to Compare
+                    Select a Test Suite First
                 </h3>
                 <p class="text-gray-600 dark:text-gray-400">
-                    Choose a baseline run and a current run from the dropdowns above
+                    Choose a test suite from the dropdown above to start comparing runs
                 </p>
             </div>
         </div>
 
-        <script src="db.js"></script>
+        <!-- Load shared scripts -->
+        <script src="theme.js"></script>
+        <script src="navigation.js"></script>
+        <script src="api-client.js"></script>
+        <script src="shared-utils.js"></script>
+
         <script>
-            const db = new TestResultsDB();
+            const db = new JUnitAPIClient();
             let allRuns = [];
+            let allSuites = [];
+            let selectedSuite = null;
+            let runsWithSelectedSuite = [];
 
             // Initialize
             async function init() {
                 try {
-                    await db.connect();
-                    await loadRuns();
+                    await loadAllSuites();
+                    await loadAllRuns();
+
+                    // Listen for project filter changes
+                    window.addEventListener('projectFilterChanged', async () => {
+                        await loadAllRuns();
+                        // Reset selections when project changes
+                        if (selectedSuite) {
+                            await onSuiteChange();
+                        }
+                    });
 
                     // Check for URL parameters
                     const urlParams = new URLSearchParams(window.location.search);
+                    const suite = urlParams.get('suite');
                     const run1 = urlParams.get('run1');
                     const run2 = urlParams.get('run2');
 
-                    if (run1 && run2) {
-                        document.getElementById('run1Select').value = run1;
-                        document.getElementById('run2Select').value = run2;
-                        await compareRuns();
+                    if (suite) {
+                        document.getElementById('suiteSelect').value = suite;
+                        await onSuiteChange();
+
+                        if (run1 && run2) {
+                            document.getElementById('run1Select').value = run1;
+                            document.getElementById('run2Select').value = run2;
+                            await compareRuns();
+                        }
                     }
                 } catch (error) {
-                    console.error('Failed to initialize:', error);
+                    logError('Failed to initialize Compare Runs page', error);
                 }
             }
 
-            async function loadRuns() {
+            async function loadAllSuites() {
                 try {
-                    const response = await db.fetchWithAuth('/runs?limit=100');
-                    allRuns = response.data.runs;
+                    // Get all unique suite/class names from test cases
+                    const response = await db.request('/cases?limit=1000');
+                    const cases = response.data.cases;
 
+                    // Extract unique classnames
+                    const uniqueClassnames = [...new Set(cases.map(c => c.classname))].filter(Boolean).sort();
+
+                    allSuites = uniqueClassnames;
+
+                    const suiteSelect = document.getElementById('suiteSelect');
+                    uniqueClassnames.forEach(classname => {
+                        const option = new Option(classname, classname);
+                        suiteSelect.add(option);
+                    });
+                } catch (error) {
+                    logError('Failed to load test suites list', error);
+                }
+            }
+
+            async function loadAllRuns() {
+                try {
+                    // Get selected project from navigation
+                    const selectedProject = window.navigationManager?.getSelectedProject();
+                    let queryParams = '?limit=100';
+
+                    // Filter by project if one is selected
+                    if (selectedProject && selectedProject !== 'all') {
+                        queryParams += `&job_name=${encodeURIComponent(selectedProject)}`;
+                    }
+
+                    const response = await db.request(`/runs${queryParams}`);
+                    allRuns = response.data.runs;
+                } catch (error) {
+                    logError('Failed to load test runs list', error);
+                }
+            }
+
+            async function onSuiteChange() {
+                const suiteSelect = document.getElementById('suiteSelect');
+                selectedSuite = suiteSelect.value;
+
+                if (!selectedSuite) {
+                    document.getElementById('runSelectionSection').classList.add('hidden');
+                    document.getElementById('emptyState').classList.remove('hidden');
+                    document.getElementById('resultsContainer').classList.add('hidden');
+                    return;
+                }
+
+                // Show loading state
+                document.getElementById('emptyState').classList.add('hidden');
+                document.getElementById('loadingState').classList.remove('hidden');
+
+                try {
+                    // Find all runs that contain this suite
+                    runsWithSelectedSuite = [];
+
+                    for (const run of allRuns) {
+                        // Check if this run contains the selected suite
+                        const casesResponse = await db.request(`/cases?run_id=${run._id}&limit=1`);
+                        const hasSuite = casesResponse.data.cases.some(c => c.classname === selectedSuite);
+
+                        if (hasSuite) {
+                            runsWithSelectedSuite.push(run);
+                        }
+                    }
+
+                    // Populate run dropdowns with filtered runs
                     const run1Select = document.getElementById('run1Select');
                     const run2Select = document.getElementById('run2Select');
 
-                    allRuns.forEach((run, index) => {
+                    run1Select.innerHTML = '<option value="">Select baseline run...</option>';
+                    run2Select.innerHTML = '<option value="">Select current run...</option>';
+
+                    runsWithSelectedSuite.forEach((run, index) => {
                         const date = new Date(run.timestamp).toLocaleString();
-                        const option1 = new Option(`Run #${allRuns.length - index} - ${date}`, run._id);
-                        const option2 = new Option(`Run #${allRuns.length - index} - ${date}`, run._id);
+
+                        // Display format: "JOB_NAME #BUILD_NUMBER" or just run name
+                        const displayName = run.ci_metadata?.job_name && run.ci_metadata?.build_number
+                            ? `${run.ci_metadata.job_name} #${run.ci_metadata.build_number}`
+                            : run.name || 'Test Run';
+
+                        const runLabel = `${displayName} - ${date}`;
+                        const option1 = new Option(runLabel, run._id);
+                        const option2 = new Option(runLabel, run._id);
                         run1Select.add(option1);
                         run2Select.add(option2);
                     });
+
+                    // Show run selection section
+                    document.getElementById('loadingState').classList.add('hidden');
+                    document.getElementById('runSelectionSection').classList.remove('hidden');
+
+                    if (runsWithSelectedSuite.length === 0) {
+                        alert(`No test runs found containing suite "${selectedSuite}"`);
+                    } else if (runsWithSelectedSuite.length === 1) {
+                        alert(`Only 1 test run found containing suite "${selectedSuite}". You need at least 2 runs to compare.`);
+                    }
                 } catch (error) {
-                    console.error('Failed to load runs:', error);
+                    logError('Failed to filter runs by suite', error);
+                    document.getElementById('loadingState').classList.add('hidden');
+                    document.getElementById('emptyState').classList.remove('hidden');
+                    alert('Failed to load runs for this suite. Please try again.');
                 }
             }
 
             async function compareRuns() {
                 const run1Id = document.getElementById('run1Select').value;
                 const run2Id = document.getElementById('run2Select').value;
+
+                if (!selectedSuite) {
+                    alert('Please select a test suite first');
+                    return;
+                }
 
                 if (!run1Id || !run2Id) {
                     alert('Please select both runs to compare');
@@ -297,10 +431,23 @@
                 document.getElementById('loadingState').classList.remove('hidden');
 
                 try {
-                    const response = await db.fetchWithAuth(`/runs/${run1Id}/compare/${run2Id}`);
-                    const data = response.data;
+                    // Fetch test cases for both runs, filtered by suite
+                    const [cases1Response, cases2Response] = await Promise.all([
+                        db.request(`/cases?run_id=${run1Id}&limit=1000`),
+                        db.request(`/cases?run_id=${run2Id}&limit=1000`)
+                    ]);
 
-                    displayResults(data);
+                    // Filter cases to only include selected suite
+                    const cases1 = cases1Response.data.cases.filter(c => c.classname === selectedSuite);
+                    const cases2 = cases2Response.data.cases.filter(c => c.classname === selectedSuite);
+
+                    // Perform comparison client-side
+                    const comparisonData = compareTestCases(cases1, cases2, run1Id, run2Id);
+
+                    displayResults(comparisonData);
+
+                    // Update selected suite name display
+                    document.getElementById('selectedSuiteName').textContent = selectedSuite;
 
                     // Hide loading, show results
                     document.getElementById('loadingState').classList.add('hidden');
@@ -308,16 +455,120 @@
 
                     // Update URL
                     const url = new URL(window.location);
+                    url.searchParams.set('suite', selectedSuite);
                     url.searchParams.set('run1', run1Id);
                     url.searchParams.set('run2', run2Id);
                     window.history.pushState({}, '', url);
 
                 } catch (error) {
-                    console.error('Failed to compare runs:', error);
+                    logError('Failed to compare runs', error);
                     document.getElementById('loadingState').classList.add('hidden');
                     document.getElementById('emptyState').classList.remove('hidden');
                     alert('Failed to compare runs. Please try again.');
                 }
+            }
+
+            function compareTestCases(cases1, cases2, run1Id, run2Id) {
+                // Get run metadata
+                const run1 = allRuns.find(r => r._id === run1Id);
+                const run2 = allRuns.find(r => r._id === run2Id);
+
+                // Create maps for easier lookup
+                const cases1Map = new Map();
+                cases1.forEach(c => cases1Map.set(`${c.name}|${c.classname}`, c));
+
+                const cases2Map = new Map();
+                cases2.forEach(c => cases2Map.set(`${c.name}|${c.classname}`, c));
+
+                // Analysis
+                const newFailures = [];
+                const newPasses = [];
+                const regressions = [];
+                const newTests = [];
+                const removedTests = [];
+
+                // Check tests in run2
+                for (const [key, test2] of cases2Map) {
+                    const test1 = cases1Map.get(key);
+
+                    if (!test1) {
+                        newTests.push({
+                            name: test2.name,
+                            classname: test2.classname,
+                            status: test2.status
+                        });
+                    } else {
+                        // Test exists in both runs
+                        if (test1.status === 'passed' && (test2.status === 'failed' || test2.status === 'error')) {
+                            newFailures.push({
+                                name: test2.name,
+                                classname: test2.classname,
+                                status: test2.status,
+                                message: test2.failure_message || test2.error_message
+                            });
+                        } else if ((test1.status === 'failed' || test1.status === 'error') && test2.status === 'passed') {
+                            newPasses.push({
+                                name: test2.name,
+                                classname: test2.classname
+                            });
+                        }
+
+                        // Check for performance regression (>20% slower)
+                        if (test1.status === 'passed' && test2.status === 'passed' && test1.time > 0) {
+                            const percentChange = ((test2.time - test1.time) / test1.time) * 100;
+                            if (percentChange > 20) {
+                                regressions.push({
+                                    name: test2.name,
+                                    classname: test2.classname,
+                                    old_time: test1.time,
+                                    new_time: test2.time,
+                                    percent_change: percentChange.toFixed(1)
+                                });
+                            }
+                        }
+                    }
+                }
+
+                // Check for removed tests
+                for (const [key, test1] of cases1Map) {
+                    if (!cases2Map.has(key)) {
+                        removedTests.push({
+                            name: test1.name,
+                            classname: test1.classname
+                        });
+                    }
+                }
+
+                // Summary stats
+                const summary = {
+                    run1: {
+                        id: run1._id,
+                        timestamp: run1.timestamp,
+                        total_tests: cases1.length,
+                        passed: cases1.filter(c => c.status === 'passed').length,
+                        failed: cases1.filter(c => c.status === 'failed').length,
+                        errors: cases1.filter(c => c.status === 'error').length,
+                        skipped: cases1.filter(c => c.status === 'skipped').length
+                    },
+                    run2: {
+                        id: run2._id,
+                        timestamp: run2.timestamp,
+                        total_tests: cases2.length,
+                        passed: cases2.filter(c => c.status === 'passed').length,
+                        failed: cases2.filter(c => c.status === 'failed').length,
+                        errors: cases2.filter(c => c.status === 'error').length,
+                        skipped: cases2.filter(c => c.status === 'skipped').length
+                    }
+                };
+
+                return {
+                    summary,
+                    new_failures: newFailures,
+                    new_passes: newPasses,
+                    performance_regressions: regressions,
+                    new_tests: newTests,
+                    removed_tests: removedTests
+                };
             }
 
             function displayResults(data) {
@@ -553,16 +804,6 @@
                 `).join('');
 
                 document.getElementById('removedTestsList').innerHTML = html;
-            }
-
-            function viewTestHistory(testName, className) {
-                window.location.href = `test-case-history.html?name=${encodeURIComponent(testName)}&class=${encodeURIComponent(className)}`;
-            }
-
-            function escapeHtml(text) {
-                const div = document.createElement('div');
-                div.textContent = text;
-                return div.innerHTML;
             }
 
             // Initialize on load

@@ -6,7 +6,8 @@ class JUnitDashboard {
             status: 'all',
             search: '',
             dateRange: null,
-            run_id: null
+            run_id: null,
+            classname: null
         };
         this.charts = {};
         this.init();
@@ -19,13 +20,7 @@ class JUnitDashboard {
             this.loadDashboard();
             this.initializeAnimations();
         } catch (error) {
-            console.error('Failed to initialize dashboard:', error);
-            console.error('Error details:', {
-                message: error.message,
-                stack: error.stack,
-                name: error.name,
-                cause: error.cause
-            });
+            logError('Failed to initialize dashboard', error);
             this.showError('Failed to initialize application. Please refresh the page.');
         }
     }
@@ -44,6 +39,7 @@ class JUnitDashboard {
 
         // Filter handlers
         const runFilter = document.getElementById('run-filter');
+        const suiteFilter = document.getElementById('suite-filter');
         const statusFilter = document.getElementById('status-filter');
         const searchInput = document.getElementById('search-input');
         const dateFilter = document.getElementById('date-filter');
@@ -51,6 +47,9 @@ class JUnitDashboard {
 
         if (runFilter) {
             runFilter.addEventListener('change', this.handleRunFilter.bind(this));
+        }
+        if (suiteFilter) {
+            suiteFilter.addEventListener('change', this.handleSuiteFilter.bind(this));
         }
         if (statusFilter) {
             statusFilter.addEventListener('change', this.handleStatusFilter.bind(this));
@@ -69,6 +68,11 @@ class JUnitDashboard {
         const sortOptions = document.querySelectorAll('[data-sort]');
         sortOptions.forEach(option => {
             option.addEventListener('click', this.handleSort.bind(this));
+        });
+
+        // Listen for project filter changes
+        window.addEventListener('projectFilterChanged', () => {
+            this.loadDashboard();
         });
 
         // Handle page visibility changes to reload data
@@ -124,7 +128,7 @@ class JUnitDashboard {
             this.hideUploadProgress();
             await this.loadDashboard();
         } catch (error) {
-            console.error('Error processing files:', error);
+            logError('Error processing files', error);
             this.showError('Error processing files: ' + error.message);
             this.hideUploadProgress();
         }
@@ -161,25 +165,28 @@ class JUnitDashboard {
 
     async loadDashboard() {
         try {
-            const [testRuns, recentUploads, statistics] = await Promise.all([
-                this.db.getTestRuns(10),
-                this.getRecentUploads(),
+            // Get selected project from navigation
+            const selectedProject = window.navigationManager?.getSelectedProject();
+            const filters = { limit: 10 };
+
+            // Filter by project if one is selected
+            if (selectedProject && selectedProject !== 'all') {
+                filters.job_name = selectedProject;
+            }
+
+            const [testRuns, statistics] = await Promise.all([
+                this.db.getTestRuns(filters),
                 this.db.getTestStatistics()
             ]);
 
             this.updateDashboardStats(statistics);
             this.renderTestRuns(testRuns);
-            this.renderRecentUploads(recentUploads);
             this.populateRunFilter(testRuns);
+            await this.populateSuiteFilter();
             this.initializeCharts(statistics);
             await this.loadInsights();
         } catch (error) {
-            console.error('Error loading dashboard:', error);
-            console.error('Error details:', {
-                message: error.message,
-                stack: error.stack,
-                name: error.name
-            });
+            logError('Error loading dashboard', error);
             this.showError('Failed to load dashboard data: ' + error.message);
 
             // Log detailed error for debugging
@@ -203,7 +210,7 @@ class JUnitDashboard {
             await insightsPanel.loadInsights();
             insightsPanel.render('insights-panel');
         } catch (error) {
-            console.error('Error loading insights:', error);
+            logError('Error loading insights', error);
             // Don't show error to user, just log it
         }
     }
@@ -220,9 +227,69 @@ class JUnitDashboard {
         testRuns.forEach(run => {
             const option = document.createElement('option');
             option.value = run.id;
-            option.textContent = `${run.name} (${new Date(run.timestamp).toLocaleDateString()})`;
+
+            // Display format: "JOB_NAME #BUILD_NUMBER" or just run name
+            const displayName = run.ci_metadata?.job_name && run.ci_metadata?.build_number
+                ? `${run.ci_metadata.job_name} #${run.ci_metadata.build_number}`
+                : run.name;
+
+            option.textContent = `${displayName} (${new Date(run.timestamp).toLocaleDateString()})`;
             runFilter.appendChild(option);
         });
+    }
+
+    async populateSuiteFilter() {
+        const suiteFilter = document.getElementById('suite-filter');
+        if (!suiteFilter) {
+            return;
+        }
+
+        try {
+            // Build filters for fetching test cases
+            const filters = { limit: 10000 }; // Increase limit to get all suites
+
+            // If a run is selected, only show suites from that run
+            if (this.currentFilters.run_id) {
+                filters.run_id = this.currentFilters.run_id;
+            }
+
+            // Fetch test cases to extract unique suites
+            const testCases = await this.db.getTestCases(filters);
+
+            // Extract unique suite names (classnames)
+            const uniqueSuites = [...new Set(testCases.map(tc => tc.classname))]
+                .filter(Boolean)
+                .sort();
+
+            // Save current selection
+            const currentSelection = suiteFilter.value;
+
+            // Clear existing options except "All"
+            suiteFilter.innerHTML = '<option value="all">All Test Suites</option>';
+
+            uniqueSuites.forEach(suite => {
+                const option = document.createElement('option');
+                option.value = suite;
+                option.textContent = suite;
+                suiteFilter.appendChild(option);
+            });
+
+            // Restore selection if it still exists
+            if (currentSelection && currentSelection !== 'all') {
+                const optionExists = Array.from(suiteFilter.options).some(
+                    opt => opt.value === currentSelection
+                );
+                if (optionExists) {
+                    suiteFilter.value = currentSelection;
+                } else {
+                    // Selection no longer valid, reset to 'all'
+                    suiteFilter.value = 'all';
+                    this.currentFilters.classname = null;
+                }
+            }
+        } catch (error) {
+            logError('Error populating suite filter', error);
+        }
     }
 
     updateDashboardStats(stats) {
@@ -298,11 +365,17 @@ class JUnitDashboard {
 
         container.innerHTML = testRuns
             .map(
-                run => `
+                run => {
+                    // Display format: "JOB_NAME #BUILD_NUMBER" or just run name
+                    const displayName = run.ci_metadata?.job_name && run.ci_metadata?.build_number
+                        ? `${run.ci_metadata.job_name} #${run.ci_metadata.build_number}`
+                        : run.name;
+
+                    return `
             <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow duration-200" data-run-id="${run.id}">
                 <div class="flex items-start justify-between mb-4">
                     <div class="flex-1">
-                        <h3 class="text-lg font-semibold text-gray-900 mb-1">${run.name}</h3>
+                        <h3 class="text-lg font-semibold text-gray-900 mb-1">${displayName}</h3>
                         <p class="text-sm text-gray-600">${new Date(run.timestamp).toLocaleString()}</p>
                     </div>
                     <div class="flex items-center space-x-2">
@@ -334,7 +407,8 @@ class JUnitDashboard {
                     </button>
                 </div>
             </div>
-        `
+        `;
+                }
             )
             .join('');
     }
@@ -375,7 +449,7 @@ class JUnitDashboard {
                 status: 'completed'
             }));
         } catch (error) {
-            console.error('Error fetching recent uploads:', error);
+            logError('Error fetching recent uploads', error);
             return [];
         }
     }
@@ -672,7 +746,7 @@ class JUnitDashboard {
                 chart.resize();
             });
         } catch (error) {
-            console.error('Error loading trend data:', error);
+            logError('Error loading trend data', error);
             // Fallback to empty chart
             chartContainer.innerHTML =
                 '<div class="flex items-center justify-center h-full text-gray-500">Unable to load trend data</div>';
@@ -680,8 +754,15 @@ class JUnitDashboard {
         }
     }
 
-    handleRunFilter(event) {
+    async handleRunFilter(event) {
         this.currentFilters.run_id = event.target.value === 'all' ? null : event.target.value;
+        // Update suite filter to show only suites from selected run
+        await this.populateSuiteFilter();
+        this.applyFilters();
+    }
+
+    handleSuiteFilter(event) {
+        this.currentFilters.classname = event.target.value === 'all' ? null : event.target.value;
         this.applyFilters();
     }
 
@@ -714,7 +795,7 @@ class JUnitDashboard {
             const testCases = await this.db.getTestCases(this.currentFilters);
             this.renderFilteredResults(testCases);
         } catch (error) {
-            console.error('Error applying filters:', error);
+            logError('Error applying filters', error);
         }
     }
 
@@ -770,16 +851,21 @@ class JUnitDashboard {
             status: 'all',
             search: '',
             dateRange: null,
-            run_id: null
+            run_id: null,
+            classname: null
         };
 
         const runFilter = document.getElementById('run-filter');
+        const suiteFilter = document.getElementById('suite-filter');
         const statusFilter = document.getElementById('status-filter');
         const searchInput = document.getElementById('search-input');
         const dateFilter = document.getElementById('date-filter');
 
         if (runFilter) {
             runFilter.value = 'all';
+        }
+        if (suiteFilter) {
+            suiteFilter.value = 'all';
         }
         if (statusFilter) {
             statusFilter.value = 'all';

@@ -95,9 +95,31 @@ class JUnitAPIClient {
     }
 
     // Get test runs (replaces getTestRuns)
-    async getTestRuns(limit = 50, offset = 0) {
-        const page = Math.floor(offset / limit) + 1;
-        const response = await this.request(`/runs?limit=${limit}&page=${page}`);
+    async getTestRuns(filtersOrLimit = 50, offset = 0) {
+        let params = new URLSearchParams();
+
+        // Support both old signature getTestRuns(limit, offset) and new signature getTestRuns(filters)
+        if (typeof filtersOrLimit === 'object') {
+            // New signature: filters object
+            const filters = filtersOrLimit;
+            if (filters.limit) params.append('limit', filters.limit);
+            if (filters.offset) {
+                const page = Math.floor(filters.offset / (filters.limit || 50)) + 1;
+                params.append('page', page);
+            }
+            if (filters.job_name) params.append('job_name', filters.job_name);
+            if (filters.branch) params.append('branch', filters.branch);
+            if (filters.from_date) params.append('from_date', filters.from_date);
+            if (filters.to_date) params.append('to_date', filters.to_date);
+        } else {
+            // Old signature: limit and offset as separate parameters
+            const limit = filtersOrLimit;
+            const page = Math.floor(offset / limit) + 1;
+            params.append('limit', limit);
+            params.append('page', page);
+        }
+
+        const response = await this.request(`/runs?${params.toString()}`);
 
         // Transform API response to match frontend expectations
         return response.data.runs.map(run => ({
@@ -140,6 +162,8 @@ class JUnitAPIClient {
 
     // Get test cases (replaces getTestCases)
     async getTestCases(filters = {}) {
+        console.log('[JUnitAPIClient.getTestCases] Called with filters:', filters);
+
         const params = new URLSearchParams();
 
         if (filters.status) {
@@ -155,10 +179,27 @@ class JUnitAPIClient {
             params.append('search', filters.search);
         }
 
-        const response = await this.request(`/cases?${params.toString()}`);
+        const queryString = params.toString();
+        const endpoint = `/cases?${queryString}`;
+        console.log('[JUnitAPIClient.getTestCases] API endpoint:', endpoint);
+        console.log('[JUnitAPIClient.getTestCases] Full URL:', `${this.baseURL}${endpoint}`);
+
+        const response = await this.request(endpoint);
+        console.log('[JUnitAPIClient.getTestCases] Raw API response:', response);
+        console.log('[JUnitAPIClient.getTestCases] response.data:', response.data);
+        console.log('[JUnitAPIClient.getTestCases] response.data.cases:', response.data?.cases);
+        console.log('[JUnitAPIClient.getTestCases] Cases count:', response.data?.cases?.length || 0);
+
+        // Check if response has the expected structure
+        if (!response.data || !response.data.cases) {
+            console.error('[JUnitAPIClient.getTestCases] Unexpected response structure!');
+            console.error('[JUnitAPIClient.getTestCases] Expected: { data: { cases: [...] } }');
+            console.error('[JUnitAPIClient.getTestCases] Got:', response);
+            return [];
+        }
 
         // Transform API response to match frontend expectations
-        return response.data.cases.map(testCase => ({
+        const transformedCases = response.data.cases.map(testCase => ({
             id: testCase._id,
             suite_id: testCase.suite_id,
             run_id: testCase.run_id,
@@ -171,12 +212,19 @@ class JUnitAPIClient {
             line: testCase.line,
             is_flaky: testCase.is_flaky || false,
             flaky_detected_at: testCase.flaky_detected_at,
-            timestamp: testCase.timestamp || testCase.created_at,
+            timestamp: testCase.result?.timestamp || testCase.created_at,
             system_out: testCase.system_out,
-            system_err: testCase.system_err
+            system_err: testCase.system_err,
+            result: testCase.result
             // Note: Filtered out - __v, file_upload_id, updated_at
-            // Note: created_at used as fallback for timestamp since TestCase model lacks explicit timestamp field
         }));
+
+        console.log('[JUnitAPIClient.getTestCases] Transformed cases count:', transformedCases.length);
+        if (transformedCases.length > 0) {
+            console.log('[JUnitAPIClient.getTestCases] Sample transformed case:', transformedCases[0]);
+        }
+
+        return transformedCases;
     }
 
     // Get test statistics (replaces getTestStatistics)
@@ -212,7 +260,8 @@ class JUnitAPIClient {
                 classname: c.classname,
                 status: c.status,
                 time: c.time || 0,
-                timestamp: c.created_at,
+                timestamp: c.result?.timestamp || c.created_at,
+                created_at: c.created_at,
                 is_flaky: c.is_flaky || false,
                 run_id: c.run_id,
                 suite_id: c.suite_id,

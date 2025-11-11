@@ -1,9 +1,27 @@
 const express = require('express');
 const router = express.Router();
+const mongoose = require('mongoose');
 const TestRun = require('../models/TestRun');
 const TestSuite = require('../models/TestSuite');
 const TestCase = require('../models/TestCase');
 const TestResult = require('../models/TestResult');
+
+// GET /api/v1/runs/projects - Get all unique job names (projects)
+router.get('/projects', async (req, res, next) => {
+    try {
+        const projects = await TestRun.distinct('ci_metadata.job_name');
+        const projectsFiltered = projects.filter(p => p != null && p !== '');
+
+        res.json({
+            success: true,
+            data: {
+                projects: projectsFiltered.sort()
+            }
+        });
+    } catch (error) {
+        next(error);
+    }
+});
 
 // GET /api/v1/runs - Get all test runs with pagination
 router.get('/', async (req, res, next) => {
@@ -15,6 +33,9 @@ router.get('/', async (req, res, next) => {
         const query = {};
 
         // Filters
+        if (req.query.job_name) {
+            query['ci_metadata.job_name'] = req.query.job_name;
+        }
         if (req.query.branch) {
             query['ci_metadata.branch'] = req.query.branch;
         }
@@ -61,7 +82,7 @@ router.get('/:id', async (req, res, next) => {
             });
         }
 
-        const suites = await TestSuite.find({ run_id: req.params.id }).lean();
+        const suites = await TestSuite.find({ run_id: new mongoose.Types.ObjectId(req.params.id) }).lean();
 
         res.json({
             success: true,
@@ -88,9 +109,10 @@ router.delete('/:id', async (req, res, next) => {
         }
 
         // Delete all related data (no transaction needed for standalone MongoDB)
-        await TestResult.deleteMany({ run_id: req.params.id });
-        await TestCase.deleteMany({ run_id: req.params.id });
-        await TestSuite.deleteMany({ run_id: req.params.id });
+        const runObjectId = new mongoose.Types.ObjectId(req.params.id);
+        await TestResult.deleteMany({ run_id: runObjectId });
+        await TestCase.deleteMany({ run_id: runObjectId });
+        await TestSuite.deleteMany({ run_id: runObjectId });
         await TestRun.findByIdAndDelete(req.params.id);
 
         res.json({
@@ -118,8 +140,8 @@ router.get('/:id1/compare/:id2', async (req, res, next) => {
         }
 
         const [cases1, cases2] = await Promise.all([
-            TestCase.find({ run_id: req.params.id1 }).lean(),
-            TestCase.find({ run_id: req.params.id2 }).lean()
+            TestCase.find({ run_id: new mongoose.Types.ObjectId(req.params.id1) }).lean(),
+            TestCase.find({ run_id: new mongoose.Types.ObjectId(req.params.id2) }).lean()
         ]);
 
         // Create maps for easier lookup

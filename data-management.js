@@ -16,6 +16,11 @@ class DataManagement {
     async init() {
         await this.loadUploads();
         this.setupEventListeners();
+
+        // Listen for project filter changes
+        window.addEventListener('projectFilterChanged', async () => {
+            await this.loadUploads();
+        });
     }
 
     setupEventListeners() {
@@ -102,13 +107,30 @@ class DataManagement {
 
     async loadUploads() {
         try {
-            this.allRuns = await this.db.getTestRuns(1000, 0);
+            // Get selected project from navigation
+            const selectedProject = window.navigationManager?.getSelectedProject();
+            const filters = { limit: 1000 };
+
+            // Filter by project if one is selected
+            if (selectedProject && selectedProject !== 'all') {
+                filters.job_name = selectedProject;
+            }
+
+            this.allRuns = await this.db.getTestRuns(filters);
             this.totalRuns = this.allRuns.length;
             this.filterAndRenderUploads();
         } catch (error) {
-            console.error('Failed to load uploads:', error);
+            logError('Failed to load uploads', error);
             this.showNotification('Failed to load test runs', 'error');
         }
+    }
+
+    getRunDisplayName(run) {
+        // Display format: "JOB_NAME #BUILD_NUMBER" or just run name
+        if (run.ci_metadata?.job_name && run.ci_metadata?.build_number) {
+            return `${run.ci_metadata.job_name} #${run.ci_metadata.build_number}`;
+        }
+        return run.name;
     }
 
     filterAndRenderUploads() {
@@ -117,7 +139,8 @@ class DataManagement {
             if (!this.searchTerm) {
                 return true;
             }
-            return run.name.toLowerCase().includes(this.searchTerm);
+            const displayName = this.getRunDisplayName(run);
+            return displayName.toLowerCase().includes(this.searchTerm);
         });
 
         // Sort
@@ -173,7 +196,7 @@ class DataManagement {
                     <div class="flex-1 min-w-0">
                         <div class="flex items-center space-x-3">
                             <h3 class="text-lg font-semibold text-gray-900 truncate">
-                                ${this.escapeHtml(run.name)}
+                                ${this.escapeHtml(this.getRunDisplayName(run))}
                             </h3>
                             ${this.getStatusBadge(run)}
                         </div>
@@ -213,7 +236,7 @@ class DataManagement {
                             View Details
                         </a>
                         <button
-                            onclick="dataManagement.showDeleteModal('${run.id}', '${this.escapeHtml(run.name)}', '${run.timestamp || run.created_at}')"
+                            onclick="dataManagement.showDeleteModal('${run.id}', '${this.escapeHtml(this.getRunDisplayName(run))}', '${run.timestamp || run.created_at}')"
                             class="delete-button px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
                         >
                             Delete
@@ -434,12 +457,7 @@ class DataManagement {
             await this.loadUploads();
             console.log('Upload list reloaded');
         } catch (error) {
-            console.error('Failed to delete test run:', error);
-            console.error('Error details:', {
-                message: error.message,
-                stack: error.stack,
-                response: error.response
-            });
+            logError('Failed to delete test run', error);
 
             this.showNotification(`Failed to delete test run: ${error.message}`, 'error');
 

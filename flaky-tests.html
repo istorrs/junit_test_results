@@ -3,6 +3,7 @@
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <script src="error-boundary.js"></script>
         <script src="console-capture.js"></script>
         <title>Flaky Tests - JUnit Dashboard</title>
         <script src="https://cdn.tailwindcss.com"></script>
@@ -72,40 +73,7 @@
     </head>
     <body>
         <!-- Navigation -->
-        <nav class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 sticky top-0 z-40">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div class="flex justify-between h-16">
-                    <div class="flex space-x-8">
-                        <a href="index.html" class="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 border-b-2 border-transparent hover:border-gray-300">
-                            Dashboard
-                        </a>
-                        <a href="details.html" class="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 border-b-2 border-transparent hover:border-gray-300">
-                            Test Details
-                        </a>
-                        <a href="flaky-tests.html" class="inline-flex items-center px-1 pt-1 text-sm font-medium text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400">
-                            Flaky Tests
-                        </a>
-                        <a href="performance-analysis.html" class="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 border-b-2 border-transparent hover:border-gray-300">
-                            Performance
-                        </a>
-                        <a href="compare-runs.html" class="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 border-b-2 border-transparent hover:border-gray-300">
-                            Compare Runs
-                        </a>
-                        <a href="reports.html" class="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 border-b-2 border-transparent hover:border-gray-300">
-                            Reports
-                        </a>
-                    </div>
-                    <div class="flex items-center">
-                        <button onclick="window.globalSearch?.open()" class="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 px-3 py-2 rounded-md text-sm font-medium flex items-center">
-                            <svg class="w-5 h-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                            </svg>
-                            Search <kbd class="ml-2 px-2 py-1 text-xs bg-gray-100 dark:bg-gray-700 rounded">Ctrl+/</kbd>
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </nav>
+        <nav class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 sticky top-0 z-40"></nav>
 
         <!-- Header -->
         <div class="bg-white shadow-sm">
@@ -123,6 +91,39 @@
 
         <!-- Main Content -->
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <!-- Info Box -->
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                <div class="flex items-start">
+                    <svg class="w-5 h-5 text-blue-600 mt-0.5 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                    </svg>
+                    <div>
+                        <p class="text-sm text-blue-800">
+                            <strong>Why filter by test suite?</strong> Different test suites test different systems and have different flakiness patterns.
+                            Filter by test suite to identify flaky tests within a specific context for more actionable insights.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Suite Filter -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <label for="suite-filter" class="text-sm font-medium text-gray-700">Test Suite:</label>
+                        <select
+                            id="suite-filter"
+                            class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        >
+                            <option value="all">All Suites</option>
+                        </select>
+                    </div>
+                    <div id="suite-badge" class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium" style="display: none;">
+                        Viewing: <span id="suite-badge-name" class="code-font"></span>
+                    </div>
+                </div>
+            </div>
+
             <!-- Summary Cards -->
             <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
                 <div class="metric-card rounded-lg p-6 text-center">
@@ -249,16 +250,40 @@
                     this.db = new JUnitAPIClient();
                     this.flakyTests = [];
                     this.filteredTests = [];
+                    this.selectedSuite = 'all';
+                    this.allSuites = [];
                     this.init();
                 }
 
                 async init() {
                     try {
                         await this.loadFlakyTests();
+                        this.populateSuiteFilter();
                         this.setupEventListeners();
                     } catch (error) {
                         console.error('Failed to initialize flaky tests page:', error);
                         this.showError('Failed to load flaky tests');
+                    }
+                }
+
+                populateSuiteFilter() {
+                    // Extract unique suites from flaky tests
+                    this.allSuites = [...new Set(this.flakyTests.map(t => t.classname))]
+                        .filter(Boolean)
+                        .sort();
+
+                    const suiteFilter = document.getElementById('suite-filter');
+                    if (suiteFilter) {
+                        // Clear existing options except "All Suites"
+                        suiteFilter.innerHTML = '<option value="all">All Suites</option>';
+
+                        // Add suite options
+                        this.allSuites.forEach(suite => {
+                            const option = document.createElement('option');
+                            option.value = suite;
+                            option.textContent = suite;
+                            suiteFilter.appendChild(option);
+                        });
                     }
                 }
 
@@ -305,24 +330,44 @@
                             })
                         );
 
-                        this.filteredTests = [...this.flakyTests];
-                        this.updateSummaryCards();
-                        this.renderTable();
+                        this.applyFilters();
                     } catch (error) {
                         console.error('Error loading flaky tests:', error);
                         this.showError('Failed to load flaky tests: ' + error.message);
                     }
                 }
 
+                applyFilters() {
+                    // Apply suite filter
+                    if (this.selectedSuite === 'all') {
+                        this.filteredTests = [...this.flakyTests];
+                    } else {
+                        this.filteredTests = this.flakyTests.filter(t => t.classname === this.selectedSuite);
+                    }
+
+                    // Update badge
+                    const badge = document.getElementById('suite-badge');
+                    const badgeName = document.getElementById('suite-badge-name');
+                    if (this.selectedSuite === 'all') {
+                        badge.style.display = 'none';
+                    } else {
+                        badge.style.display = 'block';
+                        badgeName.textContent = this.selectedSuite;
+                    }
+
+                    this.updateSummaryCards();
+                    this.renderTable();
+                }
+
                 updateSummaryCards() {
-                    const totalFlaky = this.flakyTests.length;
-                    const highRisk = this.flakyTests.filter(
+                    const totalFlaky = this.filteredTests.length;
+                    const highRisk = this.filteredTests.filter(
                         t => parseFloat(t.failure_rate) > 30
                     ).length;
 
                     // Calculate newly detected (last 7 days)
                     const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
-                    const newlyDetected = this.flakyTests.filter(t => {
+                    const newlyDetected = this.filteredTests.filter(t => {
                         return (
                             t.flaky_detected_at &&
                             new Date(t.flaky_detected_at).getTime() > sevenDaysAgo
@@ -330,7 +375,7 @@
                     }).length;
 
                     // Recently stabilized (low failure rate now)
-                    const recentlyStable = this.flakyTests.filter(
+                    const recentlyStable = this.filteredTests.filter(
                         t => parseFloat(t.failure_rate) < 10
                     ).length;
 
@@ -397,8 +442,13 @@
                 }
 
                 setupEventListeners() {
+                    const suiteFilter = document.getElementById('suite-filter');
                     const sortSelect = document.getElementById('sort-select');
                     const searchInput = document.getElementById('search-input');
+
+                    if (suiteFilter) {
+                        suiteFilter.addEventListener('change', this.handleSuiteChange.bind(this));
+                    }
 
                     if (sortSelect) {
                         sortSelect.addEventListener('change', this.handleSort.bind(this));
@@ -407,6 +457,11 @@
                     if (searchInput) {
                         searchInput.addEventListener('input', this.handleSearch.bind(this));
                     }
+                }
+
+                handleSuiteChange(event) {
+                    this.selectedSuite = event.target.value;
+                    this.applyFilters();
                 }
 
                 handleSort(event) {
@@ -433,13 +488,24 @@
                 handleSearch(event) {
                     const searchTerm = event.target.value.toLowerCase();
 
-                    this.filteredTests = this.flakyTests.filter(test => {
-                        return (
-                            test.name.toLowerCase().includes(searchTerm) ||
-                            test.classname.toLowerCase().includes(searchTerm)
-                        );
-                    });
+                    // Start with suite-filtered tests
+                    let testsToFilter = this.selectedSuite === 'all'
+                        ? [...this.flakyTests]
+                        : this.flakyTests.filter(t => t.classname === this.selectedSuite);
 
+                    // Apply search filter
+                    if (searchTerm) {
+                        this.filteredTests = testsToFilter.filter(test => {
+                            return (
+                                test.name.toLowerCase().includes(searchTerm) ||
+                                test.classname.toLowerCase().includes(searchTerm)
+                            );
+                        });
+                    } else {
+                        this.filteredTests = testsToFilter;
+                    }
+
+                    this.updateSummaryCards();
                     this.renderTable();
                 }
 

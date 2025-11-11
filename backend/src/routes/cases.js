@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const mongoose = require('mongoose');
 const TestCase = require('../models/TestCase');
 const TestResult = require('../models/TestResult');
 
@@ -14,10 +15,16 @@ router.get('/', async (req, res, next) => {
 
         // Filters
         if (req.query.run_id) {
-            matchQuery.run_id = req.query.run_id;
+            matchQuery.run_id = new mongoose.Types.ObjectId(req.query.run_id);
         }
         if (req.query.suite_id) {
-            matchQuery.suite_id = req.query.suite_id;
+            matchQuery.suite_id = new mongoose.Types.ObjectId(req.query.suite_id);
+        }
+        if (req.query.classname) {
+            matchQuery.classname = req.query.classname;
+        }
+        if (req.query.name) {
+            matchQuery.name = req.query.name;
         }
         if (req.query.status) {
             matchQuery.status = req.query.status;
@@ -36,9 +43,6 @@ router.get('/', async (req, res, next) => {
         // Use aggregation to join with TestResult
         const cases = await TestCase.aggregate([
             { $match: matchQuery },
-            { $sort: { created_at: -1 } },
-            { $skip: skip },
-            { $limit: limit },
             {
                 $lookup: {
                     from: 'testresults',
@@ -52,7 +56,10 @@ router.get('/', async (req, res, next) => {
                     path: '$result',
                     preserveNullAndEmptyArrays: true
                 }
-            }
+            },
+            { $sort: { 'result.timestamp': -1 } },
+            { $skip: skip },
+            { $limit: limit }
         ]);
 
         res.json({
@@ -110,13 +117,31 @@ router.get('/:id/history', async (req, res, next) => {
             });
         }
 
-        const history = await TestCase.find({
-            name: testCase.name,
-            classname: testCase.classname
-        })
-            .sort({ created_at: -1 })
-            .limit(20)
-            .lean();
+        // Find all test cases with same name and classname, join with TestResult for timestamps
+        const history = await TestCase.aggregate([
+            {
+                $match: {
+                    name: testCase.name,
+                    classname: testCase.classname
+                }
+            },
+            {
+                $lookup: {
+                    from: 'testresults',
+                    localField: '_id',
+                    foreignField: 'case_id',
+                    as: 'result'
+                }
+            },
+            {
+                $unwind: {
+                    path: '$result',
+                    preserveNullAndEmptyArrays: true
+                }
+            },
+            { $sort: { 'result.timestamp': -1 } },
+            { $limit: 20 }
+        ]);
 
         res.json({
             success: true,
