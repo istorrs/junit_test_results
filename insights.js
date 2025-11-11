@@ -113,22 +113,27 @@ class InsightsPanel {
             const flakyTests = await this.db.getFlakyTests();
 
             // Enrich with recent history to calculate failure rate
-            const enrichedTests = await Promise.all(
-                flakyTests.slice(0, 5).map(async test => {
+            // Process sequentially to avoid overwhelming the API
+            const enrichedTests = [];
+            for (const test of flakyTests.slice(0, 5)) {
+                try {
                     const history = await this.db.getTestCaseHistory(test.name, test.classname);
                     const recentHistory = history.slice(0, 10);
                     const failureCount = recentHistory.filter(
                         h => h.status === 'failed' || h.status === 'error'
                     ).length;
 
-                    return {
+                    enrichedTests.push({
                         ...test,
                         failureCount,
                         totalRuns: recentHistory.length,
                         failureRate: ((failureCount / recentHistory.length) * 100).toFixed(1)
-                    };
-                })
-            );
+                    });
+                } catch (error) {
+                    // Skip this test if we can't get its history (e.g., AbortError)
+                    console.log(`Skipping flaky test ${test.name} due to error:`, error.message);
+                }
+            }
 
             return enrichedTests
                 .filter(t => t.failureCount > 0)
@@ -148,12 +153,19 @@ class InsightsPanel {
                 return [];
             }
 
-            // Get test cases from recent runs
+            // Get test cases from recent runs - LIMIT to top 20 slowest tests only
             const recentCases = await this.db.getTestCases({ run_id: recentRuns[0].id });
+
+            // Sort by execution time and take only top 20 slowest tests
+            const slowestTests = recentCases
+                .filter(tc => tc.time > 0)
+                .sort((a, b) => b.time - a.time)
+                .slice(0, 20);
 
             const regressions = [];
 
-            for (const testCase of recentCases) {
+            // Process tests sequentially to avoid overwhelming the API
+            for (const testCase of slowestTests) {
                 try {
                     const history = await this.db.getTestCaseHistory(
                         testCase.name,
