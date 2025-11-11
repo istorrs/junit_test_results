@@ -22,6 +22,10 @@
         const message = args
             .map(arg => {
                 if (typeof arg === 'object' && arg !== null) {
+                    // Special handling for Error objects
+                    if (arg instanceof Error) {
+                        return `${arg.name}: ${arg.message}\n${arg.stack || ''}`;
+                    }
                     try {
                         return JSON.stringify(arg, null, 2);
                     } catch {
