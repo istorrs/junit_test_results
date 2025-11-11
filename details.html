@@ -264,10 +264,13 @@
                 <div class="flex items-center justify-between mb-6">
                     <h2 class="text-2xl font-bold text-gray-900">Test Suites</h2>
                     <button
-                        id="expand-all"
-                        class="text-blue-600 hover:text-blue-800 font-medium"
+                        id="toggle-all-suites"
+                        class="flex items-center space-x-1 px-3 py-1.5 text-sm font-medium text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors"
                     >
-                        Expand All
+                        <svg id="toggle-icon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                        <span id="toggle-text">Expand All</span>
                     </button>
                 </div>
                 <div id="test-suites-container">
@@ -361,6 +364,7 @@
                     this.runId = null;
                     this.testSuites = [];
                     this.testCases = [];
+                    this.allSuitesExpanded = false;
                     console.log('[TestDetailsPage] Calling init()');
                     this.init();
                 }
@@ -944,7 +948,7 @@
                     const statusFilter = document.getElementById('status-filter');
                     const testSearch = document.getElementById('test-search');
                     const suiteFilter = document.getElementById('suite-filter');
-                    const expandAllBtn = document.getElementById('expand-all');
+                    const toggleAllBtn = document.getElementById('toggle-all-suites');
                     const exportBtn = document.getElementById('export-btn');
 
                     if (statusFilter) {
@@ -956,8 +960,8 @@
                     if (suiteFilter) {
                         suiteFilter.addEventListener('change', this.filterTestCases.bind(this));
                     }
-                    if (expandAllBtn) {
-                        expandAllBtn.addEventListener('click', this.expandAllSuites.bind(this));
+                    if (toggleAllBtn) {
+                        toggleAllBtn.addEventListener('click', this.toggleAllSuites.bind(this));
                     }
                     if (exportBtn) {
                         exportBtn.addEventListener('click', this.exportResults.bind(this));
@@ -1096,16 +1100,43 @@
                     }
                 }
 
-                expandAllSuites() {
-                    this.testSuites.forEach(suite => {
-                        const content = document.getElementById(`suite-content-${suite.id}`);
-                        const arrow = document.getElementById(`suite-arrow-${suite.id}`);
+                toggleAllSuites() {
+                    const toggleText = document.getElementById('toggle-text');
+                    const toggleIcon = document.getElementById('toggle-icon');
 
-                        if (content && arrow) {
-                            content.classList.add('expanded');
-                            arrow.style.transform = 'rotate(180deg)';
-                        }
-                    });
+                    if (this.allSuitesExpanded) {
+                        // Collapse all
+                        this.testSuites.forEach(suite => {
+                            const content = document.getElementById(`suite-content-${suite.id}`);
+                            const arrow = document.getElementById(`suite-arrow-${suite.id}`);
+
+                            if (content && arrow) {
+                                content.classList.remove('expanded');
+                                arrow.style.transform = 'rotate(0deg)';
+                            }
+                        });
+
+                        // Update button
+                        toggleText.textContent = 'Expand All';
+                        toggleIcon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>';
+                        this.allSuitesExpanded = false;
+                    } else {
+                        // Expand all
+                        this.testSuites.forEach(suite => {
+                            const content = document.getElementById(`suite-content-${suite.id}`);
+                            const arrow = document.getElementById(`suite-arrow-${suite.id}`);
+
+                            if (content && arrow) {
+                                content.classList.add('expanded');
+                                arrow.style.transform = 'rotate(180deg)';
+                            }
+                        });
+
+                        // Update button
+                        toggleText.textContent = 'Collapse All';
+                        toggleIcon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/>';
+                        this.allSuitesExpanded = true;
+                    }
                 }
 
                 async renderFailurePatterns() {
