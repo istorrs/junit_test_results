@@ -10,6 +10,7 @@ class JUnitDashboard {
             classname: null
         };
         this.charts = {};
+        this.isLoading = false;
         this.init();
     }
 
@@ -164,6 +165,13 @@ class JUnitDashboard {
     }
 
     async loadDashboard() {
+        // Prevent concurrent loads
+        if (this.isLoading) {
+            console.log('[JUnitDashboard] loadDashboard skipped - already loading');
+            return;
+        }
+
+        this.isLoading = true;
         try {
             // Get selected project from navigation
             const selectedProject = window.navigationManager?.getSelectedProject();
@@ -196,6 +204,8 @@ class JUnitDashboard {
                     stack: error.stack
                 });
             }
+        } finally {
+            this.isLoading = false;
         }
     }
 
