@@ -342,7 +342,7 @@ class TestDetailsModal {
                         ${this.testHistory.map(t => {
                             const statusIcon = t.status === 'passed' ? '✅' : t.status === 'failed' ? '❌' : t.status === 'error' ? '⚠️' : '⊝';
                             const color = t.status === 'passed' ? 'bg-green-500' : t.status === 'failed' ? 'bg-red-500' : t.status === 'error' ? 'bg-orange-500' : 'bg-gray-400';
-                            return `<div class="${color} h-8 flex-1 rounded flex items-center justify-center text-white text-sm" title="${new Date(t.created_at).toLocaleString()} - ${t.status}">${statusIcon}</div>`;
+                            return `<div class="${color} h-8 flex-1 rounded flex items-center justify-center text-white text-sm" title="${new Date(t.timestamp).toLocaleString()} - ${t.status}">${statusIcon}</div>`;
                         }).join('')}
                     </div>
                     <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400">
@@ -374,7 +374,7 @@ class TestDetailsModal {
                             <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
                                 ${this.testHistory.map(t => `
                                     <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
-                                        <td class="px-3 py-2 text-gray-900 dark:text-white">${new Date(t.created_at).toLocaleString()}</td>
+                                        <td class="px-3 py-2 text-gray-900 dark:text-white">${new Date(t.timestamp).toLocaleString()}</td>
                                         <td class="px-3 py-2">
                                             <span class="px-2 py-1 text-xs rounded-full ${this.getStatusColorClass(t.status)}">
                                                 ${t.status.toUpperCase()}
