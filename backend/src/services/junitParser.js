@@ -213,11 +213,16 @@ const parseJUnitXML = async (xmlContent, filename, ciMetadata = null, uploaderIn
 };
 
 const processTestSuite = async (suiteData, runId, fileUploadId, testRunTimestamp) => {
+    // Determine suite timestamp: use suite's own timestamp if available, otherwise use test run timestamp
+    const suiteTimestamp = suiteData.timestamp
+        ? new Date(suiteData.timestamp)
+        : testRunTimestamp;
+
     const testSuite = await TestSuite.create({
         run_id: runId,
         name: suiteData.name || 'Unnamed Suite',
         classname: suiteData.classname || '',
-        timestamp: suiteData.timestamp ? new Date(suiteData.timestamp) : testRunTimestamp,
+        timestamp: suiteTimestamp,
         time: parseFloat(suiteData.time || 0),
         tests: parseInt(suiteData.tests || 0),
         failures: parseInt(suiteData.failures || 0),
@@ -234,8 +239,17 @@ const processTestSuite = async (suiteData, runId, fileUploadId, testRunTimestamp
             testcases = [testcases];
         }
 
+        // Calculate start time for each test by accumulating durations
+        let accumulatedTime = 0; // in seconds
+
         for (const testcase of testcases) {
-            await processTestCase(testcase, testSuite._id, runId, fileUploadId, testRunTimestamp);
+            // Calculate this test's start time by adding accumulated duration to suite timestamp
+            const testStartTime = new Date(suiteTimestamp.getTime() + (accumulatedTime * 1000));
+
+            await processTestCase(testcase, testSuite._id, runId, fileUploadId, testStartTime);
+
+            // Add this test's duration to accumulated time for next test
+            accumulatedTime += parseFloat(testcase.time || 0);
         }
     }
 
@@ -266,7 +280,7 @@ const processTestSuite = async (suiteData, runId, fileUploadId, testRunTimestamp
     }
 };
 
-const processTestCase = async (caseData, suiteId, runId, fileUploadId, testRunTimestamp) => {
+const processTestCase = async (caseData, suiteId, runId, fileUploadId, testStartTime) => {
     let status = 'passed';
     let failureMessage = null;
     let failureType = null;
@@ -413,7 +427,7 @@ const processTestCase = async (caseData, suiteId, runId, fileUploadId, testRunTi
         system_out: testCase.system_out,
         system_err: testCase.system_err,
         stack_trace: stackTrace,
-        timestamp: testRunTimestamp
+        timestamp: testStartTime
     });
 };
 
