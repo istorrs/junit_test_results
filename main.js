@@ -174,15 +174,13 @@ class JUnitDashboard {
                 filters.job_name = selectedProject;
             }
 
-            const [testRuns, recentUploads, statistics] = await Promise.all([
+            const [testRuns, statistics] = await Promise.all([
                 this.db.getTestRuns(filters),
-                this.getRecentUploads(),
                 this.db.getTestStatistics()
             ]);
 
             this.updateDashboardStats(statistics);
             this.renderTestRuns(testRuns);
-            this.renderRecentUploads(recentUploads);
             this.populateRunFilter(testRuns);
             await this.populateSuiteFilter();
             this.initializeCharts(statistics);
@@ -247,13 +245,24 @@ class JUnitDashboard {
         }
 
         try {
+            // Build filters for fetching test cases
+            const filters = { limit: 10000 }; // Increase limit to get all suites
+
+            // If a run is selected, only show suites from that run
+            if (this.currentFilters.run_id) {
+                filters.run_id = this.currentFilters.run_id;
+            }
+
             // Fetch test cases to extract unique suites
-            const testCases = await this.db.getTestCases({ limit: 1000 });
+            const testCases = await this.db.getTestCases(filters);
 
             // Extract unique suite names (classnames)
             const uniqueSuites = [...new Set(testCases.map(tc => tc.classname))]
                 .filter(Boolean)
                 .sort();
+
+            // Save current selection
+            const currentSelection = suiteFilter.value;
 
             // Clear existing options except "All"
             suiteFilter.innerHTML = '<option value="all">All Test Suites</option>';
@@ -264,6 +273,20 @@ class JUnitDashboard {
                 option.textContent = suite;
                 suiteFilter.appendChild(option);
             });
+
+            // Restore selection if it still exists
+            if (currentSelection && currentSelection !== 'all') {
+                const optionExists = Array.from(suiteFilter.options).some(
+                    opt => opt.value === currentSelection
+                );
+                if (optionExists) {
+                    suiteFilter.value = currentSelection;
+                } else {
+                    // Selection no longer valid, reset to 'all'
+                    suiteFilter.value = 'all';
+                    this.currentFilters.classname = null;
+                }
+            }
         } catch (error) {
             logError('Error populating suite filter', error);
         }
@@ -731,8 +754,10 @@ class JUnitDashboard {
         }
     }
 
-    handleRunFilter(event) {
+    async handleRunFilter(event) {
         this.currentFilters.run_id = event.target.value === 'all' ? null : event.target.value;
+        // Update suite filter to show only suites from selected run
+        await this.populateSuiteFilter();
         this.applyFilters();
     }
 
