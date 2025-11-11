@@ -262,6 +262,15 @@ class JUnitDashboardDebugger {
 // Initialize debugger
 window.dashboardDebugger = new JUnitDashboardDebugger();
 
+// Export global logError function for use in other scripts
+window.logError = function(type, details) {
+    if (window.dashboardDebugger) {
+        window.dashboardDebugger.logError(type, details);
+    } else {
+        console.error('Dashboard debugger not initialized:', type, details);
+    }
+};
+
 // Add debug button to page
 document.addEventListener('DOMContentLoaded', () => {
     const debugButton = document.createElement('button');
