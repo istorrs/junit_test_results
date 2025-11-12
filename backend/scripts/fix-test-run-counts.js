@@ -29,9 +29,11 @@ async function fixTestRunCounts() {
         await mongoose.connect(MONGODB_URI);
         console.log('Connected to MongoDB\n');
 
-        // Find all test runs with tests = 0
-        const testRuns = await TestRun.find({ tests: 0 });
-        console.log(`Found ${testRuns.length} test runs with tests=0\n`);
+        // Find all test runs with tests = 0 or null (missing/undefined)
+        const testRuns = await TestRun.find({
+            $or: [{ tests: 0 }, { tests: null }, { tests: { $exists: false } }]
+        });
+        console.log(`Found ${testRuns.length} test runs with tests=0 or null\n`);
 
         let fixed = 0;
         let skipped = 0;
