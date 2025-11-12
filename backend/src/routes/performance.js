@@ -25,7 +25,7 @@ router.get('/trends', async (req, res) => {
         }
 
         if (className) {
-            matchCondition.class_name = new RegExp(className, 'i');
+            matchCondition.classname = new RegExp(className, 'i');
         }
 
         // Group by time period based on granularity
@@ -50,8 +50,8 @@ router.get('/trends', async (req, res) => {
                 $group: {
                     _id: {
                         period: { $dateToString: { format: dateFormat, date: '$timestamp' } },
-                        test_name: testId ? '$test_name' : null,
-                        class_name: className ? '$class_name' : null
+                        test_name: testId ? '$name' : null,
+                        class_name: className ? '$classname' : null
                     },
                     avg_time: { $avg: '$time' },
                     min_time: { $min: '$time' },
@@ -118,8 +118,8 @@ router.get('/slowest', async (req, res) => {
             {
                 $group: {
                     _id: {
-                        test_name: '$test_name',
-                        class_name: '$class_name'
+                        test_name: '$name',
+                        class_name: '$classname'
                     },
                     avg_time: { $avg: '$time' },
                     max_time: { $max: '$time' },
@@ -183,8 +183,8 @@ router.get('/regressions', async (req, res) => {
             {
                 $group: {
                     _id: {
-                        test_name: '$test_name',
-                        class_name: '$class_name'
+                        test_name: '$name',
+                        class_name: '$classname'
                     },
                     recent_times: {
                         $push: {
@@ -284,12 +284,12 @@ router.get('/test/:testId', async (req, res) => {
         cutoffDate.setDate(cutoffDate.getDate() - parseInt(days));
 
         const testHistory = await TestCase.find({
-            $or: [{ _id: testId }, { test_name: testId }],
+            $or: [{ _id: testId }, { name: testId }],
             timestamp: { $gte: cutoffDate },
             time: { $exists: true }
         })
             .sort({ timestamp: 1 })
-            .select('test_name class_name timestamp time status test_run_id')
+            .select('name classname timestamp time status run_id')
             .lean();
 
         if (testHistory.length === 0) {
@@ -321,8 +321,8 @@ router.get('/test/:testId', async (req, res) => {
         res.json({
             success: true,
             data: {
-                test_name: testHistory[0].test_name,
-                class_name: testHistory[0].class_name,
+                test_name: testHistory[0].name,
+                class_name: testHistory[0].classname,
                 statistics: {
                     avg_time: Math.round(avgTime * 1000) / 1000,
                     min_time: Math.round(minTime * 1000) / 1000,

@@ -32,13 +32,13 @@ router.get('/runs', async (req, res) => {
 
         // Fetch all test cases for both runs
         const [cases1, cases2] = await Promise.all([
-            TestCase.find({ test_run_id: run1 }).lean(),
-            TestCase.find({ test_run_id: run2 }).lean()
+            TestCase.find({ run_id: run1 }).lean(),
+            TestCase.find({ run_id: run2 }).lean()
         ]);
 
         // Create maps for quick lookup
-        const cases1Map = new Map(cases1.map(c => [`${c.class_name}.${c.test_name}`, c]));
-        const cases2Map = new Map(cases2.map(c => [`${c.class_name}.${c.test_name}`, c]));
+        const cases1Map = new Map(cases1.map(c => [`${c.classname}.${c.name}`, c]));
+        const cases2Map = new Map(cases2.map(c => [`${c.classname}.${c.name}`, c]));
 
         // Get all unique test identifiers
         const allTestIds = new Set([...cases1Map.keys(), ...cases2Map.keys()]);
@@ -60,8 +60,8 @@ router.get('/runs', async (req, res) => {
             if (!case1 && case2) {
                 newTests.push({
                     test_id: testId,
-                    test_name: case2.test_name,
-                    class_name: case2.class_name,
+                    test_name: case2.name,
+                    class_name: case2.classname,
                     status: case2.status,
                     time: case2.time
                 });
@@ -72,8 +72,8 @@ router.get('/runs', async (req, res) => {
             if (case1 && !case2) {
                 removedTests.push({
                     test_id: testId,
-                    test_name: case1.test_name,
-                    class_name: case1.class_name,
+                    test_name: case1.name,
+                    class_name: case1.classname,
                     status: case1.status,
                     time: case1.time
                 });
@@ -86,8 +86,8 @@ router.get('/runs', async (req, res) => {
 
             const testInfo = {
                 test_id: testId,
-                test_name: case2.test_name,
-                class_name: case2.class_name,
+                test_name: case2.name,
+                class_name: case2.classname,
                 status_before: status1,
                 status_after: status2,
                 time_before: case1.time || 0,
@@ -133,45 +133,48 @@ router.get('/runs', async (req, res) => {
             }
         });
 
+        // Helper to handle both old (total_*) and new field names
+        const getRunMetrics = run => {
+            const tests = run.tests || run.total_tests || 0;
+            const failures = run.failures || run.total_failures || 0;
+            const errors = run.errors || run.total_errors || 0;
+            const skipped = run.skipped || run.total_skipped || 0;
+
+            return {
+                tests,
+                failures,
+                errors,
+                skipped,
+                pass_rate: tests > 0 ? ((tests - failures - errors - skipped) / tests) * 100 : 0
+            };
+        };
+
+        const run1Metrics = getRunMetrics(testRun1);
+        const run2Metrics = getRunMetrics(testRun2);
+
         // Build comparison result
         const comparison = {
             run1: {
                 id: testRun1._id,
                 timestamp: testRun1.timestamp,
-                tests: testRun1.tests,
-                failures: testRun1.failures,
-                errors: testRun1.errors,
-                skipped: testRun1.skipped,
+                tests: run1Metrics.tests,
+                failures: run1Metrics.failures,
+                errors: run1Metrics.errors,
+                skipped: run1Metrics.skipped,
                 time: testRun1.time,
-                pass_rate:
-                    testRun1.tests > 0
-                        ? ((testRun1.tests -
-                              testRun1.failures -
-                              testRun1.errors -
-                              testRun1.skipped) /
-                              testRun1.tests) *
-                          100
-                        : 0,
+                pass_rate: run1Metrics.pass_rate,
                 release_tag: testRun1.release_tag,
                 release_version: testRun1.release_version
             },
             run2: {
                 id: testRun2._id,
                 timestamp: testRun2.timestamp,
-                tests: testRun2.tests,
-                failures: testRun2.failures,
-                errors: testRun2.errors,
-                skipped: testRun2.skipped,
+                tests: run2Metrics.tests,
+                failures: run2Metrics.failures,
+                errors: run2Metrics.errors,
+                skipped: run2Metrics.skipped,
                 time: testRun2.time,
-                pass_rate:
-                    testRun2.tests > 0
-                        ? ((testRun2.tests -
-                              testRun2.failures -
-                              testRun2.errors -
-                              testRun2.skipped) /
-                              testRun2.tests) *
-                          100
-                        : 0,
+                pass_rate: run2Metrics.pass_rate,
                 release_tag: testRun2.release_tag,
                 release_version: testRun2.release_version
             },
@@ -218,7 +221,7 @@ router.get('/test/:testId', async (req, res) => {
 
         // Find all test cases for this test
         const testCases = await TestCase.find({
-            $or: [{ _id: testId }, { test_name: testId }],
+            $or: [{ _id: testId }, { name: testId }],
             timestamp: { $gte: cutoffDate }
         })
             .sort({ timestamp: -1 })
@@ -230,7 +233,7 @@ router.get('/test/:testId', async (req, res) => {
         }
 
         // Get test run details for each test case
-        const runIds = testCases.map(tc => tc.test_run_id);
+        const runIds = testCases.map(tc => tc.run_id);
         const testRuns = await TestRun.find({
             _id: { $in: runIds }
         }).lean();
@@ -240,15 +243,15 @@ router.get('/test/:testId', async (req, res) => {
         // Build history
         const history = testCases.map(tc => ({
             test_case_id: tc._id,
-            test_run_id: tc.test_run_id,
+            test_run_id: tc.run_id,
             timestamp: tc.timestamp,
             status: tc.status,
             time: tc.time,
             error_type: tc.error_type,
             error_message: tc.error_message,
             test_run: {
-                release_tag: runMap.get(tc.test_run_id.toString())?.release_tag,
-                release_version: runMap.get(tc.test_run_id.toString())?.release_version
+                release_tag: runMap.get(tc.run_id.toString())?.release_tag,
+                release_version: runMap.get(tc.run_id.toString())?.release_version
             }
         }));
 
@@ -264,8 +267,8 @@ router.get('/test/:testId', async (req, res) => {
             success: true,
             data: {
                 test_id: testId,
-                test_name: testCases[0].test_name,
-                class_name: testCases[0].class_name,
+                test_name: testCases[0].name,
+                class_name: testCases[0].classname,
                 statistics: {
                     total_runs: totalRuns,
                     passed_count: passedCount,
