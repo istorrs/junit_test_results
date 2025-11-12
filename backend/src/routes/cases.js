@@ -146,7 +146,7 @@ router.get('/:id/history', async (req, res, next) => {
             });
         }
 
-        // Find all test cases with same name and classname, join with TestResult for timestamps
+        // Find all test cases with same name and classname across runs
         const history = await TestCase.aggregate([
             {
                 $match: {
@@ -168,13 +168,140 @@ router.get('/:id/history', async (req, res, next) => {
                     preserveNullAndEmptyArrays: true
                 }
             },
-            { $sort: { 'result.timestamp': -1 } },
-            { $limit: 20 }
+            {
+                $lookup: {
+                    from: 'testruns',
+                    localField: 'run_id',
+                    foreignField: '_id',
+                    as: 'run'
+                }
+            },
+            {
+                $unwind: {
+                    path: '$run',
+                    preserveNullAndEmptyArrays: true
+                }
+            },
+            {
+                $project: {
+                    run_id: { $toString: '$run_id' },
+                    status: 1,
+                    duration: '$time',
+                    timestamp: '$run.timestamp',
+                    error_message: '$result.error_message'
+                }
+            },
+            { $sort: { timestamp: -1 } },
+            { $limit: 30 }
         ]);
 
         res.json({
             success: true,
-            data: history
+            data: {
+                runs: history
+            }
+        });
+    } catch (error) {
+        next(error);
+    }
+});
+
+// GET /api/v1/cases/:id/flakiness - Get test case flakiness metrics
+router.get('/:id/flakiness', async (req, res, next) => {
+    try {
+        const testCase = await TestCase.findById(req.params.id);
+
+        if (!testCase) {
+            return res.status(404).json({
+                success: false,
+                error: 'Test case not found'
+            });
+        }
+
+        // Find all executions of this test (same name + classname)
+        const executions = await TestCase.aggregate([
+            {
+                $match: {
+                    name: testCase.name,
+                    classname: testCase.classname
+                }
+            },
+            {
+                $lookup: {
+                    from: 'testruns',
+                    localField: 'run_id',
+                    foreignField: '_id',
+                    as: 'run'
+                }
+            },
+            {
+                $unwind: {
+                    path: '$run',
+                    preserveNullAndEmptyArrays: true
+                }
+            },
+            {
+                $sort: { 'run.timestamp': -1 }
+            },
+            {
+                $limit: 50 // Look at last 50 runs
+            },
+            {
+                $group: {
+                    _id: null,
+                    total_runs: { $sum: 1 },
+                    passed_runs: {
+                        $sum: { $cond: [{ $eq: ['$status', 'passed'] }, 1, 0] }
+                    },
+                    failed_runs: {
+                        $sum: { $cond: [{ $in: ['$status', ['failed', 'error']] }, 1, 0] }
+                    },
+                    recent_runs: { $push: '$$ROOT' }
+                }
+            }
+        ]);
+
+        if (!executions || executions.length === 0) {
+            return res.json({
+                success: true,
+                data: {
+                    pass_rate: 100,
+                    total_runs: 1,
+                    recent_failures: 0,
+                    last_status_change: testCase.created_at,
+                    flakiness_score: 0
+                }
+            });
+        }
+
+        const stats = executions[0];
+        const passRate = (stats.passed_runs / stats.total_runs) * 100;
+        const flakinessScore = 100 - passRate;
+
+        // Calculate recent failures (last 10 runs)
+        const recentRuns = stats.recent_runs.slice(0, 10);
+        const recentFailures = recentRuns.filter(r =>
+            r.status === 'failed' || r.status === 'error'
+        ).length;
+
+        // Find last status change
+        let lastStatusChange = testCase.created_at;
+        for (let i = 0; i < stats.recent_runs.length - 1; i++) {
+            if (stats.recent_runs[i].status !== stats.recent_runs[i + 1].status) {
+                lastStatusChange = stats.recent_runs[i].run.timestamp;
+                break;
+            }
+        }
+
+        res.json({
+            success: true,
+            data: {
+                pass_rate: Math.round(passRate * 100) / 100,
+                total_runs: stats.total_runs,
+                recent_failures: recentFailures,
+                last_status_change: lastStatusChange,
+                flakiness_score: Math.round(flakinessScore * 100) / 100
+            }
         });
     } catch (error) {
         next(error);
