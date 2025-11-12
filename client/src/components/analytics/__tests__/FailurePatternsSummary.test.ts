@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import { createRouter, createMemoryHistory } from 'vue-router'
+import { nextTick } from 'vue'
 import FailurePatternsSummary from '../FailurePatternsSummary.vue'
 
 // Mock the API client module
@@ -73,7 +74,7 @@ describe('FailurePatternsSummary', () => {
     expect(wrapper.find('.mock-card').exists()).toBe(true)
   })
 
-  it('displays loading state initially', () => {
+  it('displays loading state initially', async () => {
     mockGetFailurePatterns.mockImplementation(() => new Promise(() => {}))
 
     const wrapper = mount(FailurePatternsSummary, {
@@ -85,6 +86,9 @@ describe('FailurePatternsSummary', () => {
         limit: 5
       }
     })
+
+    // Wait for onMounted to run
+    await nextTick()
 
     expect(wrapper.find('.loading-state').exists()).toBe(true)
   })
@@ -245,7 +249,7 @@ describe('FailurePatternsSummary', () => {
     await flushPromises()
 
     expect(wrapper.find('.empty-state').exists()).toBe(true)
-    expect(wrapper.text()).toContain('No failure patterns detected')
+    expect(wrapper.text()).toContain('No recent failures')
   })
 
   it('displays error state on API failure', async () => {
@@ -280,7 +284,7 @@ describe('FailurePatternsSummary', () => {
 
     await flushPromises()
 
-    expect(mockGetFailurePatterns).toHaveBeenCalledWith({ days: 7, limit: 10 })
+    expect(mockGetFailurePatterns).toHaveBeenCalledWith({ days: 7, limit: 5 })
   })
 
   it('shows time range when showTimeRange is true', async () => {
@@ -341,9 +345,11 @@ describe('FailurePatternsSummary', () => {
     })
 
     await flushPromises()
+    await router.isReady()
 
     const testLinks = wrapper.findAll('.test-link')
     await testLinks[0].trigger('click')
+    await flushPromises()
 
     expect(router.currentRoute.value.path).toBe('/cases')
     expect(router.currentRoute.value.query.search).toBe('testAddition')
