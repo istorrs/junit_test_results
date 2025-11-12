@@ -72,6 +72,18 @@ const initChart = () => {
 
   const colors = getColors()
 
+  // Calculate optimal bar width based on number of data points
+  const dataPointCount = chartData.value.dates.length
+  const calculateBarWidth = () => {
+    if (dataPointCount === 1) return '60%'
+    if (dataPointCount <= 3) return '50%'
+    if (dataPointCount <= 5) return '40%'
+    if (dataPointCount <= 10) return '30%'
+    if (dataPointCount <= 20) return '60%'
+    return '80%'
+  }
+  const barWidth = calculateBarWidth()
+
   const option = {
     backgroundColor: 'transparent',
     tooltip: {
@@ -110,6 +122,7 @@ const initChart = () => {
     xAxis: {
       type: 'category',
       data: chartData.value.dates,
+      boundaryGap: true,
       axisLine: {
         lineStyle: {
           color: colors.border
@@ -213,7 +226,8 @@ const initChart = () => {
           ]),
           borderRadius: [4, 4, 0, 0]
         },
-        barMaxWidth: 20
+        barWidth: barWidth,
+        barCategoryGap: '20%'
       }
     ]
   }
