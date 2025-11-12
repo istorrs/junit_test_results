@@ -67,40 +67,10 @@ services:
         restart: unless-stopped
         ports:
             - '80:80'
-            - '443:443'
         volumes:
             - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
-            # HTML files
-            - ./index.html:/usr/share/nginx/html/index.html:ro
-            - ./details.html:/usr/share/nginx/html/details.html:ro
-            - ./reports.html:/usr/share/nginx/html/reports.html:ro
-            - ./test-case-history.html:/usr/share/nginx/html/test-case-history.html:ro
-            - ./flaky-tests.html:/usr/share/nginx/html/flaky-tests.html:ro
-            - ./compare-runs.html:/usr/share/nginx/html/compare-runs.html:ro
-            - ./performance-analysis.html:/usr/share/nginx/html/performance-analysis.html:ro
-            - ./data-management.html:/usr/share/nginx/html/data-management.html:ro
-            - ./debug-trace.html:/usr/share/nginx/html/debug-trace.html:ro
-            - ./debug-console.html:/usr/share/nginx/html/debug-console.html:ro
-            # CSS files
-            - ./shared-styles.css:/usr/share/nginx/html/shared-styles.css:ro
-            # JavaScript files
-            - ./error-boundary.js:/usr/share/nginx/html/error-boundary.js:ro
-            - ./api-client.js:/usr/share/nginx/html/api-client.js:ro
-            - ./main.js:/usr/share/nginx/html/main.js:ro
-            - ./test-details-modal.js:/usr/share/nginx/html/test-details-modal.js:ro
-            - ./test-case-history.js:/usr/share/nginx/html/test-case-history.js:ro
-            - ./insights.js:/usr/share/nginx/html/insights.js:ro
-            - ./debug.js:/usr/share/nginx/html/debug.js:ro
-            - ./console-capture.js:/usr/share/nginx/html/console-capture.js:ro
-            - ./theme.js:/usr/share/nginx/html/theme.js:ro
-            - ./navigation.js:/usr/share/nginx/html/navigation.js:ro
-            - ./global-search.js:/usr/share/nginx/html/global-search.js:ro
-            - ./shared-utils.js:/usr/share/nginx/html/shared-utils.js:ro
-            - ./data-management.js:/usr/share/nginx/html/data-management.js:ro
-            - ./debug-console.js:/usr/share/nginx/html/debug-console.js:ro
-            - ./release-reports.js:/usr/share/nginx/html/release-reports.js:ro
-            # Resources
-            - ./resources:/usr/share/nginx/html/resources:ro
+            # Vue 3 SPA build output
+            - ./public:/usr/share/nginx/html:ro
             # Add SSL certificates here when ready:
             # - ./ssl/cert.pem:/etc/nginx/ssl/cert.pem:ro
             # - ./ssl/key.pem:/etc/nginx/ssl/key.pem:ro
