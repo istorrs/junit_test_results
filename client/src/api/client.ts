@@ -124,7 +124,25 @@ class ApiClient {
     }
 
     const queryString = this.buildQueryString(params)
-    return this.request<RunsResponse>(`/runs${queryString}`)
+    const response = await this.request<any>(`/runs${queryString}`)
+
+    // Transform backend response to match frontend expectations
+    const transformedRuns = response.runs.map((run: any) => ({
+      ...run,
+      id: run._id || run.id,
+      summary: {
+        total: run.total_tests || 0,
+        passed: (run.total_tests || 0) - (run.total_failures || 0) - (run.total_errors || 0) - (run.total_skipped || 0),
+        failed: run.total_failures || 0,
+        errors: run.total_errors || 0,
+        skipped: run.total_skipped || 0,
+      }
+    }))
+
+    return {
+      runs: transformedRuns,
+      pagination: response.pagination
+    }
   }
 
   async getProjects(): Promise<string[]> {
@@ -145,7 +163,21 @@ class ApiClient {
     }
 
     const queryString = this.buildQueryString(params)
-    return this.request<TestCasesResponse>(`/cases${queryString}`)
+    const response = await this.request<any>(`/cases${queryString}`)
+
+    // Transform backend response to match frontend expectations
+    const transformedCases = response.cases.map((testCase: any) => ({
+      ...testCase,
+      id: testCase._id || testCase.id,
+      suite_name: testCase.classname || testCase.suite_name,
+      error_message: testCase.result?.error_message || testCase.result?.failure_message || testCase.error_message,
+      error_type: testCase.result?.error_type || testCase.result?.failure_type || testCase.error_type,
+    }))
+
+    return {
+      cases: transformedCases,
+      pagination: response.pagination
+    }
   }
 
   async uploadTestResults(file: File): Promise<UploadResponse> {

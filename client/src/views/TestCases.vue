@@ -177,7 +177,7 @@ onMounted(() => {
 h1 {
   font-size: 2rem;
   font-weight: 700;
-  color: #111827;
+  color: var(--text-primary);
   margin: 0;
 }
 
@@ -206,12 +206,12 @@ h1 {
 .filter-group label {
   font-size: 0.875rem;
   font-weight: 500;
-  color: #374151;
+  color: var(--text-primary);
 }
 
 .filter-select {
   padding: 0.5rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--border-color);
   border-radius: 0.375rem;
   font-size: 0.875rem;
   transition: all 0.15s;
@@ -219,7 +219,7 @@ h1 {
 
 .filter-select:focus {
   outline: none;
-  border-color: #3b82f6;
+  border-color: var(--primary-color);
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
@@ -235,28 +235,28 @@ h1 {
 }
 
 .status-badge.passed {
-  background: #d1fae5;
-  color: #10b981;
+  background: var(--success-bg);
+  color: var(--success-color);
 }
 
 .status-badge.failed {
-  background: #fee2e2;
-  color: #ef4444;
+  background: var(--error-bg);
+  color: var(--error-color);
 }
 
 .status-badge.error {
-  background: #fef3c7;
+  background: var(--warning-bg);
   color: #f59e0b;
 }
 
 .status-badge.skipped {
-  background: #f3f4f6;
-  color: #6b7280;
+  background: var(--bg-hover);
+  color: var(--text-secondary);
 }
 
 .test-name strong {
   display: block;
-  color: #111827;
+  color: var(--text-primary);
   margin-bottom: 0.25rem;
 }
 
@@ -269,30 +269,30 @@ h1 {
 
 .meta-info {
   font-size: 0.75rem;
-  color: #6b7280;
+  color: var(--text-secondary);
   padding: 0.125rem 0.5rem;
-  background: #f3f4f6;
+  background: var(--bg-hover);
   border-radius: 0.25rem;
 }
 
 .meta-info.suite {
-  background: #dbeafe;
-  color: #1e40af;
+  background: var(--info-bg);
+  color: var(--info-color);
 }
 
 .error-preview {
   margin-top: 0.5rem;
   padding: 0.5rem;
-  background: #fee2e2;
+  background: var(--error-bg);
   border-left: 3px solid #ef4444;
   border-radius: 0.25rem;
   font-size: 0.75rem;
-  color: #991b1b;
+  color: var(--error-color);
   font-family: monospace;
 }
 
 .duration {
-  color: #6b7280;
+  color: var(--text-secondary);
   font-variant-numeric: tabular-nums;
 }
 </style>

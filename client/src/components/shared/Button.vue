@@ -70,17 +70,17 @@ const handleClick = (event: MouseEvent) => {
 }
 
 .btn-primary {
-  background-color: #3b82f6;
-  color: white;
+  background-color: var(--primary-color);
+  color: #ffffff;
 }
 
 .btn-primary:hover:not(.btn-disabled):not(.btn-loading) {
-  background-color: #2563eb;
+  background-color: var(--primary-hover);
 }
 
 .btn-secondary {
   background-color: #6b7280;
-  color: white;
+  color: #ffffff;
 }
 
 .btn-secondary:hover:not(.btn-disabled):not(.btn-loading) {
@@ -89,7 +89,7 @@ const handleClick = (event: MouseEvent) => {
 
 .btn-danger {
   background-color: #ef4444;
-  color: white;
+  color: #ffffff;
 }
 
 .btn-danger:hover:not(.btn-disabled):not(.btn-loading) {
@@ -97,12 +97,12 @@ const handleClick = (event: MouseEvent) => {
 }
 
 .btn-success {
-  background-color: #10b981;
-  color: white;
+  background-color: var(--success-color);
+  color: #ffffff;
 }
 
 .btn-success:hover:not(.btn-disabled):not(.btn-loading) {
-  background-color: #059669;
+  background-color: var(--success-color);
 }
 
 .btn-sm {
@@ -133,7 +133,7 @@ const handleClick = (event: MouseEvent) => {
   width: 1rem;
   height: 1rem;
   border: 2px solid rgba(255, 255, 255, 0.3);
-  border-top-color: white;
+  border-top-color: #ffffff;
   border-radius: 50%;
   animation: spin 0.6s linear infinite;
 }

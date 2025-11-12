@@ -251,7 +251,7 @@ onMounted(() => {
 h1 {
   font-size: 2rem;
   font-weight: 700;
-  color: #111827;
+  color: var(--text-primary);
   margin: 0;
 }
 
@@ -265,8 +265,8 @@ h1 {
 .loading-spinner {
   width: 3rem;
   height: 3rem;
-  border: 4px solid #e5e7eb;
-  border-top-color: #3b82f6;
+  border: 4px solid var(--border-color);
+  border-top-color: var(--primary-color);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
   margin: 0 auto 1rem;
@@ -286,13 +286,13 @@ h1 {
 .empty-state h3 {
   font-size: 1.5rem;
   font-weight: 600;
-  color: #111827;
+  color: var(--text-primary);
   margin-bottom: 0.5rem;
 }
 
 .error-state p,
 .empty-state p {
-  color: #6b7280;
+  color: var(--text-secondary);
   margin-bottom: 1.5rem;
 }
 
@@ -331,15 +331,15 @@ h1 {
   justify-content: center;
   font-size: 1.5rem;
   border-radius: 0.5rem;
-  background: #f3f4f6;
+  background: var(--bg-hover);
 }
 
-.stat-card.success .stat-icon { background: #d1fae5; }
-.stat-card.passed .stat-icon { background: #d1fae5; color: #10b981; }
-.stat-card.failed .stat-icon { background: #fee2e2; color: #ef4444; }
-.stat-card.error .stat-icon { background: #fef3c7; color: #f59e0b; }
-.stat-card.skipped .stat-icon { background: #f3f4f6; color: #6b7280; }
-.stat-card.duration .stat-icon { background: #dbeafe; }
+.stat-card.success .stat-icon { background: var(--success-bg); }
+.stat-card.passed .stat-icon { background: var(--success-bg); color: var(--success-color); }
+.stat-card.failed .stat-icon { background: var(--error-bg); color: var(--error-color); }
+.stat-card.error .stat-icon { background: var(--warning-bg); color: var(--warning-color); }
+.stat-card.skipped .stat-icon { background: var(--bg-hover); color: var(--text-secondary); }
+.stat-card.duration .stat-icon { background: var(--info-bg); }
 
 .stat-details {
   flex: 1;
@@ -347,18 +347,18 @@ h1 {
 
 .stat-label {
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--text-secondary);
   margin-bottom: 0.25rem;
 }
 
 .stat-value {
   font-size: 1.75rem;
   font-weight: 700;
-  color: #111827;
+  color: var(--text-primary);
 }
 
 .success-rate {
-  color: #10b981;
+  color: var(--success-color);
 }
 
 .charts-grid {
@@ -374,12 +374,12 @@ h1 {
 .no-data {
   text-align: center;
   padding: 3rem;
-  color: #6b7280;
+  color: var(--text-secondary);
 }
 
 .flaky-card {
-  background: #fef3c7;
-  border-color: #f59e0b;
+  background: var(--warning-bg);
+  border-color: var(--warning-color);
 }
 
 .flaky-content {
@@ -398,11 +398,16 @@ h1 {
 
 .flaky-details p {
   margin: 0.25rem 0;
+  color: var(--text-primary);
+}
+
+.flaky-details strong {
+  color: var(--text-primary);
 }
 
 .flaky-description {
   font-size: 0.875rem;
-  color: #92400e;
+  color: var(--warning-color);
 }
 
 .actions-card {
@@ -421,16 +426,16 @@ h1 {
   align-items: center;
   gap: 0.5rem;
   padding: 1.5rem;
-  background: white;
-  border: 2px solid #e5e7eb;
+  background: var(--bg-primary);
+  border: 2px solid var(--border-color);
   border-radius: 0.5rem;
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .action-btn:hover {
-  border-color: #3b82f6;
-  background: #eff6ff;
+  border-color: var(--primary-color);
+  background: var(--primary-bg);
   transform: translateY(-2px);
 }
 
@@ -441,6 +446,6 @@ h1 {
 .action-label {
   font-size: 0.875rem;
   font-weight: 500;
-  color: #374151;
+  color: var(--text-primary);
 }
 </style>

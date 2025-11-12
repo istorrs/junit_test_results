@@ -38,14 +38,14 @@ defineEmits<{
 .search-icon {
   position: absolute;
   left: 1rem;
-  color: #6b7280;
+  color: var(--text-secondary);
   pointer-events: none;
 }
 
 input {
   width: 100%;
   padding: 0.5rem 2.5rem 0.5rem 2.5rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--border-color);
   border-radius: 0.375rem;
   font-size: 0.875rem;
   transition: all 0.15s;
@@ -53,7 +53,7 @@ input {
 
 input:focus {
   outline: none;
-  border-color: #3b82f6;
+  border-color: var(--primary-color);
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
@@ -63,7 +63,7 @@ input:focus {
   background: none;
   border: none;
   font-size: 1.5rem;
-  color: #6b7280;
+  color: var(--text-secondary);
   cursor: pointer;
   padding: 0.25rem 0.5rem;
   line-height: 1;
@@ -73,6 +73,6 @@ input:focus {
 
 .clear-btn:hover {
   background: #f3f4f6;
-  color: #111827;
+  color: var(--text-primary);
 }
 </style>

@@ -55,14 +55,14 @@ const handleClick = (event: MouseEvent) => {
 
 <style scoped>
 .card {
-  background: white;
+  background: var(--bg-primary);
   border-radius: 0.5rem;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--border-color);
   overflow: hidden;
 }
 
 .card-shadow {
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  box-shadow: var(--shadow-sm);
 }
 
 .card-padded .card-body {
@@ -71,21 +71,21 @@ const handleClick = (event: MouseEvent) => {
 
 .card-header {
   padding: 1rem 1.5rem;
-  border-bottom: 1px solid #e5e7eb;
-  background: #f9fafb;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-tertiary);
 }
 
 .card-title {
   margin: 0;
   font-size: 1.125rem;
   font-weight: 600;
-  color: #111827;
+  color: var(--text-primary);
 }
 
 .card-footer {
   padding: 1rem 1.5rem;
-  border-top: 1px solid #e5e7eb;
-  background: #f9fafb;
+  border-top: 1px solid var(--border-color);
+  background: var(--bg-tertiary);
 }
 
 .card-clickable {
@@ -95,6 +95,6 @@ const handleClick = (event: MouseEvent) => {
 
 .card-clickable:hover {
   transform: translateY(-2px);
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--shadow-lg);
 }
 </style>

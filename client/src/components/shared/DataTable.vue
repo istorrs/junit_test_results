@@ -212,16 +212,16 @@ const goToPage = (page: number) => {
 .table-filters {
   margin-bottom: 1rem;
   padding: 1rem;
-  background: white;
+  background: var(--bg-primary);
   border-radius: 0.5rem;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--border-color);
 }
 
 .table-wrapper {
   overflow-x: auto;
-  background: white;
+  background: var(--bg-primary);
   border-radius: 0.5rem;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--border-color);
 }
 
 table {
@@ -230,15 +230,15 @@ table {
 }
 
 thead {
-  background: #f9fafb;
-  border-bottom: 2px solid #e5e7eb;
+  background: var(--bg-tertiary);
+  border-bottom: 2px solid var(--border-color);
 }
 
 th {
   padding: 1rem;
   text-align: left;
   font-weight: 600;
-  color: #111827;
+  color: var(--text-primary);
   font-size: 0.875rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -250,7 +250,7 @@ th.sortable {
 }
 
 th.sortable:hover {
-  background: #f3f4f6;
+  background: var(--bg-hover);
 }
 
 .th-content {
@@ -261,7 +261,7 @@ th.sortable:hover {
 
 .sort-icon {
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--text-secondary);
 }
 
 .sort-placeholder {
@@ -269,12 +269,12 @@ th.sortable:hover {
 }
 
 tbody tr {
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--border-color);
   transition: background 0.15s;
 }
 
 tbody tr:hover {
-  background: #f9fafb;
+  background: var(--bg-tertiary);
 }
 
 tbody tr.clickable {
@@ -282,12 +282,12 @@ tbody tr.clickable {
 }
 
 tbody tr.clickable:hover {
-  background: #eff6ff;
+  background: var(--primary-bg);
 }
 
 td {
   padding: 1rem;
-  color: #374151;
+  color: var(--text-primary);
   font-size: 0.875rem;
 }
 
@@ -295,14 +295,14 @@ td {
 .empty-cell {
   text-align: center;
   padding: 3rem;
-  color: #6b7280;
+  color: var(--text-secondary);
 }
 
 .loading-spinner {
   width: 2rem;
   height: 2rem;
   border: 3px solid #e5e7eb;
-  border-top-color: #3b82f6;
+  border-top-color: var(--primary-color);
   border-radius: 50%;
   animation: spin 0.6s linear infinite;
   margin: 0 auto 1rem;
@@ -320,9 +320,9 @@ td {
   gap: 1rem;
   margin-top: 1rem;
   padding: 1rem;
-  background: white;
+  background: var(--bg-primary);
   border-radius: 0.5rem;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--border-color);
 }
 
 .page-numbers {
@@ -333,8 +333,8 @@ td {
 
 .page-btn {
   padding: 0.5rem 0.75rem;
-  border: 1px solid #e5e7eb;
-  background: white;
+  border: 1px solid var(--border-color);
+  background: var(--bg-primary);
   border-radius: 0.375rem;
   cursor: pointer;
   font-size: 0.875rem;
@@ -342,18 +342,18 @@ td {
 }
 
 .page-btn:hover:not(.active) {
-  background: #f3f4f6;
+  background: var(--bg-hover);
 }
 
 .page-btn.active {
   background: #3b82f6;
   color: white;
-  border-color: #3b82f6;
+  border-color: var(--primary-color);
 }
 
 .page-info {
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--text-secondary);
   white-space: nowrap;
 }
 </style>

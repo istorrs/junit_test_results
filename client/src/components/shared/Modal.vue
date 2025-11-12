@@ -87,7 +87,7 @@ watch(
 }
 
 .modal-content {
-  background: white;
+  background: var(--bg-primary);
   border-radius: 0.5rem;
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
   max-height: 90vh;
@@ -125,7 +125,7 @@ watch(
   margin: 0;
   font-size: 1.25rem;
   font-weight: 600;
-  color: #111827;
+  color: var(--text-primary);
 }
 
 .modal-close {
@@ -134,7 +134,7 @@ watch(
   font-size: 2rem;
   line-height: 1;
   cursor: pointer;
-  color: #6b7280;
+  color: var(--text-secondary);
   padding: 0;
   width: 2rem;
   height: 2rem;
@@ -147,7 +147,7 @@ watch(
 
 .modal-close:hover {
   background-color: #f3f4f6;
-  color: #111827;
+  color: var(--text-primary);
 }
 
 .modal-body {

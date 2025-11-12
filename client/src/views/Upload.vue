@@ -138,7 +138,7 @@ h1 {
   font-size: 2rem;
   font-weight: 700;
   margin-bottom: 2rem;
-  color: #111827;
+  color: var(--text-primary);
   text-align: center;
 }
 
@@ -162,15 +162,15 @@ h1 {
   align-items: center;
   justify-content: center;
   padding: 3rem;
-  border: 2px dashed #d1d5db;
+  border: 2px dashed var(--border-color);
   border-radius: 0.5rem;
   text-align: center;
   transition: all 0.2s;
 }
 
 .upload-content:hover {
-  border-color: #3b82f6;
-  background: #f9fafb;
+  border-color: var(--primary-color);
+  background: var(--bg-tertiary);
 }
 
 .upload-icon {
@@ -182,24 +182,24 @@ h1 {
   font-size: 1.25rem;
   font-weight: 600;
   margin-bottom: 0.5rem;
-  color: #111827;
+  color: var(--text-primary);
 }
 
 .upload-content p {
-  color: #6b7280;
+  color: var(--text-secondary);
   margin-bottom: 1.5rem;
 }
 
 .selected-file {
   margin-top: 1rem;
   padding: 1rem;
-  background: #f3f4f6;
+  background: var(--bg-hover);
   border-radius: 0.375rem;
   text-align: center;
 }
 
 .error-content {
-  color: #dc2626;
+  color: var(--error-color);
   padding: 1rem;
 }
 </style>
