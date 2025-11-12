@@ -16,6 +16,8 @@
       :columns="columns"
       :data="filteredCases"
       :loading="store.loading"
+      :row-clickable="true"
+      @row-click="handleRowClick"
     >
       <template #filters>
         <div class="filters-grid">
@@ -81,6 +83,22 @@
         <span class="duration">{{ formatDuration(((value as any) || 0) * 1000) }}</span>
       </template>
     </DataTable>
+
+    <!-- Test Details Modal -->
+    <TestDetailsModal
+      :open="modalOpen"
+      :test-id="selectedTest?.id || ''"
+      :test-name="selectedTest?.name || ''"
+      :status="selectedTest?.status || 'passed'"
+      :duration="selectedTest?.time"
+      :error-message="selectedTest?.error_message"
+      :error-type="selectedTest?.error_type"
+      :stack-trace="selectedTest?.result?.stack_trace"
+      :class-name="selectedTest?.classname || selectedTest?.suite_name"
+      :last-run="selectedTest?.timestamp"
+      :ci-metadata="selectedTest?.run_ci_metadata"
+      @close="closeModal"
+    />
   </div>
 </template>
 
@@ -92,6 +110,7 @@ import { formatDuration, getStatusIcon, truncateText } from '../utils/formatters
 import Button from '../components/shared/Button.vue'
 import DataTable from '../components/shared/DataTable.vue'
 import SearchInput from '../components/shared/SearchInput.vue'
+import TestDetailsModal from '../components/modals/TestDetailsModal.vue'
 
 const route = useRoute()
 const store = useTestDataStore()
@@ -99,6 +118,10 @@ const store = useTestDataStore()
 const searchQuery = ref('')
 const selectedStatus = ref('')
 const selectedSuite = ref('')
+
+// Modal state
+const modalOpen = ref(false)
+const selectedTest = ref<any>(null)
 
 const columns = [
   { key: 'status', label: 'Status', sortable: true },
@@ -153,6 +176,15 @@ const loadData = async () => {
   } catch (error) {
     console.error('Failed to load test cases:', error)
   }
+}
+
+const handleRowClick = (row: any) => {
+  selectedTest.value = row
+  modalOpen.value = true
+}
+
+const closeModal = () => {
+  modalOpen.value = false
 }
 
 onMounted(() => {

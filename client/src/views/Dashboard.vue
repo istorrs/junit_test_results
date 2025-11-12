@@ -103,7 +103,7 @@
         </Card>
       </div>
 
-      <!-- Charts Row -->
+      <!-- Charts and Widgets Row -->
       <div class="charts-grid">
         <Card title="Test Results Distribution" class="chart-card">
           <PieChart
@@ -124,27 +124,19 @@
             <Button size="sm" @click="$router.push('/upload')">Upload Results</Button>
           </div>
         </Card>
+
+        <FlakyTestsWidget
+          :limit="5"
+          class="chart-card"
+        />
       </div>
 
-      <!-- Flaky Tests Card -->
-      <Card v-if="store.stats.flaky_tests_count && store.stats.flaky_tests_count > 0"
-            title="Flaky Tests Alert"
-            class="flaky-card">
-        <div class="flaky-content">
-          <div class="flaky-icon">⚠️</div>
-          <div class="flaky-details">
-            <p>
-              <strong>{{ store.stats.flaky_tests_count }}</strong> flaky test(s) detected
-            </p>
-            <p class="flaky-description">
-              These tests have inconsistent results across multiple runs
-            </p>
-          </div>
-          <Button variant="secondary" @click="$router.push('/cases')">
-            View Test Cases
-          </Button>
-        </div>
-      </Card>
+      <!-- Insights Panel (Full Width) -->
+      <FailurePatternsSummary
+        :days="7"
+        :limit="5"
+        :show-time-range="true"
+      />
 
       <!-- Quick Actions -->
       <Card title="Quick Actions" class="actions-card">
@@ -186,6 +178,8 @@ import Button from '../components/shared/Button.vue'
 import Card from '../components/shared/Card.vue'
 import PieChart from '../components/charts/PieChart.vue'
 import LineChart from '../components/charts/LineChart.vue'
+import FlakyTestsWidget from '../components/widgets/FlakyTestsWidget.vue'
+import FailurePatternsSummary from '../components/analytics/FailurePatternsSummary.vue'
 
 const store = useTestDataStore()
 
@@ -363,7 +357,7 @@ h1 {
 
 .charts-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
   gap: 2rem;
 }
 
@@ -375,39 +369,6 @@ h1 {
   text-align: center;
   padding: 3rem;
   color: var(--text-secondary);
-}
-
-.flaky-card {
-  background: var(--warning-bg);
-  border-color: var(--warning-color);
-}
-
-.flaky-content {
-  display: flex;
-  align-items: center;
-  gap: 1.5rem;
-}
-
-.flaky-icon {
-  font-size: 3rem;
-}
-
-.flaky-details {
-  flex: 1;
-}
-
-.flaky-details p {
-  margin: 0.25rem 0;
-  color: var(--text-primary);
-}
-
-.flaky-details strong {
-  color: var(--text-primary);
-}
-
-.flaky-description {
-  font-size: 0.875rem;
-  color: var(--warning-color);
 }
 
 .actions-card {
