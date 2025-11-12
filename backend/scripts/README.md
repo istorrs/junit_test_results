@@ -1,95 +1,78 @@
 # Database Maintenance Scripts
 
-This directory contains scripts for database maintenance, repairs, and migrations.
+This directory contains scripts for maintaining data integrity and quality in the JUnit Test Results database.
 
-## repair-timestamps.js
+## Available Scripts
 
-Repairs test run timestamps that were incorrectly set to the upload time instead of the actual test execution time.
+### 1. fix-test-run-counts.js
 
-### Problem
+**Purpose**: Fixes test runs with missing or incorrect test counts
 
-Before the timestamp fix, test runs imported from Jenkins showed the upload/import timestamp instead of the actual test execution time from the CI build.
+**When to run**:
 
-### Solution
+- After bulk data imports
+- When test runs show 0 tests despite having test cases
+- After schema migrations
 
-This script:
-
-1. Finds all test runs with `ci_metadata.build_time` (from Jenkins imports)
-2. Compares the test run's `timestamp` with the `build_time`
-3. Updates test runs where timestamps differ by more than 1 minute
-4. Updates related test suites to match the corrected timestamp
-
-### Usage
-
-**Dry run (recommended first):**
+**Usage**:
 
 ```bash
-cd backend
-node scripts/repair-timestamps.js --dry-run
+docker exec junit-backend node /app/scripts/fix-test-run-counts.js
 ```
 
-**Apply changes:**
+**What it fixes**:
+
+- Test runs with `tests: 0`
+- Test runs with `tests: null`
+- Test runs with missing `tests` field
+- Recalculates: tests, failures, errors, skipped, time
+
+---
+
+### 2. audit-null-fields.js
+
+**Purpose**: Comprehensive audit of all null/undefined fields across all collections
+
+**When to run**:
+
+- Weekly maintenance checks
+- Before major releases
+- After schema changes
+
+**Usage**:
 
 ```bash
-cd backend
-node scripts/repair-timestamps.js
+docker exec junit-backend node /app/scripts/audit-null-fields.js
 ```
 
-### What It Does
+---
 
-For each test run with ci_metadata:
+### 3. validate-required-fields.js
 
-- Compares `run.timestamp` with `ci_metadata.build_time`
-- If they differ by more than 60 seconds:
-    - Updates `TestRun.timestamp` to `ci_metadata.build_time`
-    - Updates related `TestSuite.timestamp` entries
-    - Logs the change
+**Purpose**: Validates that all critical fields have values (no nulls allowed)
 
-### Safety
+**When to run**:
 
-- Dry run mode shows what would be changed without modifying data
-- Only updates runs where timestamps differ significantly (>1 minute)
-- Preserves test suites with their own explicit timestamps
-- Can be safely re-run (idempotent)
+- As part of CI/CD pipeline validation
+- After data migrations
+- Daily automated health checks
 
-### Example Output
+**Usage**:
 
-```
-Found 150 test runs with ci_metadata.build_time
-
-Test Run: 67304abf12345678
-  Name: test_suite_gw
-  Current timestamp: 2025-11-10T15:30:00.000Z
-  Build time: 2025-11-08T10:45:23.000Z
-  Difference: 2944.62 minutes
-  ✓ Updated test run and 5 test suites
-
-=== Summary ===
-Total test runs found: 150
-Test runs updated: 142
-Test runs skipped (already correct): 8
-Test suites updated: 1024
-
-✓ Timestamp repair completed successfully!
+```bash
+docker exec junit-backend node /app/scripts/validate-required-fields.js
 ```
 
-### Requirements
+**Exit codes**:
 
-- Node.js
-- MongoDB connection (uses `MONGODB_URI` from environment or `.env`)
-- Backend dependencies installed (`npm install` in backend directory)
+- `0`: All required fields are present (validation passed)
+- `1`: Missing required fields detected (validation failed)
 
-### When to Use
+## Data Quality Guarantees
 
-- After importing historical data from Jenkins
-- If you notice test runs showing current dates instead of historical dates
-- After upgrading from a version before the timestamp fix
+After running these scripts, you can trust that:
 
-## Future Scripts
-
-Additional maintenance scripts can be added here for:
-
-- Data migrations
-- Index optimization
-- Cleanup operations
-- Database health checks
+✅ All test runs have accurate test counts
+✅ All test cases have complete required data
+✅ All test suites have valid statistics
+✅ Test results maintain referential integrity
