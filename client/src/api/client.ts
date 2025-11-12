@@ -85,6 +85,55 @@ export interface UploadResponse {
   message: string
 }
 
+// Tier 1 feature interfaces
+
+export interface TestHistoryRun {
+  run_id: string
+  status: 'passed' | 'failed' | 'error' | 'skipped'
+  duration: number
+  timestamp: string
+  error_message?: string
+}
+
+export interface TestHistoryResponse {
+  runs: TestHistoryRun[]
+}
+
+export interface FlakinessData {
+  pass_rate: number // 0-100
+  total_runs: number
+  recent_failures: number
+  last_status_change: string
+  flakiness_score: number // 0-100
+}
+
+export interface FailurePattern {
+  error_type: string
+  error_message: string
+  count: number
+  affected_tests: Array<{ test_id: string; test_name: string }>
+  trend: 'increasing' | 'decreasing' | 'stable'
+  first_seen: string
+}
+
+export interface FailurePatternsResponse {
+  patterns: FailurePattern[]
+}
+
+export interface FlakyTest {
+  test_id: string
+  test_name: string
+  class_name: string
+  pass_rate: number
+  flakiness_score: number
+  recent_runs: number
+  recent_failures: number
+}
+
+export interface FlakyTestsResponse {
+  flaky_tests: FlakyTest[]
+}
+
 class ApiClient {
   private baseUrl = '/api/v1'
 
@@ -195,6 +244,25 @@ class ApiClient {
 
     const data = await response.json()
     return data.data
+  }
+
+  // New methods for Tier 1 features
+
+  async getTestHistory(testId: string): Promise<TestHistoryResponse> {
+    return this.request<TestHistoryResponse>(`/cases/${testId}/history`)
+  }
+
+  async getTestFlakiness(testId: string): Promise<FlakinessData> {
+    return this.request<FlakinessData>(`/cases/${testId}/flakiness`)
+  }
+
+  async getFailurePatterns(params?: { days?: number; limit?: number }): Promise<FailurePatternsResponse> {
+    const queryString = this.buildQueryString(params || {})
+    return this.request<FailurePatternsResponse>(`/analytics/failure-patterns${queryString}`)
+  }
+
+  async getFlakyTests(limit: number = 10): Promise<FlakyTestsResponse> {
+    return this.request<FlakyTestsResponse>(`/analytics/flaky-tests?limit=${limit}`)
   }
 }
 

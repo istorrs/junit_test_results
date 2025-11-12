@@ -27,7 +27,7 @@ import { computed, watch } from 'vue'
 interface Props {
   open: boolean
   title?: string
-  size?: 'sm' | 'md' | 'lg' | 'full'
+  size?: 'sm' | 'md' | 'lg' | 'xl' | 'full'
   closeOnOverlay?: boolean
   hideClose?: boolean
 }
@@ -106,6 +106,10 @@ watch(
 
 .modal-lg {
   max-width: 800px;
+}
+
+.modal-xl {
+  max-width: 1200px;
 }
 
 .modal-full {
