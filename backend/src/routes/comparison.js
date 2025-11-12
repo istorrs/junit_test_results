@@ -259,7 +259,7 @@ router.get('/test/:testId', async (req, res) => {
         const totalRuns = history.length;
         const passedCount = history.filter(h => h.status === 'passed').length;
         const failedCount = history.filter(
-            h => h.status === 'failure' || h.status === 'error'
+            h => h.status === 'failed' || h.status === 'error'
         ).length;
         const avgTime = history.reduce((sum, h) => sum + (h.time || 0), 0) / totalRuns;
 

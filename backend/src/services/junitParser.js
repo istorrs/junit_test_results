@@ -189,13 +189,7 @@ const parseJUnitXML = async (xmlContent, filename, ciMetadata = null, uploaderIn
 
         // Calculate statistics from actual test cases and update the test run
         const stats = await calculateStats(testRun._id);
-        await TestRun.findByIdAndUpdate(testRun._id, {
-            tests: stats.total_tests,
-            failures: stats.failed,
-            errors: stats.errors,
-            skipped: stats.skipped,
-            time: stats.total_time
-        });
+        await TestRun.findByIdAndUpdate(testRun._id, stats);
 
         logger.info('JUnit XML parsed successfully', { run_id: testRun._id, stats });
 
@@ -429,12 +423,12 @@ const calculateStats = async runId => {
     const cases = await TestCase.find({ run_id: runId });
 
     return {
-        total_tests: cases.length,
+        tests: cases.length,
         passed: cases.filter(c => c.status === 'passed').length,
-        failed: cases.filter(c => c.status === 'failed').length,
+        failures: cases.filter(c => c.status === 'failed').length,
         errors: cases.filter(c => c.status === 'error').length,
         skipped: cases.filter(c => c.status === 'skipped').length,
-        total_time: cases.reduce((sum, c) => sum + c.time, 0)
+        time: cases.reduce((sum, c) => sum + c.time, 0)
     };
 };
 

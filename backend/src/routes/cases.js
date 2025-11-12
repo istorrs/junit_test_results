@@ -186,7 +186,7 @@ router.get('/:id/history', async (req, res, next) => {
                 $project: {
                     run_id: { $toString: '$run_id' },
                     status: 1,
-                    duration: '$time',
+                    time: '$time',
                     timestamp: '$run.timestamp',
                     error_message: '$result.error_message'
                 }
@@ -280,8 +280,8 @@ router.get('/:id/flakiness', async (req, res, next) => {
 
         // Calculate recent failures (last 10 runs)
         const recentRuns = stats.recent_runs.slice(0, 10);
-        const recentFailures = recentRuns.filter(r =>
-            r.status === 'failed' || r.status === 'error'
+        const recentFailures = recentRuns.filter(
+            r => r.status === 'failed' || r.status === 'error'
         ).length;
 
         // Find last status change

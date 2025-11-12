@@ -142,10 +142,10 @@ export interface Release {
   first_run: string
   last_run: string
   total_runs: number
-  total_tests: number
-  total_failures: number
-  total_errors: number
-  total_skipped: number
+  tests: number
+  failures: number
+  errors: number
+  skipped: number
   pass_rate: number
 }
 
@@ -156,11 +156,11 @@ export interface ReleasesResponse {
 
 export interface ReleaseMetrics {
   total_runs: number
-  total_tests: number
-  total_passed: number
-  total_failures: number
-  total_errors: number
-  total_skipped: number
+  tests: number
+  passed: number
+  failures: number
+  errors: number
+  skipped: number
   pass_rate: number
   total_time: number
   avg_time_per_run: number

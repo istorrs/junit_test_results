@@ -38,10 +38,10 @@ router.get('/', async (req, res) => {
                     first_run: 1,
                     last_run: 1,
                     total_runs: 1,
-                    total_tests: '$tests_sum',
-                    total_failures: '$failures_sum',
-                    total_errors: '$errors_sum',
-                    total_skipped: '$skipped_sum',
+                    tests: '$tests_sum',
+                    failures: '$failures_sum',
+                    errors: '$errors_sum',
+                    skipped: '$skipped_sum',
                     pass_rate: {
                         $multiply: [
                             {

@@ -82,7 +82,9 @@ router.get('/:id', async (req, res, next) => {
             });
         }
 
-        const suites = await TestSuite.find({ run_id: new mongoose.Types.ObjectId(req.params.id) }).lean();
+        const suites = await TestSuite.find({
+            run_id: new mongoose.Types.ObjectId(req.params.id)
+        }).lean();
 
         res.json({
             success: true,
@@ -166,14 +168,20 @@ router.get('/:id1/compare/:id2', async (req, res, next) => {
                 newTests.push(test2);
             } else {
                 // Test exists in both runs
-                if (test1.status === 'passed' && (test2.status === 'failed' || test2.status === 'error')) {
+                if (
+                    test1.status === 'passed' &&
+                    (test2.status === 'failed' || test2.status === 'error')
+                ) {
                     newFailures.push({
                         name: test2.name,
                         classname: test2.classname,
                         status: test2.status,
                         message: test2.failure_message
                     });
-                } else if ((test1.status === 'failed' || test1.status === 'error') && test2.status === 'passed') {
+                } else if (
+                    (test1.status === 'failed' || test1.status === 'error') &&
+                    test2.status === 'passed'
+                ) {
                     newPasses.push({
                         name: test2.name,
                         classname: test2.classname
@@ -211,18 +219,18 @@ router.get('/:id1/compare/:id2', async (req, res, next) => {
             run1: {
                 id: run1._id,
                 timestamp: run1.timestamp,
-                total_tests: cases1.length,
+                tests: cases1.length,
                 passed: cases1.filter(c => c.status === 'passed').length,
-                failed: cases1.filter(c => c.status === 'failed').length,
+                failures: cases1.filter(c => c.status === 'failed').length,
                 errors: cases1.filter(c => c.status === 'error').length,
                 skipped: cases1.filter(c => c.status === 'skipped').length
             },
             run2: {
                 id: run2._id,
                 timestamp: run2.timestamp,
-                total_tests: cases2.length,
+                tests: cases2.length,
                 passed: cases2.filter(c => c.status === 'passed').length,
-                failed: cases2.filter(c => c.status === 'failed').length,
+                failures: cases2.filter(c => c.status === 'failed').length,
                 errors: cases2.filter(c => c.status === 'error').length,
                 skipped: cases2.filter(c => c.status === 'skipped').length
             }
@@ -239,7 +247,6 @@ router.get('/:id1/compare/:id2', async (req, res, next) => {
                 removed_tests: removedTests
             }
         });
-
     } catch (error) {
         next(error);
     }

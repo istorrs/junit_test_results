@@ -61,7 +61,7 @@ router.get('/trends', async (req, res) => {
                         $sum: { $cond: [{ $eq: ['$status', 'passed'] }, 1, 0] }
                     },
                     failed: {
-                        $sum: { $cond: [{ $in: ['$status', ['failure', 'error']] }, 1, 0] }
+                        $sum: { $cond: [{ $in: ['$status', ['failed', 'error']] }, 1, 0] }
                     }
                 }
             },
