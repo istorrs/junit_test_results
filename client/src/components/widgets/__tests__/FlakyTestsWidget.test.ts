@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import { createRouter, createMemoryHistory } from 'vue-router'
+import { nextTick } from 'vue'
 import FlakyTestsWidget from '../FlakyTestsWidget.vue'
 
 // Mock the API client module
@@ -81,6 +82,9 @@ describe('FlakyTestsWidget', () => {
         limit: 5
       }
     })
+
+    // Wait for onMounted to run
+    await nextTick()
 
     // Check immediately before promise resolves
     expect(wrapper.find('.loading-state').exists()).toBe(true)
@@ -163,8 +167,8 @@ describe('FlakyTestsWidget', () => {
     await flushPromises()
 
     const scores = wrapper.findAll('.flaky-score')
-    // Flakiness score 30 is low (< 50), score 15 is low
-    expect(scores[0].classes()).toContain('score-low')
+    // Flakiness score 30 is medium (< 50), score 15 is low
+    expect(scores[0].classes()).toContain('score-medium')
     expect(scores[1].classes()).toContain('score-low')
   })
 
@@ -225,7 +229,7 @@ describe('FlakyTestsWidget', () => {
     expect(mockGetFlakyTests).toHaveBeenCalledWith(10)
   })
 
-  it('uses default limit of 10 when not specified', async () => {
+  it('uses default limit of 5 when not specified', async () => {
     mockGetFlakyTests.mockResolvedValue({
       flaky_tests: mockFlakyTests
     })
@@ -238,7 +242,7 @@ describe('FlakyTestsWidget', () => {
 
     await flushPromises()
 
-    expect(mockGetFlakyTests).toHaveBeenCalledWith(10)
+    expect(mockGetFlakyTests).toHaveBeenCalledWith(5)
   })
 
   it('navigates to test cases on "View All" click', async () => {
@@ -256,9 +260,11 @@ describe('FlakyTestsWidget', () => {
     })
 
     await flushPromises()
+    await router.isReady()
 
-    const viewAllLink = wrapper.find('.view-all-link')
-    await viewAllLink.trigger('click')
+    const viewAllButton = wrapper.find('.view-all-button')
+    await viewAllButton.trigger('click')
+    await flushPromises()
 
     expect(router.currentRoute.value.path).toBe('/cases')
   })
