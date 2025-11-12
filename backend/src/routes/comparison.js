@@ -214,7 +214,7 @@ router.get('/runs', async (req, res) => {
 router.get('/test/:testId', async (req, res) => {
     try {
         const { testId } = req.params;
-        const { limit = 50, days = 30 } = req.query;
+        const { limit = 500, days = 30 } = req.query;
 
         const cutoffDate = new Date();
         cutoffDate.setDate(cutoffDate.getDate() - parseInt(days));

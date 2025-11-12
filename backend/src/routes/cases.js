@@ -8,7 +8,7 @@ const TestResult = require('../models/TestResult');
 router.get('/', async (req, res, next) => {
     try {
         const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 50;
+        const limit = parseInt(req.query.limit) || 500;
         const skip = (page - 1) * limit;
 
         const matchQuery = {};

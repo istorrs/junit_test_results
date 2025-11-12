@@ -99,7 +99,7 @@ router.get('/trends', async (req, res) => {
  */
 router.get('/slowest', async (req, res) => {
     try {
-        const { limit = 20, days = 7, threshold = 0 } = req.query;
+        const { limit = 100, days = 7, threshold = 0 } = req.query;
 
         const cutoffDate = new Date();
         cutoffDate.setDate(cutoffDate.getDate() - parseInt(days));

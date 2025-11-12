@@ -8,7 +8,7 @@ const TestRun = require('../models/TestRun');
  */
 router.get('/', async (req, res) => {
     try {
-        const { limit = 50, skip = 0 } = req.query;
+        const { limit = 500, skip = 0 } = req.query;
 
         // Aggregate to get unique releases with stats
         const releases = await TestRun.aggregate([
@@ -182,7 +182,7 @@ router.get('/compare', async (req, res) => {
 router.get('/:tag/runs', async (req, res) => {
     try {
         const { tag } = req.params;
-        const { limit = 50, skip = 0 } = req.query;
+        const { limit = 500, skip = 0 } = req.query;
 
         const runs = await TestRun.find({ release_tag: tag })
             .sort({ timestamp: -1 })

@@ -40,15 +40,13 @@ router.get('/overview', async (req, res, next) => {
             average_duration: cases.reduce((sum, c) => sum + c.time, 0) / cases.length || 0
         };
 
-        stats.success_rate = stats.total_tests > 0
-            ? ((stats.total_passed / stats.total_tests) * 100).toFixed(2)
-            : 0;
+        stats.success_rate =
+            stats.total_tests > 0 ? ((stats.total_passed / stats.total_tests) * 100).toFixed(2) : 0;
 
         res.json({
             success: true,
             data: stats
         });
-
     } catch (error) {
         next(error);
     }
@@ -57,10 +55,7 @@ router.get('/overview', async (req, res, next) => {
 // GET /api/v1/stats/trends - Get test execution trends
 router.get('/trends', async (req, res, next) => {
     try {
-        const runs = await TestRun.find()
-            .sort({ timestamp: 1 })
-            .limit(30)
-            .lean();
+        const runs = await TestRun.find().sort({ timestamp: 1 }).limit(30).lean();
 
         const trends = [];
 
@@ -75,9 +70,13 @@ router.get('/trends', async (req, res, next) => {
                 failed: cases.filter(c => c.status === 'failed').length,
                 errors: cases.filter(c => c.status === 'error').length,
                 skipped: cases.filter(c => c.status === 'skipped').length,
-                success_rate: cases.length > 0
-                    ? ((cases.filter(c => c.status === 'passed').length / cases.length) * 100).toFixed(2)
-                    : 0
+                success_rate:
+                    cases.length > 0
+                        ? (
+                              (cases.filter(c => c.status === 'passed').length / cases.length) *
+                              100
+                          ).toFixed(2)
+                        : 0
             });
         }
 
@@ -85,7 +84,6 @@ router.get('/trends', async (req, res, next) => {
             success: true,
             data: trends
         });
-
     } catch (error) {
         next(error);
     }
@@ -101,11 +99,7 @@ router.get('/flaky-tests', async (req, res, next) => {
                     _id: { name: '$name', classname: '$classname' },
                     failure_count: {
                         $sum: {
-                            $cond: [
-                                { $in: ['$status', ['failed', 'error']] },
-                                1,
-                                0
-                            ]
+                            $cond: [{ $in: ['$status', ['failed', 'error']] }, 1, 0]
                         }
                     },
                     total_runs: { $sum: 1 },
@@ -119,10 +113,7 @@ router.get('/flaky-tests', async (req, res, next) => {
                     failure_count: 1,
                     total_runs: 1,
                     failure_rate: {
-                        $multiply: [
-                            { $divide: ['$failure_count', '$total_runs'] },
-                            100
-                        ]
+                        $multiply: [{ $divide: ['$failure_count', '$total_runs'] }, 100]
                     },
                     last_failed: 1
                 }
@@ -134,7 +125,6 @@ router.get('/flaky-tests', async (req, res, next) => {
             success: true,
             data: flakyTests
         });
-
     } catch (error) {
         next(error);
     }
@@ -161,7 +151,10 @@ router.get('/performance-regressions', async (req, res, next) => {
                 name: test._id.name,
                 classname: test._id.classname,
                 status: 'passed'
-            }).sort({ created_at: -1 }).limit(8).lean();
+            })
+                .sort({ created_at: -1 })
+                .limit(8)
+                .lean();
 
             if (cases.length >= 8) {
                 const recent = cases.slice(0, 3);
@@ -188,9 +181,10 @@ router.get('/performance-regressions', async (req, res, next) => {
 
         res.json({
             success: true,
-            data: regressions.sort((a, b) => parseFloat(b.percent_change) - parseFloat(a.percent_change))
+            data: regressions.sort(
+                (a, b) => parseFloat(b.percent_change) - parseFloat(a.percent_change)
+            )
         });
-
     } catch (error) {
         next(error);
     }
@@ -199,7 +193,7 @@ router.get('/performance-regressions', async (req, res, next) => {
 // GET /api/v1/stats/slowest-tests - Get slowest tests
 router.get('/slowest-tests', async (req, res, next) => {
     try {
-        const limit = parseInt(req.query.limit) || 20;
+        const limit = parseInt(req.query.limit) || 100;
 
         const slowestTests = await TestCase.aggregate([
             {
@@ -229,7 +223,6 @@ router.get('/slowest-tests', async (req, res, next) => {
             success: true,
             data: slowestTests
         });
-
     } catch (error) {
         next(error);
     }
@@ -266,10 +259,7 @@ router.get('/suite-performance', async (req, res, next) => {
                     total_time: { $round: ['$total_time', 2] },
                     avg_time: { $round: ['$avg_time', 3] },
                     success_rate: {
-                        $multiply: [
-                            { $divide: ['$passed', '$total_tests'] },
-                            100
-                        ]
+                        $multiply: [{ $divide: ['$passed', '$total_tests'] }, 100]
                     }
                 }
             },
@@ -280,7 +270,6 @@ router.get('/suite-performance', async (req, res, next) => {
             success: true,
             data: suites
         });
-
     } catch (error) {
         next(error);
     }

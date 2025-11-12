@@ -385,7 +385,7 @@ class ApiClient {
   async getRuns(filters: RunFilters = {}): Promise<RunsResponse> {
     const params = {
       page: filters.page || 1,
-      limit: filters.limit || 50,
+      limit: filters.limit || 500,
       ...filters,
     }
 
@@ -424,7 +424,7 @@ class ApiClient {
   async getTestCases(filters: TestCaseFilters = {}): Promise<TestCasesResponse> {
     const params = {
       page: filters.page || 1,
-      limit: filters.limit || 50,
+      limit: filters.limit || 500,
       ...filters,
     }
 
@@ -478,7 +478,7 @@ class ApiClient {
     return this.request<FailurePatternsResponse>(`/analytics/failure-patterns${queryString}`)
   }
 
-  async getFlakyTests(limit: number = 10): Promise<FlakyTestsResponse> {
+  async getFlakyTests(limit: number = 100): Promise<FlakyTestsResponse> {
     return this.request<FlakyTestsResponse>(`/analytics/flaky-tests?limit=${limit}`)
   }
 

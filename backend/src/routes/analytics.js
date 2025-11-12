@@ -1,6 +1,5 @@
 const express = require('express');
 const router = express.Router();
-const mongoose = require('mongoose');
 const TestCase = require('../models/TestCase');
 const TestResult = require('../models/TestResult');
 
@@ -8,7 +7,7 @@ const TestResult = require('../models/TestResult');
 router.get('/failure-patterns', async (req, res, next) => {
     try {
         const days = parseInt(req.query.days) || 7;
-        const limit = parseInt(req.query.limit) || 10;
+        const limit = parseInt(req.query.limit) || 100;
 
         // Calculate date threshold
         const dateThreshold = new Date();
@@ -29,11 +28,7 @@ router.get('/failure-patterns', async (req, res, next) => {
                             $ifNull: ['$error_type', '$failure_type']
                         },
                         error_message_prefix: {
-                            $substr: [
-                                { $ifNull: ['$error_message', '$failure_message'] },
-                                0,
-                                100
-                            ]
+                            $substr: [{ $ifNull: ['$error_message', '$failure_message'] }, 0, 100]
                         }
                     },
                     count: { $sum: 1 },
@@ -103,7 +98,7 @@ router.get('/failure-patterns', async (req, res, next) => {
 // GET /api/v1/analytics/flaky-tests - Get top flaky tests
 router.get('/flaky-tests', async (req, res, next) => {
     try {
-        const limit = parseInt(req.query.limit) || 10;
+        const limit = parseInt(req.query.limit) || 100;
         const minRuns = parseInt(req.query.min_runs) || 5; // Minimum runs to be considered
 
         // Find all unique test names and their execution history
@@ -135,18 +130,12 @@ router.get('/flaky-tests', async (req, res, next) => {
             {
                 $addFields: {
                     pass_rate: {
-                        $multiply: [
-                            { $divide: ['$passed_runs', '$total_runs'] },
-                            100
-                        ]
+                        $multiply: [{ $divide: ['$passed_runs', '$total_runs'] }, 100]
                     },
                     flakiness_score: {
                         $multiply: [
                             {
-                                $subtract: [
-                                    1,
-                                    { $divide: ['$passed_runs', '$total_runs'] }
-                                ]
+                                $subtract: [1, { $divide: ['$passed_runs', '$total_runs'] }]
                             },
                             100
                         ]
