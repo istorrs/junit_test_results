@@ -127,11 +127,11 @@ const parseJUnitXML = async (xmlContent, filename, ciMetadata = null, uploaderIn
                 testRun = await TestRun.create({
                     name: testRunName,
                     timestamp,
-                    time: 0,  // Will be calculated from test cases
-                    total_tests: 0,  // Will be calculated from test cases
-                    total_failures: 0,
-                    total_errors: 0,
-                    total_skipped: 0,
+                    time: 0, // Will be calculated from test cases
+                    tests: 0, // Will be calculated from test cases
+                    failures: 0,
+                    errors: 0,
+                    skipped: 0,
                     file_upload_id: fileUpload._id,
                     source: 'ci_cd',
                     ci_metadata: ciMetadata
@@ -150,11 +150,11 @@ const parseJUnitXML = async (xmlContent, filename, ciMetadata = null, uploaderIn
             testRun = await TestRun.create({
                 name: suiteElement.name || filename,
                 timestamp,
-                time: 0,  // Will be calculated from test cases
-                total_tests: 0,
-                total_failures: 0,
-                total_errors: 0,
-                total_skipped: 0,
+                time: 0, // Will be calculated from test cases
+                tests: 0,
+                failures: 0,
+                errors: 0,
+                skipped: 0,
                 file_upload_id: fileUpload._id,
                 content_hash: contentHash,
                 source: 'api',
@@ -170,7 +170,6 @@ const parseJUnitXML = async (xmlContent, filename, ciMetadata = null, uploaderIn
 
         // Process all test suites from this XML
         for (const suiteElement of testsuites) {
-
             // Process test suites
             let suites = suiteElement.testsuite || [suiteElement];
             if (!Array.isArray(suites)) {
@@ -191,10 +190,10 @@ const parseJUnitXML = async (xmlContent, filename, ciMetadata = null, uploaderIn
         // Calculate statistics from actual test cases and update the test run
         const stats = await calculateStats(testRun._id);
         await TestRun.findByIdAndUpdate(testRun._id, {
-            total_tests: stats.total_tests,
-            total_failures: stats.failed,
-            total_errors: stats.errors,
-            total_skipped: stats.skipped,
+            tests: stats.total_tests,
+            failures: stats.failed,
+            errors: stats.errors,
+            skipped: stats.skipped,
             time: stats.total_time
         });
 
@@ -214,9 +213,7 @@ const parseJUnitXML = async (xmlContent, filename, ciMetadata = null, uploaderIn
 
 const processTestSuite = async (suiteData, runId, fileUploadId, testRunTimestamp) => {
     // Determine suite timestamp: use suite's own timestamp if available, otherwise use test run timestamp
-    const suiteTimestamp = suiteData.timestamp
-        ? new Date(suiteData.timestamp)
-        : testRunTimestamp;
+    const suiteTimestamp = suiteData.timestamp ? new Date(suiteData.timestamp) : testRunTimestamp;
 
     const testSuite = await TestSuite.create({
         run_id: runId,
@@ -244,7 +241,7 @@ const processTestSuite = async (suiteData, runId, fileUploadId, testRunTimestamp
 
         for (const testcase of testcases) {
             // Calculate this test's start time by adding accumulated duration to suite timestamp
-            const testStartTime = new Date(suiteTimestamp.getTime() + (accumulatedTime * 1000));
+            const testStartTime = new Date(suiteTimestamp.getTime() + accumulatedTime * 1000);
 
             await processTestCase(testcase, testSuite._id, runId, fileUploadId, testStartTime);
 
@@ -265,10 +262,7 @@ const processTestSuite = async (suiteData, runId, fileUploadId, testRunTimestamp
 
         if (classnames.length > 0) {
             // Use the most common classname or the first one if all test cases are from same class
-            const newName =
-                classnames.length === 1
-                    ? classnames[0]
-                    : classnames[0]; // Use first classname for consistency
+            const newName = classnames.length === 1 ? classnames[0] : classnames[0]; // Use first classname for consistency
 
             await TestSuite.findByIdAndUpdate(testSuite._id, { name: newName });
             logger.info('Updated test suite name from generic to classname', {
