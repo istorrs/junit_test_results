@@ -397,11 +397,11 @@ class ApiClient {
       ...run,
       id: run._id || run.id,
       summary: {
-        total: run.total_tests || 0,
-        passed: (run.total_tests || 0) - (run.total_failures || 0) - (run.total_errors || 0) - (run.total_skipped || 0),
-        failed: run.total_failures || 0,
-        errors: run.total_errors || 0,
-        skipped: run.total_skipped || 0,
+        total: run.tests || 0,
+        passed: (run.tests || 0) - (run.failures || 0) - (run.errors || 0) - (run.skipped || 0),
+        failed: run.failures || 0,
+        errors: run.errors || 0,
+        skipped: run.skipped || 0,
       }
     }))
 
