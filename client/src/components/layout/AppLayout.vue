@@ -11,6 +11,10 @@
           <router-link to="/runs" class="nav-link">Test Runs</router-link>
           <router-link to="/cases" class="nav-link">Test Cases</router-link>
           <router-link to="/upload" class="nav-link">Upload</router-link>
+          <div class="nav-separator"></div>
+          <router-link to="/releases" class="nav-link">Releases</router-link>
+          <router-link to="/compare" class="nav-link">Compare</router-link>
+          <router-link to="/performance" class="nav-link">Performance</router-link>
           <button @click="toggleTheme" class="theme-toggle" :title="`Switch to ${currentTheme === 'light' ? 'dark' : 'light'} mode`">
             <span v-if="currentTheme === 'light'">🌙</span>
             <span v-else>☀️</span>
@@ -89,6 +93,13 @@ onMounted(() => {
   display: flex;
   gap: 1rem;
   align-items: center;
+}
+
+.nav-separator {
+  width: 1px;
+  height: 1.5rem;
+  background: var(--border-color);
+  margin: 0 0.5rem;
 }
 
 .nav-link {

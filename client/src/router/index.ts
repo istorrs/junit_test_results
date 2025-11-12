@@ -25,6 +25,25 @@ const routes: RouteRecordRaw[] = [
     component: () => import('../views/Upload.vue'),
     meta: { title: 'Upload Results' },
   },
+  // Tier 2 Routes
+  {
+    path: '/releases',
+    name: 'releases',
+    component: () => import('../views/Releases.vue'),
+    meta: { title: 'Release Comparison' },
+  },
+  {
+    path: '/compare',
+    name: 'compare',
+    component: () => import('../views/Compare.vue'),
+    meta: { title: 'Compare Test Runs' },
+  },
+  {
+    path: '/performance',
+    name: 'performance',
+    component: () => import('../views/Performance.vue'),
+    meta: { title: 'Performance Trends' },
+  },
   {
     path: '/:pathMatch(.*)*',
     name: 'not-found',
