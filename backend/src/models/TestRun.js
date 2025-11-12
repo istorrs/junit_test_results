@@ -66,9 +66,46 @@ const testRunSchema = new mongoose.Schema({
         branch: String,
         repository: String,
         build_url: String
+    },
+    // Tier 2: Release tracking
+    release_tag: {
+        type: String,
+        index: true,
+        sparse: true  // Only index if present
+    },
+    release_version: {
+        type: String,
+        index: true,
+        sparse: true
+    },
+    baseline: {
+        type: Boolean,
+        default: false
+    },
+    comparison_tags: [{
+        type: String
+    }],
+    // Add aliases for backward compatibility
+    tests: {
+        type: Number,
+        alias: 'total_tests'
+    },
+    failures: {
+        type: Number,
+        alias: 'total_failures'
+    },
+    errors: {
+        type: Number,
+        alias: 'total_errors'
+    },
+    skipped: {
+        type: Number,
+        alias: 'total_skipped'
     }
 }, {
-    timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }
+    timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' },
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true }
 });
 
 // Compound index for unique test run identification
