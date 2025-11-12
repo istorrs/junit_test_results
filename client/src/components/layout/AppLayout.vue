@@ -22,14 +22,30 @@
     <main class="main-content">
       <router-view />
     </main>
+
+    <footer class="app-footer">
+      <div class="footer-content">
+        <span class="version-info">
+          <span class="env-badge" :class="isDev ? 'env-dev' : 'env-prod'">
+            {{ isDev ? 'DEV' : 'PROD' }}
+          </span>
+          <span class="separator">•</span>
+          <span class="git-info">{{ gitBranch }}@{{ gitCommit }}</span>
+        </span>
+      </div>
+    </footer>
   </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { onMounted, computed } from 'vue'
 import { useTheme } from '../../composables/useTheme'
 
 const { currentTheme, toggleTheme, initTheme } = useTheme()
+
+const isDev = computed(() => import.meta.env.DEV)
+const gitBranch = __GIT_BRANCH__
+const gitCommit = __GIT_COMMIT__
 
 onMounted(() => {
   initTheme()
@@ -119,5 +135,54 @@ onMounted(() => {
   max-width: 1400px;
   width: 100%;
   margin: 0 auto;
+}
+
+.app-footer {
+  background: var(--bg-primary);
+  border-top: 1px solid var(--border-color);
+  padding: 0.75rem 2rem;
+}
+
+.footer-content {
+  max-width: 1400px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.version-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  font-family: monospace;
+}
+
+.env-badge {
+  padding: 0.125rem 0.375rem;
+  border-radius: 0.25rem;
+  font-weight: 600;
+  font-size: 0.625rem;
+  letter-spacing: 0.05em;
+}
+
+.env-dev {
+  background: var(--warning-bg);
+  color: var(--warning-color);
+}
+
+.env-prod {
+  background: var(--success-bg);
+  color: var(--success-color);
+}
+
+.separator {
+  color: var(--border-color);
+}
+
+.git-info {
+  font-size: 0.75rem;
 }
 </style>
