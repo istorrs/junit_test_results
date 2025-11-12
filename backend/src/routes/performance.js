@@ -16,7 +16,7 @@ router.get('/trends', async (req, res) => {
         cutoffDate.setDate(cutoffDate.getDate() - parseInt(days));
 
         let matchCondition = {
-            timestamp: { $gte: cutoffDate },
+            created_at: { $gte: cutoffDate },
             time: { $exists: true, $ne: null }
         };
 
@@ -49,15 +49,13 @@ router.get('/trends', async (req, res) => {
             {
                 $group: {
                     _id: {
-                        period: { $dateToString: { format: dateFormat, date: '$timestamp' } },
+                        period: { $dateToString: { format: dateFormat, date: '$created_at' } },
                         test_name: testId ? '$name' : null,
                         class_name: className ? '$classname' : null
                     },
                     avg_time: { $avg: '$time' },
                     min_time: { $min: '$time' },
                     max_time: { $max: '$time' },
-                    p50_time: { $median: { input: '$time', method: 'approximate' } },
-                    p95_time: { $percentile: { input: '$time', p: [0.95], method: 'approximate' } },
                     total_runs: { $sum: 1 },
                     passed: {
                         $sum: { $cond: [{ $eq: ['$status', 'passed'] }, 1, 0] }
@@ -76,8 +74,6 @@ router.get('/trends', async (req, res) => {
                     avg_time: { $round: ['$avg_time', 3] },
                     min_time: { $round: ['$min_time', 3] },
                     max_time: { $round: ['$max_time', 3] },
-                    p50_time: { $round: [{ $arrayElemAt: ['$p50_time', 0] }, 3] },
-                    p95_time: { $round: [{ $arrayElemAt: ['$p95_time', 0] }, 3] },
                     total_runs: 1,
                     passed: 1,
                     failed: 1,
@@ -111,7 +107,7 @@ router.get('/slowest', async (req, res) => {
         const slowestTests = await TestCase.aggregate([
             {
                 $match: {
-                    timestamp: { $gte: cutoffDate },
+                    created_at: { $gte: cutoffDate },
                     time: { $gt: parseFloat(threshold) }
                 }
             },
@@ -124,9 +120,8 @@ router.get('/slowest', async (req, res) => {
                     avg_time: { $avg: '$time' },
                     max_time: { $max: '$time' },
                     min_time: { $min: '$time' },
-                    p95_time: { $percentile: { input: '$time', p: [0.95], method: 'approximate' } },
                     total_runs: { $sum: 1 },
-                    latest_run: { $max: '$timestamp' }
+                    latest_run: { $max: '$created_at' }
                 }
             },
             {
@@ -137,7 +132,6 @@ router.get('/slowest', async (req, res) => {
                     avg_time: { $round: ['$avg_time', 3] },
                     max_time: { $round: ['$max_time', 3] },
                     min_time: { $round: ['$min_time', 3] },
-                    p95_time: { $round: [{ $arrayElemAt: ['$p95_time', 0] }, 3] },
                     total_runs: 1,
                     latest_run: 1
                 }
@@ -176,7 +170,7 @@ router.get('/regressions', async (req, res) => {
         const allTests = await TestCase.aggregate([
             {
                 $match: {
-                    timestamp: { $gte: baselineDate },
+                    created_at: { $gte: baselineDate },
                     time: { $exists: true, $ne: null, $gt: 0.1 } // Only tests > 0.1s
                 }
             },
@@ -188,12 +182,12 @@ router.get('/regressions', async (req, res) => {
                     },
                     recent_times: {
                         $push: {
-                            $cond: [{ $gte: ['$timestamp', cutoffDate] }, '$time', '$$REMOVE']
+                            $cond: [{ $gte: ['$created_at', cutoffDate] }, '$time', '$$REMOVE']
                         }
                     },
                     baseline_times: {
                         $push: {
-                            $cond: [{ $lt: ['$timestamp', cutoffDate] }, '$time', '$$REMOVE']
+                            $cond: [{ $lt: ['$created_at', cutoffDate] }, '$time', '$$REMOVE']
                         }
                     }
                 }
@@ -285,11 +279,11 @@ router.get('/test/:testId', async (req, res) => {
 
         const testHistory = await TestCase.find({
             $or: [{ _id: testId }, { name: testId }],
-            timestamp: { $gte: cutoffDate },
+            created_at: { $gte: cutoffDate },
             time: { $exists: true }
         })
-            .sort({ timestamp: 1 })
-            .select('name classname timestamp time status run_id')
+            .sort({ created_at: 1 })
+            .select('name classname created_at time status run_id')
             .lean();
 
         if (testHistory.length === 0) {

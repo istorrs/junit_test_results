@@ -26,7 +26,7 @@ export default defineConfig({
   server: {
     host: '0.0.0.0',
     port: 5173,
-    allowedHosts: ['klingon', 'localhost', '.local'],
+    allowedHosts: ['klingon', 'localhost', '.local', 'klingon.tailfd6918.ts.net'],
     proxy: {
       '/api': {
         target: 'http://localhost:5000',

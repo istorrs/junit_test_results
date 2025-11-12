@@ -99,8 +99,11 @@ router.get('/runs', async (req, res) => {
                         : 0
             };
 
+            // Helper to check if status is a failure
+            const isFailure = status => status === 'failed' || status === 'error';
+
             // New failure (passed -> failed)
-            if (status1 === 'passed' && (status2 === 'failure' || status2 === 'error')) {
+            if (status1 === 'passed' && isFailure(status2)) {
                 newFailures.push({
                     ...testInfo,
                     error_message: case2.error_message,
@@ -108,14 +111,11 @@ router.get('/runs', async (req, res) => {
                 });
             }
             // Fixed test (failed -> passed)
-            else if ((status1 === 'failure' || status1 === 'error') && status2 === 'passed') {
+            else if (isFailure(status1) && status2 === 'passed') {
                 fixedTests.push(testInfo);
             }
             // Still failing
-            else if (
-                (status1 === 'failure' || status1 === 'error') &&
-                (status2 === 'failure' || status2 === 'error')
-            ) {
+            else if (isFailure(status1) && isFailure(status2)) {
                 stillFailing.push({
                     ...testInfo,
                     error_message: case2.error_message,
@@ -222,9 +222,9 @@ router.get('/test/:testId', async (req, res) => {
         // Find all test cases for this test
         const testCases = await TestCase.find({
             $or: [{ _id: testId }, { name: testId }],
-            timestamp: { $gte: cutoffDate }
+            created_at: { $gte: cutoffDate }
         })
-            .sort({ timestamp: -1 })
+            .sort({ created_at: -1 })
             .limit(parseInt(limit))
             .lean();
 
@@ -244,7 +244,7 @@ router.get('/test/:testId', async (req, res) => {
         const history = testCases.map(tc => ({
             test_case_id: tc._id,
             test_run_id: tc.run_id,
-            timestamp: tc.timestamp,
+            timestamp: tc.created_at,
             status: tc.status,
             time: tc.time,
             error_type: tc.error_type,

@@ -286,8 +286,6 @@ export interface PerformanceTrend {
   avg_time: number
   min_time: number
   max_time: number
-  p50_time: number
-  p95_time: number
   total_runs: number
   passed: number
   failed: number
@@ -304,7 +302,6 @@ export interface SlowestTest {
   avg_time: number
   max_time: number
   min_time: number
-  p95_time: number
   total_runs: number
   latest_run: string
 }

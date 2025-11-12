@@ -1,0 +1,383 @@
+import { B as S } from './Button-CNSxvtKi.js';
+import {
+    d as N,
+    r as $,
+    c as g,
+    b as s,
+    i as C,
+    h as i,
+    z,
+    F as y,
+    j as m,
+    p as k,
+    l as B,
+    g as D,
+    t as p,
+    e as n,
+    k as V,
+    _ as P
+} from './index-B71WFFrY.js';
+const x = { class: 'data-table' },
+    F = { key: 0, class: 'table-filters' },
+    L = { class: 'table-wrapper' },
+    j = ['onClick'],
+    E = { class: 'th-content' },
+    K = { key: 0, class: 'sort-icon' },
+    M = { key: 0 },
+    O = { key: 1, class: 'sort-placeholder' },
+    q = { key: 0 },
+    A = ['colspan'],
+    G = { key: 1 },
+    H = ['colspan'],
+    J = ['onClick'],
+    Q = { key: 1, class: 'table-pagination' },
+    R = { class: 'page-numbers' },
+    U = ['onClick'],
+    W = { class: 'page-info' },
+    X = N({
+        __name: 'DataTable',
+        props: {
+            columns: {},
+            data: {},
+            loading: { type: Boolean, default: !1 },
+            paginate: { type: Boolean, default: !0 },
+            pageSize: { default: 20 },
+            rowClickable: { type: Boolean, default: !1 }
+        },
+        emits: ['row-click'],
+        setup(o) {
+            const r = o,
+                u = $(''),
+                c = $('asc'),
+                d = $(1),
+                I = t => {
+                    (u.value === t
+                        ? (c.value = c.value === 'asc' ? 'desc' : 'asc')
+                        : ((u.value = t), (c.value = 'asc')),
+                        (d.value = 1));
+                },
+                b = (t, l) => t[l],
+                h = g(() =>
+                    u.value
+                        ? [...r.data].sort((t, l) => {
+                              const e = b(t, u.value),
+                                  a = b(l, u.value);
+                              if (e === a) return 0;
+                              if (e == null) return 1;
+                              if (a == null) return -1;
+                              const v = e > a ? 1 : -1;
+                              return c.value === 'asc' ? v : -v;
+                          })
+                        : r.data
+                ),
+                f = g(() => (r.paginate ? Math.ceil(h.value.length / r.pageSize) : 1)),
+                w = g(() => {
+                    if (!r.paginate) return h.value;
+                    const t = (d.value - 1) * r.pageSize,
+                        l = t + r.pageSize;
+                    return h.value.slice(t, l);
+                }),
+                T = g(() => {
+                    const t = f.value,
+                        l = d.value,
+                        e = [];
+                    if (t <= 7) for (let a = 1; a <= t; a++) e.push(a);
+                    else if (l <= 4) {
+                        for (let a = 1; a <= 5; a++) e.push(a);
+                        (e.push(-1), e.push(t));
+                    } else if (l >= t - 3) {
+                        (e.push(1), e.push(-1));
+                        for (let a = t - 4; a <= t; a++) e.push(a);
+                    } else {
+                        (e.push(1), e.push(-1));
+                        for (let a = l - 1; a <= l + 1; a++) e.push(a);
+                        (e.push(-1), e.push(t));
+                    }
+                    return e;
+                }),
+                _ = t => {
+                    t >= 1 && t <= f.value && (d.value = t);
+                };
+            return (t, l) => (
+                n(),
+                s('div', x, [
+                    t.$slots.filters
+                        ? (n(), s('div', F, [z(t.$slots, 'filters', {}, void 0)]))
+                        : C('', !0),
+                    i('div', L, [
+                        i('table', null, [
+                            i('thead', null, [
+                                i('tr', null, [
+                                    (n(!0),
+                                    s(
+                                        y,
+                                        null,
+                                        m(
+                                            o.columns,
+                                            e => (
+                                                n(),
+                                                s(
+                                                    'th',
+                                                    {
+                                                        key: e.key,
+                                                        class: V({ sortable: e.sortable }),
+                                                        onClick: a => (e.sortable ? I(e.key) : null)
+                                                    },
+                                                    [
+                                                        i('div', E, [
+                                                            k(p(e.label) + ' ', 1),
+                                                            e.sortable
+                                                                ? (n(),
+                                                                  s('span', K, [
+                                                                      u.value === e.key
+                                                                          ? (n(),
+                                                                            s(
+                                                                                'span',
+                                                                                M,
+                                                                                p(
+                                                                                    c.value ===
+                                                                                        'asc'
+                                                                                        ? '↑'
+                                                                                        : '↓'
+                                                                                ),
+                                                                                1
+                                                                            ))
+                                                                          : (n(),
+                                                                            s('span', O, '↕'))
+                                                                  ]))
+                                                                : C('', !0)
+                                                        ])
+                                                    ],
+                                                    10,
+                                                    j
+                                                )
+                                            )
+                                        ),
+                                        128
+                                    ))
+                                ])
+                            ]),
+                            i('tbody', null, [
+                                o.loading
+                                    ? (n(),
+                                      s('tr', q, [
+                                          i(
+                                              'td',
+                                              { colspan: o.columns.length, class: 'loading-cell' },
+                                              [
+                                                  ...(l[2] ||
+                                                      (l[2] = [
+                                                          i(
+                                                              'div',
+                                                              { class: 'loading-spinner' },
+                                                              null,
+                                                              -1
+                                                          ),
+                                                          k(' Loading... ', -1)
+                                                      ]))
+                                              ],
+                                              8,
+                                              A
+                                          )
+                                      ]))
+                                    : h.value.length === 0
+                                      ? (n(),
+                                        s('tr', G, [
+                                            i(
+                                                'td',
+                                                { colspan: o.columns.length, class: 'empty-cell' },
+                                                'No data available',
+                                                8,
+                                                H
+                                            )
+                                        ]))
+                                      : (n(!0),
+                                        s(
+                                            y,
+                                            { key: 2 },
+                                            m(
+                                                w.value,
+                                                (e, a) => (
+                                                    n(),
+                                                    s(
+                                                        'tr',
+                                                        {
+                                                            key: a,
+                                                            class: V({ clickable: o.rowClickable }),
+                                                            onClick: v =>
+                                                                o.rowClickable
+                                                                    ? t.$emit('row-click', e)
+                                                                    : null
+                                                        },
+                                                        [
+                                                            (n(!0),
+                                                            s(
+                                                                y,
+                                                                null,
+                                                                m(
+                                                                    o.columns,
+                                                                    v => (
+                                                                        n(),
+                                                                        s('td', { key: v.key }, [
+                                                                            z(
+                                                                                t.$slots,
+                                                                                `cell-${v.key}`,
+                                                                                {
+                                                                                    row: e,
+                                                                                    value: b(
+                                                                                        e,
+                                                                                        v.key
+                                                                                    )
+                                                                                },
+                                                                                () => [
+                                                                                    k(
+                                                                                        p(
+                                                                                            b(
+                                                                                                e,
+                                                                                                v.key
+                                                                                            )
+                                                                                        ),
+                                                                                        1
+                                                                                    )
+                                                                                ]
+                                                                            )
+                                                                        ])
+                                                                    )
+                                                                ),
+                                                                128
+                                                            ))
+                                                        ],
+                                                        10,
+                                                        J
+                                                    )
+                                                )
+                                            ),
+                                            128
+                                        ))
+                            ])
+                        ])
+                    ]),
+                    o.paginate && f.value > 1
+                        ? (n(),
+                          s('div', Q, [
+                              B(
+                                  S,
+                                  {
+                                      size: 'sm',
+                                      variant: 'secondary',
+                                      disabled: d.value === 1,
+                                      onClick: l[0] || (l[0] = e => _(d.value - 1))
+                                  },
+                                  {
+                                      default: D(() => [
+                                          ...(l[3] || (l[3] = [k(' Previous ', -1)]))
+                                      ]),
+                                      _: 1
+                                  },
+                                  8,
+                                  ['disabled']
+                              ),
+                              i('div', R, [
+                                  (n(!0),
+                                  s(
+                                      y,
+                                      null,
+                                      m(
+                                          T.value,
+                                          e => (
+                                              n(),
+                                              s(
+                                                  'button',
+                                                  {
+                                                      key: e,
+                                                      class: V([
+                                                          'page-btn',
+                                                          { active: e === d.value }
+                                                      ]),
+                                                      onClick: a => _(e)
+                                                  },
+                                                  p(e),
+                                                  11,
+                                                  U
+                                              )
+                                          )
+                                      ),
+                                      128
+                                  ))
+                              ]),
+                              B(
+                                  S,
+                                  {
+                                      size: 'sm',
+                                      variant: 'secondary',
+                                      disabled: d.value === f.value,
+                                      onClick: l[1] || (l[1] = e => _(d.value + 1))
+                                  },
+                                  {
+                                      default: D(() => [...(l[4] || (l[4] = [k(' Next ', -1)]))]),
+                                      _: 1
+                                  },
+                                  8,
+                                  ['disabled']
+                              ),
+                              i(
+                                  'div',
+                                  W,
+                                  ' Page ' +
+                                      p(d.value) +
+                                      ' of ' +
+                                      p(f.value) +
+                                      ' (' +
+                                      p(h.value.length) +
+                                      ' total) ',
+                                  1
+                              )
+                          ]))
+                        : C('', !0)
+                ])
+            );
+        }
+    }),
+    le = P(X, [['__scopeId', 'data-v-d7213576']]),
+    Y = { class: 'search-input' },
+    Z = ['value', 'placeholder'],
+    ee = N({
+        __name: 'SearchInput',
+        props: { modelValue: {}, placeholder: { default: 'Search...' } },
+        emits: ['update:modelValue'],
+        setup(o) {
+            return (r, u) => (
+                n(),
+                s('div', Y, [
+                    u[2] || (u[2] = i('span', { class: 'search-icon' }, '🔍', -1)),
+                    i(
+                        'input',
+                        {
+                            value: o.modelValue,
+                            type: 'text',
+                            placeholder: o.placeholder,
+                            onInput:
+                                u[0] || (u[0] = c => r.$emit('update:modelValue', c.target.value))
+                        },
+                        null,
+                        40,
+                        Z
+                    ),
+                    o.modelValue
+                        ? (n(),
+                          s(
+                              'button',
+                              {
+                                  key: 0,
+                                  class: 'clear-btn',
+                                  onClick: u[1] || (u[1] = c => r.$emit('update:modelValue', ''))
+                              },
+                              ' × '
+                          ))
+                        : C('', !0)
+                ])
+            );
+        }
+    }),
+    se = P(ee, [['__scopeId', 'data-v-ee5f50b7']]);
+export { le as D, se as S };

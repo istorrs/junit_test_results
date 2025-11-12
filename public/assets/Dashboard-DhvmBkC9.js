@@ -1,0 +1,1314 @@
+import { a as L, u as O, B as S, f as C, b as U } from './Button-CNSxvtKi.js';
+import { C as g } from './Card-DYtOphwT.js';
+import { i as z } from './index-B-ioSKa-.js';
+import {
+    d as w,
+    r as b,
+    c as T,
+    w as A,
+    o as F,
+    a as N,
+    b as r,
+    e as l,
+    n as B,
+    f as D,
+    g as f,
+    h as t,
+    t as c,
+    i as $,
+    F as R,
+    j as P,
+    u as M,
+    k as I,
+    _ as V,
+    l as v,
+    m as u,
+    p as x
+} from './index-B71WFFrY.js';
+const W = w({
+        __name: 'PieChart',
+        props: {
+            data: {},
+            title: { default: '' },
+            width: { default: '100%' },
+            height: { default: '400px' }
+        },
+        setup(y) {
+            const e = y,
+                _ = b(null);
+            let n = null;
+            const m = T(() => document.documentElement.getAttribute('data-theme') === 'dark'),
+                i = () => {
+                    const a = document.documentElement,
+                        o = getComputedStyle(a);
+                    return {
+                        textColor: o.getPropertyValue('--text-primary').trim(),
+                        textSecondary: o.getPropertyValue('--text-secondary').trim(),
+                        bgColor: o.getPropertyValue('--bg-primary').trim(),
+                        borderColor: o.getPropertyValue('--border-color').trim()
+                    };
+                },
+                s = () => {
+                    _.value && ((n = z(_.value)), p());
+                },
+                p = () => {
+                    if (!n) return;
+                    const a = i(),
+                        o = {
+                            backgroundColor: 'transparent',
+                            title: {
+                                text: e.title,
+                                left: 'center',
+                                top: 10,
+                                textStyle: {
+                                    fontSize: 16,
+                                    fontWeight: 600,
+                                    color: a.textColor,
+                                    fontFamily: 'system-ui, -apple-system, sans-serif'
+                                }
+                            },
+                            tooltip: {
+                                trigger: 'item',
+                                formatter: '{b}: {c} ({d}%)',
+                                backgroundColor: a.bgColor,
+                                borderColor: a.borderColor,
+                                textStyle: {
+                                    color: a.textColor,
+                                    fontFamily: 'system-ui, -apple-system, sans-serif'
+                                }
+                            },
+                            legend: {
+                                orient: 'vertical',
+                                left: 'left',
+                                top: 'middle',
+                                textStyle: {
+                                    color: a.textColor,
+                                    fontFamily: 'system-ui, -apple-system, sans-serif'
+                                }
+                            },
+                            series: [
+                                {
+                                    type: 'pie',
+                                    radius: '60%',
+                                    center: ['50%', '55%'],
+                                    data: e.data,
+                                    emphasis: {
+                                        itemStyle: {
+                                            shadowBlur: 10,
+                                            shadowOffsetX: 0,
+                                            shadowColor: 'rgba(0, 0, 0, 0.5)'
+                                        }
+                                    },
+                                    label: {
+                                        formatter: '{b}: {d}%',
+                                        color: a.textColor,
+                                        fontFamily: 'system-ui, -apple-system, sans-serif'
+                                    }
+                                }
+                            ]
+                        };
+                    n.setOption(o, !0);
+                },
+                k = () => {
+                    p();
+                };
+            return (
+                A(m, () => {
+                    p();
+                }),
+                F(() => {
+                    (s(),
+                        window.addEventListener('resize', () => n?.resize()),
+                        new MutationObserver(() => {
+                            p();
+                        }).observe(document.documentElement, {
+                            attributes: !0,
+                            attributeFilter: ['data-theme']
+                        }));
+                }),
+                A(() => e.data, k, { deep: !0 }),
+                N(() => {
+                    (n?.dispose(), window.removeEventListener('resize', () => n?.resize()));
+                }),
+                (a, o) => (
+                    l(),
+                    r(
+                        'div',
+                        {
+                            ref_key: 'chartRef',
+                            ref: _,
+                            style: B({ width: y.width, height: y.height })
+                        },
+                        null,
+                        4
+                    )
+                )
+            );
+        }
+    }),
+    q = w({
+        __name: 'LineChart',
+        props: {
+            xAxisData: {},
+            series: {},
+            title: { default: '' },
+            width: { default: '100%' },
+            height: { default: '400px' }
+        },
+        setup(y) {
+            const e = y,
+                _ = b(null);
+            let n = null;
+            const m = T(() => document.documentElement.getAttribute('data-theme') === 'dark'),
+                i = () => {
+                    const a = document.documentElement,
+                        o = getComputedStyle(a);
+                    return {
+                        textColor: o.getPropertyValue('--text-primary').trim(),
+                        textSecondary: o.getPropertyValue('--text-secondary').trim(),
+                        bgColor: o.getPropertyValue('--bg-primary').trim(),
+                        borderColor: o.getPropertyValue('--border-color').trim()
+                    };
+                },
+                s = () => {
+                    _.value && ((n = z(_.value)), p());
+                },
+                p = () => {
+                    if (!n) return;
+                    const a = i(),
+                        o = {
+                            backgroundColor: 'transparent',
+                            title: {
+                                text: e.title,
+                                left: 'center',
+                                top: 10,
+                                textStyle: {
+                                    fontSize: 16,
+                                    fontWeight: 600,
+                                    color: a.textColor,
+                                    fontFamily: 'system-ui, -apple-system, sans-serif'
+                                }
+                            },
+                            tooltip: {
+                                trigger: 'axis',
+                                backgroundColor: a.bgColor,
+                                borderColor: a.borderColor,
+                                textStyle: {
+                                    color: a.textColor,
+                                    fontFamily: 'system-ui, -apple-system, sans-serif'
+                                }
+                            },
+                            legend: {
+                                data: e.series.map(d => d.name),
+                                top: 40,
+                                textStyle: {
+                                    color: a.textColor,
+                                    fontFamily: 'system-ui, -apple-system, sans-serif'
+                                }
+                            },
+                            grid: {
+                                left: '3%',
+                                right: '4%',
+                                bottom: '3%',
+                                top: 80,
+                                containLabel: !0
+                            },
+                            xAxis: {
+                                type: 'category',
+                                boundaryGap: !1,
+                                data: e.xAxisData,
+                                axisLine: { lineStyle: { color: a.borderColor } },
+                                axisLabel: {
+                                    color: a.textColor,
+                                    fontFamily: 'system-ui, -apple-system, sans-serif'
+                                }
+                            },
+                            yAxis: {
+                                type: 'value',
+                                axisLine: { lineStyle: { color: a.borderColor } },
+                                axisLabel: {
+                                    color: a.textColor,
+                                    fontFamily: 'system-ui, -apple-system, sans-serif'
+                                },
+                                splitLine: { lineStyle: { color: a.borderColor, opacity: 0.3 } }
+                            },
+                            series: e.series.map(d => ({
+                                name: d.name,
+                                type: 'line',
+                                data: d.data,
+                                smooth: !0
+                            }))
+                        };
+                    n.setOption(o, !0);
+                },
+                k = () => {
+                    p();
+                };
+            return (
+                A(m, () => {
+                    p();
+                }),
+                F(() => {
+                    (s(),
+                        window.addEventListener('resize', () => n?.resize()),
+                        new MutationObserver(() => {
+                            p();
+                        }).observe(document.documentElement, {
+                            attributes: !0,
+                            attributeFilter: ['data-theme']
+                        }));
+                }),
+                A([() => e.xAxisData, () => e.series], k, { deep: !0 }),
+                N(() => {
+                    (n?.dispose(), window.removeEventListener('resize', () => n?.resize()));
+                }),
+                (a, o) => (
+                    l(),
+                    r(
+                        'div',
+                        {
+                            ref_key: 'chartRef',
+                            ref: _,
+                            style: B({ width: y.width, height: y.height })
+                        },
+                        null,
+                        4
+                    )
+                )
+            );
+        }
+    }),
+    G = { key: 0, class: 'loading-state' },
+    j = { key: 1, class: 'error-state' },
+    Q = { key: 2, class: 'empty-state' },
+    X = { key: 3, class: 'flaky-tests-list' },
+    H = ['onClick'],
+    J = { class: 'test-info' },
+    K = { class: 'test-name' },
+    Y = { class: 'test-suite' },
+    Z = w({
+        __name: 'FlakyTestsWidget',
+        props: { limit: { default: 5 }, showViewAll: { type: Boolean, default: !0 } },
+        setup(y) {
+            const e = y,
+                _ = M(),
+                n = b(!1),
+                m = b(null),
+                i = b([]),
+                s = async () => {
+                    ((n.value = !0), (m.value = null));
+                    try {
+                        const o = await L.getFlakyTests(e.limit);
+                        i.value = o.flaky_tests;
+                    } catch (o) {
+                        ((m.value = 'Failed to load flaky tests'),
+                            console.error('Error loading flaky tests:', o));
+                    } finally {
+                        n.value = !1;
+                    }
+                },
+                p = o => (o >= 50 ? 'score-high' : o >= 30 ? 'score-medium' : 'score-low'),
+                k = o => {
+                    _.push({ path: '/cases', query: { search: o.test_name } });
+                },
+                a = () => {
+                    _.push('/cases');
+                };
+            return (
+                F(() => {
+                    s();
+                }),
+                (o, d) => (
+                    l(),
+                    D(
+                        g,
+                        { title: '⚠️ Top Flaky Tests' },
+                        {
+                            default: f(() => [
+                                n.value
+                                    ? (l(),
+                                      r('div', G, [
+                                          ...(d[0] ||
+                                              (d[0] = [
+                                                  t('div', { class: 'spinner' }, null, -1),
+                                                  t('p', null, 'Loading flaky tests...', -1)
+                                              ]))
+                                      ]))
+                                    : m.value
+                                      ? (l(), r('div', j, [t('p', null, c(m.value), 1)]))
+                                      : i.value.length === 0
+                                        ? (l(),
+                                          r('div', Q, [
+                                              ...(d[1] ||
+                                                  (d[1] = [
+                                                      t(
+                                                          'p',
+                                                          null,
+                                                          '🎉 No flaky tests detected!',
+                                                          -1
+                                                      ),
+                                                      t(
+                                                          'span',
+                                                          { class: 'subtitle' },
+                                                          'All tests are stable',
+                                                          -1
+                                                      )
+                                                  ]))
+                                          ]))
+                                        : (l(),
+                                          r('div', X, [
+                                              (l(!0),
+                                              r(
+                                                  R,
+                                                  null,
+                                                  P(
+                                                      i.value,
+                                                      h => (
+                                                          l(),
+                                                          r(
+                                                              'div',
+                                                              {
+                                                                  key: h.test_id,
+                                                                  class: 'flaky-test-item',
+                                                                  onClick: E => k(h)
+                                                              },
+                                                              [
+                                                                  t('div', J, [
+                                                                      t(
+                                                                          'div',
+                                                                          K,
+                                                                          c(h.test_name),
+                                                                          1
+                                                                      ),
+                                                                      t(
+                                                                          'div',
+                                                                          Y,
+                                                                          c(h.class_name),
+                                                                          1
+                                                                      )
+                                                                  ]),
+                                                                  t(
+                                                                      'div',
+                                                                      {
+                                                                          class: I([
+                                                                              'flaky-score',
+                                                                              p(h.flakiness_score)
+                                                                          ])
+                                                                      },
+                                                                      c(
+                                                                          Math.round(
+                                                                              h.flakiness_score
+                                                                          )
+                                                                      ) + '% ',
+                                                                      3
+                                                                  )
+                                                              ],
+                                                              8,
+                                                              H
+                                                          )
+                                                      )
+                                                  ),
+                                                  128
+                                              )),
+                                              y.showViewAll
+                                                  ? (l(),
+                                                    r(
+                                                        'button',
+                                                        {
+                                                            key: 0,
+                                                            onClick: a,
+                                                            class: 'view-all-button'
+                                                        },
+                                                        ' View All Flaky Tests → '
+                                                    ))
+                                                  : $('', !0)
+                                          ]))
+                            ]),
+                            _: 1
+                        }
+                    )
+                )
+            );
+        }
+    }),
+    tt = V(Z, [['__scopeId', 'data-v-4fe86724']]),
+    st = { key: 0, class: 'loading-state' },
+    et = { key: 1, class: 'error-state' },
+    at = { key: 2, class: 'empty-state' },
+    ot = { class: 'subtitle' },
+    lt = { key: 3, class: 'patterns-list' },
+    rt = { class: 'pattern-header' },
+    nt = { class: 'pattern-info' },
+    it = { class: 'error-type' },
+    dt = { class: 'type-badge' },
+    ut = { class: 'count' },
+    ct = { class: 'error-message' },
+    pt = { key: 0 },
+    mt = { key: 1 },
+    vt = { key: 0, class: 'affected-tests' },
+    ft = ['onClick'],
+    yt = { key: 0, class: 'more-tests' },
+    _t = { key: 0, class: 'time-range-info' },
+    gt = w({
+        __name: 'FailurePatternsSummary',
+        props: {
+            days: { default: 7 },
+            limit: { default: 5 },
+            showTimeRange: { type: Boolean, default: !0 }
+        },
+        setup(y) {
+            const e = y,
+                _ = M(),
+                n = b(!1),
+                m = b(null),
+                i = b([]),
+                s = async () => {
+                    ((n.value = !0), (m.value = null));
+                    try {
+                        const a = await L.getFailurePatterns({ days: e.days, limit: e.limit });
+                        i.value = a.patterns;
+                    } catch (a) {
+                        ((m.value = 'Failed to load failure patterns'),
+                            console.error('Error loading failure patterns:', a));
+                    } finally {
+                        n.value = !1;
+                    }
+                },
+                p = a => {
+                    if (!a) return 'No error message';
+                    const o = 80;
+                    return a.length <= o ? a : a.substring(0, o) + '...';
+                },
+                k = (a, o) => {
+                    _.push({ path: '/cases', query: { search: o } });
+                };
+            return (
+                F(() => {
+                    s();
+                }),
+                (a, o) => (
+                    l(),
+                    D(
+                        g,
+                        { title: 'Common Failure Patterns' },
+                        {
+                            default: f(() => [
+                                n.value
+                                    ? (l(),
+                                      r('div', st, [
+                                          ...(o[0] ||
+                                              (o[0] = [
+                                                  t('div', { class: 'spinner' }, null, -1),
+                                                  t('p', null, 'Analyzing failure patterns...', -1)
+                                              ]))
+                                      ]))
+                                    : m.value
+                                      ? (l(), r('div', et, [t('p', null, c(m.value), 1)]))
+                                      : i.value.length === 0
+                                        ? (l(),
+                                          r('div', at, [
+                                              o[1] ||
+                                                  (o[1] = t('p', null, '✓ No recent failures', -1)),
+                                              t(
+                                                  'span',
+                                                  ot,
+                                                  'All tests passing in the last ' +
+                                                      c(y.days) +
+                                                      ' days',
+                                                  1
+                                              )
+                                          ]))
+                                        : (l(),
+                                          r('div', lt, [
+                                              (l(!0),
+                                              r(
+                                                  R,
+                                                  null,
+                                                  P(
+                                                      i.value,
+                                                      d => (
+                                                          l(),
+                                                          r(
+                                                              'div',
+                                                              {
+                                                                  key: `${d.error_type}-${d.count}`,
+                                                                  class: 'pattern-item'
+                                                              },
+                                                              [
+                                                                  t('div', rt, [
+                                                                      t('div', nt, [
+                                                                          t('div', it, [
+                                                                              t(
+                                                                                  'span',
+                                                                                  dt,
+                                                                                  c(
+                                                                                      d.error_type ||
+                                                                                          'Unknown Error'
+                                                                                  ),
+                                                                                  1
+                                                                              ),
+                                                                              t(
+                                                                                  'span',
+                                                                                  ut,
+                                                                                  c(d.count) +
+                                                                                      ' tests',
+                                                                                  1
+                                                                              )
+                                                                          ]),
+                                                                          t(
+                                                                              'div',
+                                                                              ct,
+                                                                              c(p(d.error_message)),
+                                                                              1
+                                                                          )
+                                                                      ]),
+                                                                      t(
+                                                                          'div',
+                                                                          {
+                                                                              class: I([
+                                                                                  'trend-indicator',
+                                                                                  `trend-${d.trend}`
+                                                                              ])
+                                                                          },
+                                                                          [
+                                                                              d.trend ===
+                                                                              'increasing'
+                                                                                  ? (l(),
+                                                                                    r(
+                                                                                        'span',
+                                                                                        pt,
+                                                                                        '📈'
+                                                                                    ))
+                                                                                  : (l(),
+                                                                                    r(
+                                                                                        'span',
+                                                                                        mt,
+                                                                                        '━'
+                                                                                    ))
+                                                                          ],
+                                                                          2
+                                                                      )
+                                                                  ]),
+                                                                  d.affected_tests.length > 0
+                                                                      ? (l(),
+                                                                        r('div', vt, [
+                                                                            o[2] ||
+                                                                                (o[2] = t(
+                                                                                    'span',
+                                                                                    {
+                                                                                        class: 'affected-label'
+                                                                                    },
+                                                                                    'Affected:',
+                                                                                    -1
+                                                                                )),
+                                                                            (l(!0),
+                                                                            r(
+                                                                                R,
+                                                                                null,
+                                                                                P(
+                                                                                    d.affected_tests.slice(
+                                                                                        0,
+                                                                                        3
+                                                                                    ),
+                                                                                    (h, E) => (
+                                                                                        l(),
+                                                                                        r(
+                                                                                            'span',
+                                                                                            {
+                                                                                                key: h.test_id,
+                                                                                                class: 'test-link',
+                                                                                                onClick:
+                                                                                                    ss =>
+                                                                                                        k(
+                                                                                                            h.test_id,
+                                                                                                            h.test_name
+                                                                                                        )
+                                                                                            },
+                                                                                            c(
+                                                                                                h.test_name
+                                                                                            ) +
+                                                                                                c(
+                                                                                                    E <
+                                                                                                        Math.min(
+                                                                                                            2,
+                                                                                                            d
+                                                                                                                .affected_tests
+                                                                                                                .length -
+                                                                                                                1
+                                                                                                        )
+                                                                                                        ? ','
+                                                                                                        : ''
+                                                                                                ),
+                                                                                            9,
+                                                                                            ft
+                                                                                        )
+                                                                                    )
+                                                                                ),
+                                                                                128
+                                                                            )),
+                                                                            d.affected_tests
+                                                                                .length > 3
+                                                                                ? (l(),
+                                                                                  r(
+                                                                                      'span',
+                                                                                      yt,
+                                                                                      ' +' +
+                                                                                          c(
+                                                                                              d
+                                                                                                  .affected_tests
+                                                                                                  .length -
+                                                                                                  3
+                                                                                          ) +
+                                                                                          ' more ',
+                                                                                      1
+                                                                                  ))
+                                                                                : $('', !0)
+                                                                        ]))
+                                                                      : $('', !0)
+                                                              ]
+                                                          )
+                                                      )
+                                                  ),
+                                                  128
+                                              )),
+                                              y.showTimeRange
+                                                  ? (l(),
+                                                    r('div', _t, [
+                                                        t(
+                                                            'span',
+                                                            null,
+                                                            'Last ' + c(y.days) + ' days',
+                                                            1
+                                                        )
+                                                    ]))
+                                                  : $('', !0)
+                                          ]))
+                            ]),
+                            _: 1
+                        }
+                    )
+                )
+            );
+        }
+    }),
+    ht = V(gt, [['__scopeId', 'data-v-83ea8337']]),
+    bt = { class: 'dashboard' },
+    kt = { class: 'dashboard-header' },
+    Ct = { key: 0, class: 'loading' },
+    xt = { key: 1, class: 'error-state' },
+    $t = { key: 2, class: 'dashboard-content' },
+    wt = { class: 'stats-grid' },
+    Ft = { class: 'stat-content' },
+    St = { class: 'stat-details' },
+    Tt = { class: 'stat-value' },
+    At = { class: 'stat-content' },
+    Dt = { class: 'stat-details' },
+    Rt = { class: 'stat-value' },
+    Pt = { class: 'stat-content' },
+    Vt = { class: 'stat-details' },
+    Et = { class: 'stat-value success-rate' },
+    Lt = { class: 'stat-content' },
+    zt = { class: 'stat-details' },
+    Nt = { class: 'stat-value' },
+    Bt = { class: 'stat-content' },
+    Mt = { class: 'stat-details' },
+    It = { class: 'stat-value' },
+    Ot = { class: 'stat-content' },
+    Ut = { class: 'stat-details' },
+    Wt = { class: 'stat-value' },
+    qt = { class: 'stat-content' },
+    Gt = { class: 'stat-details' },
+    jt = { class: 'stat-value' },
+    Qt = { class: 'stat-content' },
+    Xt = { class: 'stat-details' },
+    Ht = { class: 'stat-value' },
+    Jt = { class: 'charts-grid' },
+    Kt = { key: 1, class: 'no-data' },
+    Yt = { class: 'actions-grid' },
+    Zt = { key: 3, class: 'empty-state' },
+    ts = w({
+        __name: 'Dashboard',
+        setup(y) {
+            const e = O(),
+                _ = T(() =>
+                    e.stats
+                        ? [
+                              { name: 'Passed', value: e.stats.total_passed },
+                              { name: 'Failed', value: e.stats.total_failed },
+                              { name: 'Errors', value: e.stats.total_errors },
+                              { name: 'Skipped', value: e.stats.total_skipped }
+                          ].filter(i => i.value > 0)
+                        : []
+                ),
+                n = T(() => {
+                    const i = e.runs.slice(0, 10).reverse();
+                    return {
+                        xAxisData: i.map((s, p) => `Run ${p + 1}`),
+                        series: [
+                            { name: 'Passed', data: i.map(s => s.summary?.passed || 0) },
+                            { name: 'Failed', data: i.map(s => s.summary?.failed || 0) }
+                        ]
+                    };
+                }),
+                m = async () => {
+                    try {
+                        await Promise.all([e.fetchStats(), e.fetchRuns({ limit: 10 })]);
+                    } catch (i) {
+                        console.error('Failed to refresh dashboard:', i);
+                    }
+                };
+            return (
+                F(() => {
+                    m();
+                }),
+                (i, s) => (
+                    l(),
+                    r('div', bt, [
+                        t('div', kt, [
+                            s[6] || (s[6] = t('h1', null, 'Dashboard', -1)),
+                            v(
+                                S,
+                                { onClick: m, loading: u(e).loading },
+                                {
+                                    default: f(() => [...(s[5] || (s[5] = [x(' Refresh ', -1)]))]),
+                                    _: 1
+                                },
+                                8,
+                                ['loading']
+                            )
+                        ]),
+                        u(e).loading && !u(e).stats
+                            ? (l(),
+                              r('div', Ct, [
+                                  ...(s[7] ||
+                                      (s[7] = [
+                                          t('div', { class: 'loading-spinner' }, null, -1),
+                                          x(' Loading dashboard... ', -1)
+                                      ]))
+                              ]))
+                            : u(e).error
+                              ? (l(),
+                                r('div', xt, [
+                                    s[9] || (s[9] = t('div', { class: 'error-icon' }, '⚠️', -1)),
+                                    s[10] ||
+                                        (s[10] = t('h3', null, 'Failed to load dashboard', -1)),
+                                    t('p', null, c(u(e).error), 1),
+                                    v(
+                                        S,
+                                        { onClick: m },
+                                        {
+                                            default: f(() => [
+                                                ...(s[8] || (s[8] = [x('Try Again', -1)]))
+                                            ]),
+                                            _: 1
+                                        }
+                                    )
+                                ]))
+                              : u(e).stats
+                                ? (l(),
+                                  r('div', $t, [
+                                      t('div', wt, [
+                                          v(
+                                              g,
+                                              { class: 'stat-card' },
+                                              {
+                                                  default: f(() => [
+                                                      t('div', Ft, [
+                                                          s[12] ||
+                                                              (s[12] = t(
+                                                                  'div',
+                                                                  { class: 'stat-icon runs' },
+                                                                  '📊',
+                                                                  -1
+                                                              )),
+                                                          t('div', St, [
+                                                              s[11] ||
+                                                                  (s[11] = t(
+                                                                      'div',
+                                                                      { class: 'stat-label' },
+                                                                      'Total Runs',
+                                                                      -1
+                                                                  )),
+                                                              t(
+                                                                  'div',
+                                                                  Tt,
+                                                                  c(u(C)(u(e).stats.total_runs)),
+                                                                  1
+                                                              )
+                                                          ])
+                                                      ])
+                                                  ]),
+                                                  _: 1
+                                              }
+                                          ),
+                                          v(
+                                              g,
+                                              { class: 'stat-card' },
+                                              {
+                                                  default: f(() => [
+                                                      t('div', At, [
+                                                          s[14] ||
+                                                              (s[14] = t(
+                                                                  'div',
+                                                                  { class: 'stat-icon tests' },
+                                                                  '🧪',
+                                                                  -1
+                                                              )),
+                                                          t('div', Dt, [
+                                                              s[13] ||
+                                                                  (s[13] = t(
+                                                                      'div',
+                                                                      { class: 'stat-label' },
+                                                                      'Total Tests',
+                                                                      -1
+                                                                  )),
+                                                              t(
+                                                                  'div',
+                                                                  Rt,
+                                                                  c(u(C)(u(e).stats.total_tests)),
+                                                                  1
+                                                              )
+                                                          ])
+                                                      ])
+                                                  ]),
+                                                  _: 1
+                                              }
+                                          ),
+                                          v(
+                                              g,
+                                              { class: 'stat-card success' },
+                                              {
+                                                  default: f(() => [
+                                                      t('div', Pt, [
+                                                          s[16] ||
+                                                              (s[16] = t(
+                                                                  'div',
+                                                                  { class: 'stat-icon' },
+                                                                  '✓',
+                                                                  -1
+                                                              )),
+                                                          t('div', Vt, [
+                                                              s[15] ||
+                                                                  (s[15] = t(
+                                                                      'div',
+                                                                      { class: 'stat-label' },
+                                                                      'Success Rate',
+                                                                      -1
+                                                                  )),
+                                                              t(
+                                                                  'div',
+                                                                  Et,
+                                                                  c(u(e).stats.success_rate) + '%',
+                                                                  1
+                                                              )
+                                                          ])
+                                                      ])
+                                                  ]),
+                                                  _: 1
+                                              }
+                                          ),
+                                          v(
+                                              g,
+                                              { class: 'stat-card passed' },
+                                              {
+                                                  default: f(() => [
+                                                      t('div', Lt, [
+                                                          s[18] ||
+                                                              (s[18] = t(
+                                                                  'div',
+                                                                  { class: 'stat-icon' },
+                                                                  '✓',
+                                                                  -1
+                                                              )),
+                                                          t('div', zt, [
+                                                              s[17] ||
+                                                                  (s[17] = t(
+                                                                      'div',
+                                                                      { class: 'stat-label' },
+                                                                      'Passed',
+                                                                      -1
+                                                                  )),
+                                                              t(
+                                                                  'div',
+                                                                  Nt,
+                                                                  c(u(C)(u(e).stats.total_passed)),
+                                                                  1
+                                                              )
+                                                          ])
+                                                      ])
+                                                  ]),
+                                                  _: 1
+                                              }
+                                          ),
+                                          v(
+                                              g,
+                                              { class: 'stat-card failed' },
+                                              {
+                                                  default: f(() => [
+                                                      t('div', Bt, [
+                                                          s[20] ||
+                                                              (s[20] = t(
+                                                                  'div',
+                                                                  { class: 'stat-icon' },
+                                                                  '✗',
+                                                                  -1
+                                                              )),
+                                                          t('div', Mt, [
+                                                              s[19] ||
+                                                                  (s[19] = t(
+                                                                      'div',
+                                                                      { class: 'stat-label' },
+                                                                      'Failed',
+                                                                      -1
+                                                                  )),
+                                                              t(
+                                                                  'div',
+                                                                  It,
+                                                                  c(u(C)(u(e).stats.total_failed)),
+                                                                  1
+                                                              )
+                                                          ])
+                                                      ])
+                                                  ]),
+                                                  _: 1
+                                              }
+                                          ),
+                                          v(
+                                              g,
+                                              { class: 'stat-card error' },
+                                              {
+                                                  default: f(() => [
+                                                      t('div', Ot, [
+                                                          s[22] ||
+                                                              (s[22] = t(
+                                                                  'div',
+                                                                  { class: 'stat-icon' },
+                                                                  '⚠',
+                                                                  -1
+                                                              )),
+                                                          t('div', Ut, [
+                                                              s[21] ||
+                                                                  (s[21] = t(
+                                                                      'div',
+                                                                      { class: 'stat-label' },
+                                                                      'Errors',
+                                                                      -1
+                                                                  )),
+                                                              t(
+                                                                  'div',
+                                                                  Wt,
+                                                                  c(u(C)(u(e).stats.total_errors)),
+                                                                  1
+                                                              )
+                                                          ])
+                                                      ])
+                                                  ]),
+                                                  _: 1
+                                              }
+                                          ),
+                                          v(
+                                              g,
+                                              { class: 'stat-card skipped' },
+                                              {
+                                                  default: f(() => [
+                                                      t('div', qt, [
+                                                          s[24] ||
+                                                              (s[24] = t(
+                                                                  'div',
+                                                                  { class: 'stat-icon' },
+                                                                  '⊘',
+                                                                  -1
+                                                              )),
+                                                          t('div', Gt, [
+                                                              s[23] ||
+                                                                  (s[23] = t(
+                                                                      'div',
+                                                                      { class: 'stat-label' },
+                                                                      'Skipped',
+                                                                      -1
+                                                                  )),
+                                                              t(
+                                                                  'div',
+                                                                  jt,
+                                                                  c(u(C)(u(e).stats.total_skipped)),
+                                                                  1
+                                                              )
+                                                          ])
+                                                      ])
+                                                  ]),
+                                                  _: 1
+                                              }
+                                          ),
+                                          u(e).stats.average_duration
+                                              ? (l(),
+                                                D(
+                                                    g,
+                                                    { key: 0, class: 'stat-card duration' },
+                                                    {
+                                                        default: f(() => [
+                                                            t('div', Qt, [
+                                                                s[26] ||
+                                                                    (s[26] = t(
+                                                                        'div',
+                                                                        { class: 'stat-icon' },
+                                                                        '⏱️',
+                                                                        -1
+                                                                    )),
+                                                                t('div', Xt, [
+                                                                    s[25] ||
+                                                                        (s[25] = t(
+                                                                            'div',
+                                                                            { class: 'stat-label' },
+                                                                            'Avg Duration',
+                                                                            -1
+                                                                        )),
+                                                                    t(
+                                                                        'div',
+                                                                        Ht,
+                                                                        c(
+                                                                            u(U)(
+                                                                                u(e).stats
+                                                                                    .average_duration *
+                                                                                    1e3
+                                                                            )
+                                                                        ),
+                                                                        1
+                                                                    )
+                                                                ])
+                                                            ])
+                                                        ]),
+                                                        _: 1
+                                                    }
+                                                ))
+                                              : $('', !0)
+                                      ]),
+                                      t('div', Jt, [
+                                          v(
+                                              g,
+                                              {
+                                                  title: 'Test Results Distribution',
+                                                  class: 'chart-card'
+                                              },
+                                              {
+                                                  default: f(() => [
+                                                      v(
+                                                          W,
+                                                          { data: _.value, height: '350px' },
+                                                          null,
+                                                          8,
+                                                          ['data']
+                                                      )
+                                                  ]),
+                                                  _: 1
+                                              }
+                                          ),
+                                          v(
+                                              g,
+                                              { title: 'Recent Test Runs', class: 'chart-card' },
+                                              {
+                                                  default: f(() => [
+                                                      n.value.xAxisData.length > 0
+                                                          ? (l(),
+                                                            D(
+                                                                q,
+                                                                {
+                                                                    key: 0,
+                                                                    'x-axis-data':
+                                                                        n.value.xAxisData,
+                                                                    series: n.value.series,
+                                                                    height: '350px'
+                                                                },
+                                                                null,
+                                                                8,
+                                                                ['x-axis-data', 'series']
+                                                            ))
+                                                          : (l(),
+                                                            r('div', Kt, [
+                                                                s[28] ||
+                                                                    (s[28] = t(
+                                                                        'p',
+                                                                        null,
+                                                                        'No recent test run data available',
+                                                                        -1
+                                                                    )),
+                                                                v(
+                                                                    S,
+                                                                    {
+                                                                        size: 'sm',
+                                                                        onClick:
+                                                                            s[0] ||
+                                                                            (s[0] = p =>
+                                                                                i.$router.push(
+                                                                                    '/upload'
+                                                                                ))
+                                                                    },
+                                                                    {
+                                                                        default: f(() => [
+                                                                            ...(s[27] ||
+                                                                                (s[27] = [
+                                                                                    x(
+                                                                                        'Upload Results',
+                                                                                        -1
+                                                                                    )
+                                                                                ]))
+                                                                        ]),
+                                                                        _: 1
+                                                                    }
+                                                                )
+                                                            ]))
+                                                  ]),
+                                                  _: 1
+                                              }
+                                          ),
+                                          v(tt, { limit: 5, class: 'chart-card' })
+                                      ]),
+                                      v(ht, { days: 7, limit: 5, 'show-time-range': !0 }),
+                                      v(
+                                          g,
+                                          { title: 'Quick Actions', class: 'actions-card' },
+                                          {
+                                              default: f(() => [
+                                                  t('div', Yt, [
+                                                      t(
+                                                          'button',
+                                                          {
+                                                              class: 'action-btn',
+                                                              onClick:
+                                                                  s[1] ||
+                                                                  (s[1] = p =>
+                                                                      i.$router.push('/upload'))
+                                                          },
+                                                          [
+                                                              ...(s[29] ||
+                                                                  (s[29] = [
+                                                                      t(
+                                                                          'span',
+                                                                          { class: 'action-icon' },
+                                                                          '📤',
+                                                                          -1
+                                                                      ),
+                                                                      t(
+                                                                          'span',
+                                                                          { class: 'action-label' },
+                                                                          'Upload Results',
+                                                                          -1
+                                                                      )
+                                                                  ]))
+                                                          ]
+                                                      ),
+                                                      t(
+                                                          'button',
+                                                          {
+                                                              class: 'action-btn',
+                                                              onClick:
+                                                                  s[2] ||
+                                                                  (s[2] = p =>
+                                                                      i.$router.push('/runs'))
+                                                          },
+                                                          [
+                                                              ...(s[30] ||
+                                                                  (s[30] = [
+                                                                      t(
+                                                                          'span',
+                                                                          { class: 'action-icon' },
+                                                                          '📊',
+                                                                          -1
+                                                                      ),
+                                                                      t(
+                                                                          'span',
+                                                                          { class: 'action-label' },
+                                                                          'View Test Runs',
+                                                                          -1
+                                                                      )
+                                                                  ]))
+                                                          ]
+                                                      ),
+                                                      t(
+                                                          'button',
+                                                          {
+                                                              class: 'action-btn',
+                                                              onClick:
+                                                                  s[3] ||
+                                                                  (s[3] = p =>
+                                                                      i.$router.push('/cases'))
+                                                          },
+                                                          [
+                                                              ...(s[31] ||
+                                                                  (s[31] = [
+                                                                      t(
+                                                                          'span',
+                                                                          { class: 'action-icon' },
+                                                                          '🧪',
+                                                                          -1
+                                                                      ),
+                                                                      t(
+                                                                          'span',
+                                                                          { class: 'action-label' },
+                                                                          'View Test Cases',
+                                                                          -1
+                                                                      )
+                                                                  ]))
+                                                          ]
+                                                      ),
+                                                      t(
+                                                          'button',
+                                                          { class: 'action-btn', onClick: m },
+                                                          [
+                                                              ...(s[32] ||
+                                                                  (s[32] = [
+                                                                      t(
+                                                                          'span',
+                                                                          { class: 'action-icon' },
+                                                                          '🔄',
+                                                                          -1
+                                                                      ),
+                                                                      t(
+                                                                          'span',
+                                                                          { class: 'action-label' },
+                                                                          'Refresh Data',
+                                                                          -1
+                                                                      )
+                                                                  ]))
+                                                          ]
+                                                      )
+                                                  ])
+                                              ]),
+                                              _: 1
+                                          }
+                                      )
+                                  ]))
+                                : (l(),
+                                  r('div', Zt, [
+                                      s[34] ||
+                                          (s[34] = t('div', { class: 'empty-icon' }, '📊', -1)),
+                                      s[35] ||
+                                          (s[35] = t('h3', null, 'No Test Data Available', -1)),
+                                      s[36] ||
+                                          (s[36] = t(
+                                              'p',
+                                              null,
+                                              'Get started by uploading your first test results',
+                                              -1
+                                          )),
+                                      v(
+                                          S,
+                                          {
+                                              onClick:
+                                                  s[4] || (s[4] = p => i.$router.push('/upload'))
+                                          },
+                                          {
+                                              default: f(() => [
+                                                  ...(s[33] ||
+                                                      (s[33] = [x('Upload Test Results', -1)]))
+                                              ]),
+                                              _: 1
+                                          }
+                                      )
+                                  ]))
+                    ])
+                )
+            );
+        }
+    }),
+    rs = V(ts, [['__scopeId', 'data-v-4f005a23']]);
+export { rs as default };
