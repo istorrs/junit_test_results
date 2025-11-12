@@ -19,7 +19,14 @@ describe('API Client', () => {
       const mockData = {
         success: true,
         data: {
-          runs: [{ id: '1', name: 'Test Run 1' }],
+          runs: [{
+            id: '1',
+            name: 'Test Run 1',
+            total_tests: 100,
+            total_failures: 5,
+            total_errors: 2,
+            total_skipped: 3
+          }],
           pagination: { page: 1, limit: 50, total: 1 },
         },
       }
@@ -32,7 +39,24 @@ describe('API Client', () => {
       const result = await apiClient.getRuns()
 
       expect(mockFetch).toHaveBeenCalledWith('/api/v1/runs?page=1&limit=50', undefined)
-      expect(result).toEqual(mockData.data)
+      expect(result).toEqual({
+        runs: [{
+          id: '1',
+          name: 'Test Run 1',
+          total_tests: 100,
+          total_failures: 5,
+          total_errors: 2,
+          total_skipped: 3,
+          summary: {
+            total: 100,
+            passed: 90,
+            failed: 5,
+            errors: 2,
+            skipped: 3,
+          }
+        }],
+        pagination: { page: 1, limit: 50, total: 1 },
+      })
     })
 
     it('should fetch test runs with custom pagination', async () => {
