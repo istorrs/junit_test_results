@@ -3,7 +3,7 @@
     <nav class="navbar">
       <div class="navbar-content">
         <div class="logo">
-          <h2>JUnit Test Results</h2>
+          <h2>Test Results Viewer</h2>
         </div>
 
         <div class="nav-links">

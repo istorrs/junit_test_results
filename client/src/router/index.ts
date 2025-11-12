@@ -41,7 +41,7 @@ const router = createRouter({
 router.beforeEach((to, _from, next) => {
   const title = to.meta.title as string
   if (title) {
-    document.title = `${title} - JUnit Test Results`
+    document.title = `${title} - Test Results Viewer`
   }
   next()
 })
