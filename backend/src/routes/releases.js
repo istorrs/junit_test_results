@@ -71,12 +71,15 @@ router.get('/', async (req, res) => {
         );
 
         res.json({
-            releases,
-            pagination: {
-                total: totalCount,
-                limit: parseInt(limit),
-                skip: parseInt(skip),
-                has_more: parseInt(skip) + releases.length < totalCount
+            success: true,
+            data: {
+                releases,
+                pagination: {
+                    total: totalCount,
+                    limit: parseInt(limit),
+                    skip: parseInt(skip),
+                    has_more: parseInt(skip) + releases.length < totalCount
+                }
             }
         });
     } catch (error) {
@@ -165,7 +168,7 @@ router.get('/compare', async (req, res) => {
             }
         };
 
-        res.json(comparison);
+        res.json({ success: true, data: comparison });
     } catch (error) {
         console.error('Error comparing releases:', error);
         res.status(500).json({ error: 'Failed to compare releases' });
@@ -190,12 +193,15 @@ router.get('/:tag/runs', async (req, res) => {
         const totalCount = await TestRun.countDocuments({ release_tag: tag });
 
         res.json({
-            runs,
-            pagination: {
-                total: totalCount,
-                limit: parseInt(limit),
-                skip: parseInt(skip),
-                has_more: parseInt(skip) + runs.length < totalCount
+            success: true,
+            data: {
+                runs,
+                pagination: {
+                    total: totalCount,
+                    limit: parseInt(limit),
+                    skip: parseInt(skip),
+                    has_more: parseInt(skip) + runs.length < totalCount
+                }
             }
         });
     } catch (error) {
