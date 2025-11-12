@@ -17,6 +17,7 @@
       :data="filteredRuns"
       :loading="store.loading"
       :row-clickable="true"
+      :page-size="1000"
       @row-click="(row: any) => viewRunDetails(row as TestRun)"
     >
       <template #filters>

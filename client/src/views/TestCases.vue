@@ -17,6 +17,7 @@
       :data="filteredCases"
       :loading="store.loading"
       :row-clickable="true"
+      :page-size="1000"
       @row-click="handleRowClick"
     >
       <template #filters>
