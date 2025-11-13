@@ -1,0 +1,42 @@
+#!/bin/bash
+#
+# Pre-commit hook to prevent committing TypeScript code with compilation errors
+#
+
+echo "Running pre-commit checks..."
+
+# Check if there are changes in the client directory
+if git diff --cached --name-only | grep -q "^client/"; then
+    echo "Detected changes in client directory. Running TypeScript type check..."
+
+    # Navigate to client directory and run type check
+    cd client || exit 1
+
+    # Check if node_modules exists
+    if [ ! -d "node_modules" ]; then
+        echo "⚠️  Warning: node_modules not found in client directory."
+        echo "Skipping TypeScript type check. Run 'npm install' to enable type checking."
+        cd ..
+    else
+        # Run TypeScript type check
+        if ! npm run type-check 2>&1; then
+            echo ""
+            echo "❌ TypeScript compilation errors detected!"
+            echo "Please fix the TypeScript errors before committing."
+            echo "Run 'cd client && npm run type-check' to see the errors."
+            exit 1
+        fi
+
+        echo "✅ TypeScript type check passed!"
+        cd ..
+    fi
+fi
+
+# Check if there are changes in the backend directory (optional - for future)
+if git diff --cached --name-only | grep -q "^backend/"; then
+    echo "Detected changes in backend directory."
+    # Add backend checks here in the future if needed
+fi
+
+echo "✅ All pre-commit checks passed!"
+exit 0
