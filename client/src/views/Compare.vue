@@ -65,11 +65,11 @@
             </div>
             <div class="summary-item">
               <span class="label">Tests:</span>
-              <span class="value">{{ comparison.run1.tests }}</span>
+              <span class="value">{{ comparison.run1.total_tests }}</span>
             </div>
             <div class="summary-item">
               <span class="label">Failures:</span>
-              <span class="value failures">{{ comparison.run1.failures }}</span>
+              <span class="value failures">{{ comparison.run1.failed }}</span>
             </div>
             <div class="summary-item">
               <span class="label">Pass Rate:</span>
@@ -94,11 +94,11 @@
             </div>
             <div class="summary-item">
               <span class="label">Tests:</span>
-              <span class="value">{{ comparison.run2.tests }}</span>
+              <span class="value">{{ comparison.run2.total_tests }}</span>
             </div>
             <div class="summary-item">
               <span class="label">Failures:</span>
-              <span class="value failures">{{ comparison.run2.failures }}</span>
+              <span class="value failures">{{ comparison.run2.failed }}</span>
             </div>
             <div class="summary-item">
               <span class="label">Pass Rate:</span>

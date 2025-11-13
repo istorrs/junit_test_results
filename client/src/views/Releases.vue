@@ -51,7 +51,7 @@
             </div>
             <div class="metric">
               <span class="metric-label">Failures</span>
-              <span class="metric-value error">{{ comparison.release1.total_failures }}</span>
+              <span class="metric-value error">{{ comparison.release1.failed }}</span>
             </div>
             <div class="metric">
               <span class="metric-label">Avg Time</span>
@@ -72,7 +72,7 @@
             </div>
             <div class="metric">
               <span class="metric-label">Failures</span>
-              <span class="metric-value error">{{ comparison.release2.total_failures }}</span>
+              <span class="metric-value error">{{ comparison.release2.failed }}</span>
             </div>
             <div class="metric">
               <span class="metric-label">Avg Time</span>

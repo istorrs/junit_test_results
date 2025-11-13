@@ -129,7 +129,6 @@
 
         <FlakyTestsWidget
           :limit="5"
-          :job-name="selectedProject"
           class="chart-card"
         />
       </div>
@@ -139,7 +138,6 @@
         :days="7"
         :limit="5"
         :show-time-range="true"
-        :job-name="selectedProject"
       />
 
       <!-- Quick Actions -->
@@ -175,7 +173,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, computed, ref, watch } from 'vue'
+import { onMounted, computed, watch } from 'vue'
 import { useTestDataStore } from '../stores/testData'
 import { formatNumber, formatDuration } from '../utils/formatters'
 import Button from '../components/shared/Button.vue'
