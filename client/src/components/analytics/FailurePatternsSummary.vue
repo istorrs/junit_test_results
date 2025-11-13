@@ -58,7 +58,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import Card from '../shared/Card.vue'
 import { apiClient } from '../../api/client'
@@ -68,12 +68,14 @@ interface Props {
   days?: number
   limit?: number
   showTimeRange?: boolean
+  jobName?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
   days: 7,
   limit: 5,
-  showTimeRange: true
+  showTimeRange: true,
+  jobName: undefined
 })
 
 const router = useRouter()
@@ -89,7 +91,8 @@ const loadFailurePatterns = async () => {
   try {
     const response = await apiClient.getFailurePatterns({
       days: props.days,
-      limit: props.limit
+      limit: props.limit,
+      job_name: props.jobName
     })
     patterns.value = response.patterns
   } catch (err) {
@@ -99,6 +102,11 @@ const loadFailurePatterns = async () => {
     loading.value = false
   }
 }
+
+// Reload when jobName changes
+watch(() => props.jobName, () => {
+  loadFailurePatterns()
+})
 
 const truncateMessage = (message: string | undefined): string => {
   if (!message) return 'No error message'

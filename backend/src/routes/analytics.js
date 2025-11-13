@@ -1,25 +1,43 @@
 const express = require('express');
 const router = express.Router();
+const mongoose = require('mongoose');
 const TestCase = require('../models/TestCase');
 const TestResult = require('../models/TestResult');
+const TestRun = require('../models/TestRun');
 
 // GET /api/v1/analytics/failure-patterns - Get common failure patterns across recent runs
 router.get('/failure-patterns', async (req, res, next) => {
     try {
         const days = parseInt(req.query.days) || 7;
         const limit = parseInt(req.query.limit) || 100;
+        const job_name = req.query.job_name;
 
         // Calculate date threshold
         const dateThreshold = new Date();
         dateThreshold.setDate(dateThreshold.getDate() - days);
 
+        // Build match filter
+        const matchFilter = {
+            status: { $in: ['failed', 'error'] },
+            timestamp: { $gte: dateThreshold }
+        };
+
+        // If job_name is specified, find matching run_ids
+        if (job_name) {
+            const runs = await TestRun.find({ 'ci_metadata.job_name': job_name }).select('_id');
+            const runIds = runs.map(r => r._id);
+
+            // Find case_ids from those runs
+            const cases = await TestCase.find({ run_id: { $in: runIds } }).select('_id');
+            const caseIds = cases.map(c => c._id);
+
+            matchFilter.case_id = { $in: caseIds };
+        }
+
         // Aggregate failure patterns by error type and message
         const patterns = await TestResult.aggregate([
             {
-                $match: {
-                    status: { $in: ['failed', 'error'] },
-                    timestamp: { $gte: dateThreshold }
-                }
+                $match: matchFilter
             },
             {
                 $group: {
@@ -100,9 +118,27 @@ router.get('/flaky-tests', async (req, res, next) => {
     try {
         const limit = parseInt(req.query.limit) || 100;
         const minRuns = parseInt(req.query.min_runs) || 5; // Minimum runs to be considered
+        const job_name = req.query.job_name;
+
+        // Build initial match filter
+        const initialMatch = {};
+
+        // If job_name is specified, filter by run_ids
+        if (job_name) {
+            const runs = await TestRun.find({ 'ci_metadata.job_name': job_name }).select('_id');
+            const runIds = runs.map(r => r._id);
+            initialMatch.run_id = { $in: runIds };
+        }
 
         // Find all unique test names and their execution history
-        const flakyTests = await TestCase.aggregate([
+        const aggregatePipeline = [];
+
+        // Add initial match if filtering by job
+        if (Object.keys(initialMatch).length > 0) {
+            aggregatePipeline.push({ $match: initialMatch });
+        }
+
+        aggregatePipeline.push(
             {
                 $group: {
                     _id: {
@@ -119,7 +155,9 @@ router.get('/flaky-tests', async (req, res, next) => {
                     },
                     statuses: { $push: '$status' }
                 }
-            },
+            });
+
+        aggregatePipeline.push(
             {
                 $match: {
                     total_runs: { $gte: minRuns },
@@ -179,8 +217,9 @@ router.get('/flaky-tests', async (req, res, next) => {
                     recent_runs: '$total_runs',
                     recent_failures: '$failed_runs'
                 }
-            }
-        ]);
+            });
+
+        const flakyTests = await TestCase.aggregate(aggregatePipeline);
 
         res.json({
             success: true,

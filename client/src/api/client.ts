@@ -365,7 +365,15 @@ class ApiClient {
     const response = await fetch(url, options)
 
     if (!response.ok) {
-      throw new Error(`Failed to ${options?.method || 'GET'} ${endpoint}: ${response.status}`)
+      // Try to extract error message from response body
+      try {
+        const errorData = await response.json()
+        const errorMessage = errorData.error || errorData.message || `Request failed with status ${response.status}`
+        throw new Error(errorMessage)
+      } catch (e) {
+        // If JSON parsing fails, throw generic error
+        throw new Error(`Failed to ${options?.method || 'GET'} ${endpoint}: ${response.status}`)
+      }
     }
 
     const data = await response.json()
@@ -424,6 +432,9 @@ class ApiClient {
   async batchUpdateRuns(runIds: string[], updates: { release_tag: string | null; release_version: string | null }): Promise<{ matched_count: number; modified_count: number }> {
     const response = await this.request<any>('/runs/batch', {
       method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json'
+      },
       body: JSON.stringify({
         run_ids: runIds,
         release_tag: updates.release_tag,
@@ -490,13 +501,18 @@ class ApiClient {
     return this.request<FlakinessData>(`/cases/${testId}/flakiness`)
   }
 
-  async getFailurePatterns(params?: { days?: number; limit?: number }): Promise<FailurePatternsResponse> {
+  async getFailurePatterns(params?: { days?: number; limit?: number; job_name?: string }): Promise<FailurePatternsResponse> {
     const queryString = this.buildQueryString(params || {})
     return this.request<FailurePatternsResponse>(`/analytics/failure-patterns${queryString}`)
   }
 
-  async getFlakyTests(limit: number = 100): Promise<FlakyTestsResponse> {
-    return this.request<FlakyTestsResponse>(`/analytics/flaky-tests?limit=${limit}`)
+  async getFlakyTests(limit: number = 100, job_name?: string): Promise<FlakyTestsResponse> {
+    const params: any = { limit }
+    if (job_name) {
+      params.job_name = job_name
+    }
+    const queryString = this.buildQueryString(params)
+    return this.request<FlakyTestsResponse>(`/analytics/flaky-tests${queryString}`)
   }
 
   // Tier 2: Release Comparison

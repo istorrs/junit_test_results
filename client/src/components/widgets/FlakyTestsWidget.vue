@@ -38,7 +38,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import Card from '../shared/Card.vue'
 import { apiClient } from '../../api/client'
@@ -47,11 +47,13 @@ import type { FlakyTest } from '../../api/client'
 interface Props {
   limit?: number
   showViewAll?: boolean
+  jobName?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
   limit: 5,
-  showViewAll: true
+  showViewAll: true,
+  jobName: undefined
 })
 
 const router = useRouter()
@@ -65,7 +67,7 @@ const loadFlakyTests = async () => {
   error.value = null
 
   try {
-    const response = await apiClient.getFlakyTests(props.limit)
+    const response = await apiClient.getFlakyTests(props.limit, props.jobName)
     flakyTests.value = response.flaky_tests
   } catch (err) {
     error.value = 'Failed to load flaky tests'
@@ -74,6 +76,11 @@ const loadFlakyTests = async () => {
     loading.value = false
   }
 }
+
+// Reload when jobName changes
+watch(() => props.jobName, () => {
+  loadFlakyTests()
+})
 
 const getScoreClass = (score: number): string => {
   if (score >= 50) return 'score-high'
