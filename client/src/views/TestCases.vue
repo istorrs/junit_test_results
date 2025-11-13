@@ -70,9 +70,8 @@
       <template #cell-name="{ row }">
         <div class="test-name">
           <strong>{{ (row as any).name }}</strong>
-          <div class="test-meta" v-if="(row as any).classname || (row as any).suite_name">
-            <span v-if="(row as any).classname" class="meta-info">{{ (row as any).classname }}</span>
-            <span v-if="(row as any).suite_name" class="meta-info suite">{{ (row as any).suite_name }}</span>
+          <div class="test-meta" v-if="(row as any).class_name">
+            <span class="meta-info">{{ (row as any).class_name }}</span>
           </div>
           <div v-if="(row as any).error_message" class="error-preview">
             {{ truncateText((row as any).error_message || '', 100) }}
@@ -95,7 +94,7 @@
       :error-message="selectedTest?.error_message"
       :error-type="selectedTest?.error_type"
       :stack-trace="selectedTest?.result?.stack_trace"
-      :class-name="selectedTest?.classname || selectedTest?.suite_name"
+      :class-name="selectedTest?.class_name"
       :last-run="selectedTest?.timestamp"
       :ci-metadata="selectedTest?.run_ci_metadata"
       @close="closeModal"
@@ -133,7 +132,7 @@ const columns = [
 const suites = computed(() => {
   const uniqueSuites = new Set<string>()
   store.cases.forEach(testCase => {
-    if (testCase.suite_name) uniqueSuites.add(testCase.suite_name)
+    if (testCase.class_name) uniqueSuites.add(testCase.class_name)
   })
   return Array.from(uniqueSuites).sort()
 })
@@ -146,7 +145,7 @@ const filteredCases = computed(() => {
     const query = searchQuery.value.toLowerCase()
     filtered = filtered.filter(testCase =>
       testCase.name?.toLowerCase().includes(query) ||
-      testCase.classname?.toLowerCase().includes(query)
+      testCase.class_name?.toLowerCase().includes(query)
     )
     console.log('[TestCases] After search filter:', filtered.length)
   }
@@ -157,7 +156,7 @@ const filteredCases = computed(() => {
   }
 
   if (selectedSuite.value) {
-    filtered = filtered.filter(testCase => testCase.suite_name === selectedSuite.value)
+    filtered = filtered.filter(testCase => testCase.class_name === selectedSuite.value)
     console.log('[TestCases] After suite filter:', filtered.length, 'suite:', selectedSuite.value)
   }
 
