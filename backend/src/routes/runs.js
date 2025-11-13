@@ -5,6 +5,7 @@ const TestRun = require('../models/TestRun');
 const TestSuite = require('../models/TestSuite');
 const TestCase = require('../models/TestCase');
 const TestResult = require('../models/TestResult');
+const logger = require('../utils/logger');
 
 // GET /api/v1/runs/projects - Get all unique job names (projects)
 router.get('/projects', async (req, res, next) => {
@@ -257,8 +258,16 @@ router.patch('/batch', async (req, res, next) => {
     try {
         const { run_ids, release_tag, release_version } = req.body;
 
+        logger.info('Batch update request received', {
+            run_ids,
+            release_tag,
+            release_version,
+            body: req.body
+        });
+
         // Validation
         if (!run_ids || !Array.isArray(run_ids) || run_ids.length === 0) {
+            logger.warn('Invalid run_ids', { run_ids, type: typeof run_ids });
             return res.status(400).json({
                 success: false,
                 error: 'run_ids array is required and must not be empty'
@@ -266,6 +275,7 @@ router.patch('/batch', async (req, res, next) => {
         }
 
         if (!release_tag && !release_version) {
+            logger.warn('No release metadata provided', { release_tag, release_version });
             return res.status(400).json({
                 success: false,
                 error: 'At least one of release_tag or release_version must be provided'
