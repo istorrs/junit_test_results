@@ -21,21 +21,11 @@ const testRunSchema = new mongoose.Schema(
             type: Number,
             default: 0
         },
-        // Legacy field - keep for backwards compatibility but prefer total_tests
-        tests: {
-            type: Number,
-            default: 0
-        },
         passed: {
             type: Number,
             default: 0
         },
         failed: {
-            type: Number,
-            default: 0
-        },
-        // Legacy field - keep for backwards compatibility but prefer failed
-        failures: {
             type: Number,
             default: 0
         },

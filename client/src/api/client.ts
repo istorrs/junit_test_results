@@ -20,7 +20,6 @@ export interface StatsFilters {
 export interface TestCaseFilters extends PaginationParams {
   run_id?: string
   status?: string
-  suite_name?: string
   class_name?: string
   job_name?: string
 }
@@ -29,29 +28,60 @@ export interface TestRun {
   id: string
   name: string
   timestamp: string
+  total_tests: number
+  passed: number
+  failed: number
+  errors: number
+  skipped: number
+  time: number
+  pass_rate?: number
   ci_metadata?: {
     job_name?: string
     branch?: string
     build_number?: string
+    build_url?: string
+    provider?: string
+    commit_sha?: string
+    repository?: string
   }
-  summary?: {
-    total: number
-    passed: number
-    failed: number
-    errors: number
-    skipped: number
-  }
+  release_tag?: string
+  release_version?: string
+  baseline?: boolean
+  comparison_tags?: string[]
+  file_upload_id?: string
+  created_at?: string
+  updated_at?: string
 }
 
 export interface TestCase {
   id: string
+  suite_id?: string
+  run_id?: string
   name: string
-  status: 'passed' | 'failed' | 'error' | 'skipped'
-  time: number
   class_name?: string
+  time: number
+  status: 'passed' | 'failed' | 'error' | 'skipped'
   error_message?: string
   error_type?: string
   stack_trace?: string
+  assertions?: number
+  file?: string
+  line?: number
+  system_out?: string
+  system_err?: string
+  is_flaky?: boolean
+  flaky_detected_at?: string
+  file_upload_id?: string
+  timestamp?: string
+  run_name?: string
+  run_source?: string
+  run_ci_metadata?: {
+    job_name?: string
+    branch?: string
+    build_number?: string
+  }
+  created_at?: string
+  updated_at?: string
 }
 
 export interface Stats {
@@ -92,7 +122,7 @@ export interface UploadResponse {
 export interface TestHistoryRun {
   run_id: string
   status: 'passed' | 'failed' | 'error' | 'skipped'
-  duration: number
+  time: number
   timestamp: string
   error_message?: string
 }
@@ -407,20 +437,8 @@ class ApiClient {
     const queryString = this.buildQueryString(params)
     const response = await this.request<any>(`/runs${queryString}`)
 
-    // Transform backend response to match frontend expectations
-    const transformedRuns = response.runs.map((run: any) => ({
-      ...run,
-      summary: {
-        total: run.total_tests || 0,
-        passed: run.passed || 0,
-        failed: run.failed || 0,
-        errors: run.errors || 0,
-        skipped: run.skipped || 0,
-      }
-    }))
-
     return {
-      runs: transformedRuns,
+      runs: response.runs,
       pagination: response.pagination
     }
   }
@@ -464,9 +482,9 @@ class ApiClient {
     // Backend now returns standardized field names via toJSON transforms
     const transformedCases = response.cases.map((testCase: any) => ({
       ...testCase,
-      // Backend provides standard names; keep minimal fallbacks for safety
-      error_message: testCase.error_message || testCase.result?.error_message || testCase.result?.failure_message,
-      error_type: testCase.error_type || testCase.result?.error_type || testCase.result?.failure_type,
+      // Backend provides standard names
+      error_message: testCase.error_message,
+      error_type: testCase.error_type,
     }))
 
     return {

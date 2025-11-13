@@ -20,8 +20,8 @@ router.get('/', async (req, res, next) => {
         if (req.query.suite_id) {
             matchQuery.suite_id = new mongoose.Types.ObjectId(req.query.suite_id);
         }
-        if (req.query.classname) {
-            matchQuery.classname = req.query.classname;
+        if (req.query.class_name) {
+            matchQuery.class_name = req.query.class_name;
         }
         if (req.query.name) {
             matchQuery.name = req.query.name;
@@ -170,12 +170,12 @@ router.get('/:id/history', async (req, res, next) => {
             });
         }
 
-        // Find all test cases with same name and classname across runs
+        // Find all test cases with same name and class_name across runs
         const history = await TestCase.aggregate([
             {
                 $match: {
                     name: testCase.name,
-                    classname: testCase.classname
+                    class_name: testCase.class_name
                 }
             },
             {
@@ -242,12 +242,12 @@ router.get('/:id/flakiness', async (req, res, next) => {
             });
         }
 
-        // Find all executions of this test (same name + classname)
+        // Find all executions of this test (same name + class_name)
         const executions = await TestCase.aggregate([
             {
                 $match: {
                     name: testCase.name,
-                    classname: testCase.classname
+                    class_name: testCase.class_name
                 }
             },
             {

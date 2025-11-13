@@ -16,8 +16,6 @@ const testCaseSchema = new mongoose.Schema({
         required: true
     },
     class_name: String,
-    // Legacy field - keep for backwards compatibility but prefer class_name
-    classname: String,
     time: {
         type: Number,
         default: 0
@@ -51,10 +49,6 @@ const testCaseSchema = new mongoose.Schema({
             ret.id = ret._id.toString()
             delete ret._id
             delete ret.__v
-            // Prefer class_name over classname
-            if (!ret.class_name && ret.classname) {
-                ret.class_name = ret.classname
-            }
             return ret
         }
     }

@@ -39,9 +39,9 @@ const createIndexes = async () => {
         await db.collection('testcases').createIndex({ run_id: 1 });
         await db.collection('testcases').createIndex({ suite_id: 1 });
         await db.collection('testcases').createIndex({ status: 1 });
-        await db.collection('testcases').createIndex({ name: 1, classname: 1 });
+        await db.collection('testcases').createIndex({ name: 1, class_name: 1 });
         await db.collection('testcases').createIndex({ is_flaky: 1 });
-        await db.collection('testcases').createIndex({ name: 'text', classname: 'text' });
+        await db.collection('testcases').createIndex({ name: 'text', class_name: 'text' });
 
         // test_results indexes
         await db.collection('testresults').createIndex({ case_id: 1 });

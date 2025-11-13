@@ -12,7 +12,7 @@ const detectFlakyTests = async (runId) => {
             // Get historical results for this test
             const history = await TestCase.find({
                 name: testCase.name,
-                classname: testCase.classname
+                class_name: testCase.class_name
             }).sort({ created_at: -1 }).limit(10);
 
             if (history.length >= 3) {
@@ -29,7 +29,7 @@ const detectFlakyTests = async (runId) => {
 
                     logger.info('Flaky test detected', {
                         test_name: testCase.name,
-                        classname: testCase.classname
+                        class_name: testCase.class_name
                     });
                 }
             }

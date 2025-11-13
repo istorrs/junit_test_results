@@ -129,10 +129,8 @@ const parseJUnitXML = async (xmlContent, filename, ciMetadata = null, uploaderIn
                     timestamp,
                     time: 0, // Will be calculated from test cases
                     total_tests: 0, // Will be calculated from test cases
-                    tests: 0, // Legacy field for backwards compatibility
                     passed: 0,
                     failed: 0,
-                    failures: 0, // Legacy field for backwards compatibility
                     errors: 0,
                     skipped: 0,
                     file_upload_id: fileUpload._id,
@@ -157,10 +155,8 @@ const parseJUnitXML = async (xmlContent, filename, ciMetadata = null, uploaderIn
                 timestamp,
                 time: 0, // Will be calculated from test cases
                 total_tests: 0,
-                tests: 0, // Legacy field for backwards compatibility
                 passed: 0,
                 failed: 0,
-                failures: 0, // Legacy field for backwards compatibility
                 errors: 0,
                 skipped: 0,
                 file_upload_id: fileUpload._id,
@@ -223,14 +219,11 @@ const processTestSuite = async (suiteData, runId, fileUploadId, testRunTimestamp
         run_id: runId,
         name: suiteData.name || 'Unnamed Suite',
         package_name: suiteData.classname || suiteData.package || '',
-        classname: suiteData.classname || '', // Legacy field
         timestamp: suiteTimestamp,
         time: parseFloat(suiteData.time || 0),
         total_tests: parseInt(suiteData.tests || 0),
-        tests: parseInt(suiteData.tests || 0), // Legacy field
         passed: 0, // Will be calculated from test cases
         failed: parseInt(suiteData.failures || 0),
-        failures: parseInt(suiteData.failures || 0), // Legacy field
         errors: parseInt(suiteData.errors || 0),
         skipped: parseInt(suiteData.skipped || 0),
         hostname: suiteData.hostname || '',
@@ -258,7 +251,7 @@ const processTestSuite = async (suiteData, runId, fileUploadId, testRunTimestamp
         }
     }
 
-    // Update suite name if it's generic (e.g., "pytest") - use classname from test cases instead
+    // Update suite name if it's generic (e.g., "pytest") - use class_name from test cases instead
     if (
         testSuite.name === 'pytest' ||
         testSuite.name === 'pytest tests' ||
@@ -266,14 +259,14 @@ const processTestSuite = async (suiteData, runId, fileUploadId, testRunTimestamp
         !testSuite.name
     ) {
         const testCases = await TestCase.find({ suite_id: testSuite._id });
-        const classnames = [...new Set(testCases.map(tc => tc.classname).filter(c => c))];
+        const classNames = [...new Set(testCases.map(tc => tc.class_name).filter(c => c))];
 
-        if (classnames.length > 0) {
-            // Use the most common classname or the first one if all test cases are from same class
-            const newName = classnames.length === 1 ? classnames[0] : classnames[0]; // Use first classname for consistency
+        if (classNames.length > 0) {
+            // Use the most common class_name or the first one if all test cases are from same class
+            const newName = classNames.length === 1 ? classNames[0] : classNames[0]; // Use first class_name for consistency
 
             await TestSuite.findByIdAndUpdate(testSuite._id, { name: newName });
-            logger.info('Updated test suite name from generic to classname', {
+            logger.info('Updated test suite name from generic to class_name', {
                 suite_id: testSuite._id,
                 old_name: testSuite.name,
                 new_name: newName
@@ -284,8 +277,6 @@ const processTestSuite = async (suiteData, runId, fileUploadId, testRunTimestamp
 
 const processTestCase = async (caseData, suiteId, runId, fileUploadId, testStartTime) => {
     let status = 'passed';
-    let failureMessage = null;
-    let failureType = null;
     let errorMessage = null;
     let errorType = null;
     let skippedMessage = null;
@@ -380,8 +371,8 @@ const processTestCase = async (caseData, suiteId, runId, fileUploadId, testStart
         status = 'failed';
         const failure = caseData.failure;
         const traceContent = failure._ || '';
-        failureMessage = extractErrorMessage(traceContent, failure.message);
-        failureType = failure.type || '';
+        errorMessage = extractErrorMessage(traceContent, failure.message);
+        errorType = failure.type || '';
         stackTrace = traceContent || failure.message || '';
     } else if (caseData.error) {
         status = 'error';
@@ -404,7 +395,6 @@ const processTestCase = async (caseData, suiteId, runId, fileUploadId, testStart
         run_id: runId,
         name: caseData.name || 'Unnamed Test',
         class_name: caseData.classname || '',
-        classname: caseData.classname || '', // Legacy field
         time: parseFloat(caseData.time || 0),
         status,
         error_message: errorMessage,
@@ -425,8 +415,6 @@ const processTestCase = async (caseData, suiteId, runId, fileUploadId, testStart
         run_id: runId,
         status,
         time: testCase.time,
-        failure_message: failureMessage,
-        failure_type: failureType,
         error_message: errorMessage,
         error_type: errorType,
         skipped_message: skippedMessage,
@@ -443,16 +431,12 @@ const calculateStats = async runId => {
     const failed = cases.filter(c => c.status === 'failed').length;
 
     return {
-        // Standard field names
         total_tests: cases.length,
         passed,
         failed,
         errors: cases.filter(c => c.status === 'error').length,
         skipped: cases.filter(c => c.status === 'skipped').length,
-        time: cases.reduce((sum, c) => sum + c.time, 0),
-        // Legacy field names for backwards compatibility
-        tests: cases.length,
-        failures: failed
+        time: cases.reduce((sum, c) => sum + c.time, 0)
     };
 };
 

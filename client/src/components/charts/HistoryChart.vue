@@ -14,7 +14,7 @@ import * as echarts from 'echarts'
 interface HistoryRun {
   run_id: string
   status: 'passed' | 'failed' | 'error' | 'skipped'
-  duration: number
+  time: number
   timestamp: string | Date
   error_message?: string
 }
@@ -32,7 +32,7 @@ const hasData = computed(() => props.data && props.data.length > 0)
 
 // Prepare chart data
 const chartData = computed(() => {
-  if (!props.data) return { dates: [], statuses: [], durations: [] }
+  if (!props.data) return { dates: [], statuses: [], times: [] }
 
   const sortedData = [...props.data].sort((a, b) => {
     return new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
@@ -46,7 +46,7 @@ const chartData = computed(() => {
       if (d.status === 'error') return -2
       return 0 // skipped
     }),
-    durations: sortedData.map(d => d.duration),
+    times: sortedData.map(d => d.time),
     runs: sortedData
   }
 })
@@ -98,7 +98,7 @@ const initChart = () => {
         const run = chartData.value.runs?.[index]
         if (!run) return ''
         const status = run.status
-        const duration = (run.duration * 1000).toFixed(0) + 'ms'
+        const time = (run.time * 1000).toFixed(0) + 'ms'
 
         let html = `<div style="padding: 0.5rem;">
           <div style="font-weight: 600; margin-bottom: 0.5rem;">${params[0].name}</div>
@@ -106,7 +106,7 @@ const initChart = () => {
             <span style="color: ${status === 'passed' ? colors.success : colors.error};">●</span>
             <span>Status: ${status}</span>
           </div>
-          <div>Duration: ${duration}</div>
+          <div>Duration: ${time}</div>
         </div>`
 
         return html
@@ -218,7 +218,7 @@ const initChart = () => {
         name: 'Duration',
         type: 'bar',
         yAxisIndex: 1,
-        data: chartData.value.durations,
+        data: chartData.value.times,
         itemStyle: {
           color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
             { offset: 0, color: 'rgba(59, 130, 246, 0.8)' },

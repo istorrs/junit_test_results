@@ -32,8 +32,8 @@ router.get('/', async (req, res) => {
                     first_run: { $min: '$timestamp' },
                     last_run: { $max: '$timestamp' },
                     total_runs: { $sum: 1 },
-                    tests_sum: { $sum: '$tests' },
-                    failures_sum: { $sum: '$failures' },
+                    total_tests_sum: { $sum: '$total_tests' },
+                    failed_sum: { $sum: '$failed' },
                     errors_sum: { $sum: '$errors' },
                     skipped_sum: { $sum: '$skipped' }
                 }
@@ -46,8 +46,8 @@ router.get('/', async (req, res) => {
                     first_run: 1,
                     last_run: 1,
                     total_runs: 1,
-                    tests: '$tests_sum',
-                    failures: '$failures_sum',
+                    total_tests: '$total_tests_sum',
+                    failed: '$failed_sum',
                     errors: '$errors_sum',
                     skipped: '$skipped_sum',
                     pass_rate: {
@@ -56,11 +56,11 @@ router.get('/', async (req, res) => {
                                 $divide: [
                                     {
                                         $subtract: [
-                                            '$tests_sum',
-                                            { $add: ['$failures_sum', '$errors_sum'] }
+                                            '$total_tests_sum',
+                                            { $add: ['$failed_sum', '$errors_sum'] }
                                         ]
                                     },
-                                    '$tests_sum'
+                                    '$total_tests_sum'
                                 ]
                             },
                             100
@@ -125,18 +125,18 @@ router.get('/compare', async (req, res) => {
 
         // Calculate aggregate metrics for each release
         const calculateMetrics = runs => {
-            const totalTests = runs.reduce((sum, run) => sum + run.tests, 0);
-            const totalFailures = runs.reduce((sum, run) => sum + run.failures, 0);
+            const totalTests = runs.reduce((sum, run) => sum + run.total_tests, 0);
+            const totalFailed = runs.reduce((sum, run) => sum + run.failed, 0);
             const totalErrors = runs.reduce((sum, run) => sum + run.errors, 0);
             const totalSkipped = runs.reduce((sum, run) => sum + run.skipped, 0);
-            const totalPassed = totalTests - totalFailures - totalErrors - totalSkipped;
+            const totalPassed = totalTests - totalFailed - totalErrors - totalSkipped;
             const totalTime = runs.reduce((sum, run) => sum + (run.time || 0), 0);
 
             return {
                 total_runs: runs.length,
                 total_tests: totalTests,
                 total_passed: totalPassed,
-                total_failures: totalFailures,
+                total_failed: totalFailed,
                 total_errors: totalErrors,
                 total_skipped: totalSkipped,
                 pass_rate: totalTests > 0 ? (totalPassed / totalTests) * 100 : 0,
@@ -165,7 +165,7 @@ router.get('/compare', async (req, res) => {
             diff: {
                 test_count_change: metrics2.total_tests - metrics1.total_tests,
                 pass_rate_change: metrics2.pass_rate - metrics1.pass_rate,
-                failure_change: metrics2.total_failures - metrics1.total_failures,
+                failed_change: metrics2.total_failed - metrics1.total_failed,
                 time_change: metrics2.avg_time_per_run - metrics1.avg_time_per_run,
                 time_change_percent:
                     metrics1.avg_time_per_run > 0
