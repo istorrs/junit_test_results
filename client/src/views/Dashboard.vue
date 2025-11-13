@@ -3,12 +3,6 @@
     <div class="dashboard-header">
       <h1>Dashboard</h1>
       <div class="header-controls">
-        <select v-model="selectedProject" class="project-filter">
-          <option value="">All Projects</option>
-          <option v-for="project in projects" :key="project" :value="project">
-            {{ project }}
-          </option>
-        </select>
         <Button @click="refreshData" :loading="store.loading">
           Refresh
         </Button>
@@ -192,18 +186,6 @@ import FlakyTestsWidget from '../components/widgets/FlakyTestsWidget.vue'
 import FailurePatternsSummary from '../components/analytics/FailurePatternsSummary.vue'
 
 const store = useTestDataStore()
-const selectedProject = ref('')
-
-// Extract unique projects from runs
-const projects = computed(() => {
-  const uniqueProjects = new Set<string>()
-  store.runs.forEach(run => {
-    if (run.ci_metadata?.job_name) {
-      uniqueProjects.add(run.ci_metadata.job_name)
-    }
-  })
-  return Array.from(uniqueProjects).sort()
-})
 
 const testResultsChartData = computed(() => {
   if (!store.stats) return []
@@ -237,21 +219,21 @@ const recentRunsData = computed(() => {
 const refreshData = async () => {
   try {
     const filters: any = {}
-    if (selectedProject.value) {
-      filters.job_name = selectedProject.value
+    if (store.globalProjectFilter) {
+      filters.job_name = store.globalProjectFilter
     }
 
     await Promise.all([
       store.fetchStats(filters),
-      store.fetchRuns({ limit: 10 }),
+      store.fetchRuns({ limit: 10, ...filters }),
     ])
   } catch (error) {
     console.error('Failed to refresh dashboard:', error)
   }
 }
 
-// Watch for project changes and reload data
-watch(selectedProject, () => {
+// Watch for global project filter changes and reload data
+watch(() => store.globalProjectFilter, () => {
   refreshData()
 })
 
@@ -278,28 +260,6 @@ onMounted(() => {
   display: flex;
   gap: 1rem;
   align-items: center;
-}
-
-.project-filter {
-  padding: 0.5rem 1rem;
-  border: 1px solid var(--border-color);
-  border-radius: 0.375rem;
-  background: var(--bg-primary);
-  color: var(--text-primary);
-  font-size: 0.875rem;
-  cursor: pointer;
-  transition: all 0.2s;
-  min-width: 200px;
-}
-
-.project-filter:hover {
-  border-color: var(--primary-color);
-}
-
-.project-filter:focus {
-  outline: none;
-  border-color: var(--primary-color);
-  box-shadow: 0 0 0 3px var(--primary-bg);
 }
 
 h1 {

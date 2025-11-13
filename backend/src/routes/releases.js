@@ -8,14 +8,22 @@ const TestRun = require('../models/TestRun');
  */
 router.get('/', async (req, res) => {
     try {
-        const { limit = 500, skip = 0 } = req.query;
+        const { limit = 500, skip = 0, job_name } = req.query;
+
+        // Build match criteria
+        const matchCriteria = {
+            release_tag: { $exists: true, $ne: null }
+        };
+
+        // Add job_name filter if provided
+        if (job_name) {
+            matchCriteria['ci_metadata.job_name'] = job_name;
+        }
 
         // Aggregate to get unique releases with stats
         const releases = await TestRun.aggregate([
             {
-                $match: {
-                    release_tag: { $exists: true, $ne: null }
-                }
+                $match: matchCriteria
             },
             {
                 $group: {
@@ -65,8 +73,8 @@ router.get('/', async (req, res) => {
             { $limit: parseInt(limit) }
         ]);
 
-        // Get total count
-        const totalCount = await TestRun.distinct('release_tag').then(
+        // Get total count with same filter
+        const totalCount = await TestRun.distinct('release_tag', matchCriteria).then(
             tags => tags.filter(tag => tag != null).length
         );
 

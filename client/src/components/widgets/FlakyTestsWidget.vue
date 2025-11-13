@@ -43,20 +43,20 @@ import { useRouter } from 'vue-router'
 import Card from '../shared/Card.vue'
 import { apiClient } from '../../api/client'
 import type { FlakyTest } from '../../api/client'
+import { useTestDataStore } from '../../stores/testData'
 
 interface Props {
   limit?: number
   showViewAll?: boolean
-  jobName?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
   limit: 5,
-  showViewAll: true,
-  jobName: undefined
+  showViewAll: true
 })
 
 const router = useRouter()
+const store = useTestDataStore()
 
 const loading = ref(false)
 const error = ref<string | null>(null)
@@ -67,7 +67,11 @@ const loadFlakyTests = async () => {
   error.value = null
 
   try {
-    const response = await apiClient.getFlakyTests(props.limit, props.jobName)
+    const params: any = { limit: props.limit }
+    if (store.globalProjectFilter) {
+      params.job_name = store.globalProjectFilter
+    }
+    const response = await apiClient.getFlakyTests(params)
     flakyTests.value = response.flaky_tests
   } catch (err) {
     error.value = 'Failed to load flaky tests'
@@ -77,8 +81,8 @@ const loadFlakyTests = async () => {
   }
 }
 
-// Reload when jobName changes
-watch(() => props.jobName, () => {
+// Watch for global project filter changes and reload
+watch(() => store.globalProjectFilter, () => {
   loadFlakyTests()
 })
 

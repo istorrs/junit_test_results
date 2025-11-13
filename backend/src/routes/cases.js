@@ -38,10 +38,8 @@ router.get('/', async (req, res, next) => {
             matchQuery.$text = { $search: req.query.search };
         }
 
-        const total = await TestCase.countDocuments(matchQuery);
-
-        // Use aggregation to join with TestResult and TestRun
-        const cases = await TestCase.aggregate([
+        // Build aggregation pipeline
+        const pipeline = [
             { $match: matchQuery },
             {
                 $lookup: {
@@ -79,7 +77,19 @@ router.get('/', async (req, res, next) => {
                     run_source: '$run.source',
                     run_ci_metadata: '$run.ci_metadata'
                 }
-            },
+            }
+        ];
+
+        // Add job_name filter after joining with runs
+        if (req.query.job_name) {
+            pipeline.push({
+                $match: {
+                    'run_ci_metadata.job_name': req.query.job_name
+                }
+            });
+        }
+
+        pipeline.push(
             {
                 $project: {
                     // Exclude the full run object to reduce payload size
@@ -89,7 +99,21 @@ router.get('/', async (req, res, next) => {
             { $sort: { timestamp: -1 } },
             { $skip: skip },
             { $limit: limit }
-        ]);
+        );
+
+        // Get total count with same filters
+        const countPipeline = [...pipeline];
+        // Remove skip, limit, and project stages for count
+        const skipIndex = countPipeline.findIndex(stage => stage.$skip !== undefined);
+        if (skipIndex !== -1) {
+            countPipeline.splice(skipIndex);
+        }
+        countPipeline.push({ $count: 'total' });
+
+        const countResult = await TestCase.aggregate(countPipeline);
+        const total = countResult.length > 0 ? countResult[0].total : 0;
+
+        const cases = await TestCase.aggregate(pipeline);
 
         res.json({
             success: true,

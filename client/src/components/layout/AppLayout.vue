@@ -6,6 +6,25 @@
           <h2>Test Results Viewer</h2>
         </div>
 
+        <div class="project-filter">
+          <label for="global-project-filter" class="filter-label">Project:</label>
+          <select
+            id="global-project-filter"
+            v-model="store.globalProjectFilter"
+            @change="handleProjectChange"
+            class="project-select"
+          >
+            <option value="">All Projects</option>
+            <option
+              v-for="project in store.availableProjects"
+              :key="project"
+              :value="project"
+            >
+              {{ project }}
+            </option>
+          </select>
+        </div>
+
         <div class="nav-links">
           <router-link to="/" class="nav-link">Dashboard</router-link>
           <router-link to="/runs" class="nav-link">Test Runs</router-link>
@@ -44,12 +63,19 @@
 <script setup lang="ts">
 import { onMounted, computed } from 'vue'
 import { useTheme } from '../../composables/useTheme'
+import { useTestDataStore } from '../../stores/testData'
 
 const { currentTheme, toggleTheme, initTheme } = useTheme()
+const store = useTestDataStore()
 
 const isDev = computed(() => import.meta.env.DEV)
 const gitBranch = __GIT_BRANCH__
 const gitCommit = __GIT_COMMIT__
+
+const handleProjectChange = () => {
+  // The v-model binding automatically updates store.globalProjectFilter
+  // Pages will react to this change through watchers
+}
 
 onMounted(() => {
   initTheme()
@@ -87,6 +113,40 @@ onMounted(() => {
   font-size: 1.5rem;
   font-weight: 700;
   color: var(--text-primary);
+}
+
+.project-filter {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.filter-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.project-select {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: 0.375rem;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-width: 200px;
+}
+
+.project-select:hover {
+  border-color: var(--primary-color);
+}
+
+.project-select:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px var(--primary-bg);
 }
 
 .nav-links {

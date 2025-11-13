@@ -285,11 +285,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import Card from '../components/shared/Card.vue'
 import TestDetailsModal from '../components/modals/TestDetailsModal.vue'
 import { apiClient, type TestRun, type RunComparisonResponse } from '../api/client'
+import { useTestDataStore } from '../stores/testData'
 
+const store = useTestDataStore()
 const runs = ref<TestRun[]>([])
 const selectedRun1 = ref<string>('')
 const selectedRun2 = ref<string>('')
@@ -375,14 +377,31 @@ const compareRuns = async () => {
   }
 }
 
-onMounted(async () => {
+const loadRuns = async () => {
   try {
-    const response = await apiClient.getRuns({ limit: 100 })
+    const filters: any = { limit: 100 }
+    if (store.globalProjectFilter) {
+      filters.job_name = store.globalProjectFilter
+    }
+    const response = await apiClient.getRuns(filters)
     runs.value = response.runs
   } catch (err) {
     error.value = 'Failed to load test runs'
     console.error('Error loading runs:', err)
   }
+}
+
+// Watch for global project filter changes and reload runs
+watch(() => store.globalProjectFilter, () => {
+  loadRuns()
+  // Clear selections when filter changes
+  selectedRun1.value = ''
+  selectedRun2.value = ''
+  comparison.value = null
+})
+
+onMounted(() => {
+  loadRuns()
 })
 </script>
 
