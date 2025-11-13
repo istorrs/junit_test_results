@@ -93,7 +93,7 @@
       :duration="selectedTest?.time"
       :error-message="selectedTest?.error_message"
       :error-type="selectedTest?.error_type"
-      :stack-trace="selectedTest?.result?.stack_trace"
+      :stack-trace="selectedTest?.stack_trace"
       :class-name="selectedTest?.class_name"
       :last-run="selectedTest?.timestamp"
       :ci-metadata="selectedTest?.run_ci_metadata"

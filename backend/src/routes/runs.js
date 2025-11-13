@@ -149,10 +149,10 @@ router.get('/:id1/compare/:id2', async (req, res, next) => {
 
         // Create maps for easier lookup
         const cases1Map = new Map();
-        cases1.forEach(c => cases1Map.set(`${c.name}|${c.classname}`, c));
+        cases1.forEach(c => cases1Map.set(`${c.name}|${c.class_name}`, c));
 
         const cases2Map = new Map();
-        cases2.forEach(c => cases2Map.set(`${c.name}|${c.classname}`, c));
+        cases2.forEach(c => cases2Map.set(`${c.name}|${c.class_name}`, c));
 
         // Analysis
         const newFailures = [];
@@ -175,9 +175,9 @@ router.get('/:id1/compare/:id2', async (req, res, next) => {
                 ) {
                     newFailures.push({
                         name: test2.name,
-                        classname: test2.classname,
+                        class_name: test2.class_name,
                         status: test2.status,
-                        message: test2.failure_message
+                        error_message: test2.error_message
                     });
                 } else if (
                     (test1.status === 'failed' || test1.status === 'error') &&
@@ -185,7 +185,7 @@ router.get('/:id1/compare/:id2', async (req, res, next) => {
                 ) {
                     newPasses.push({
                         name: test2.name,
-                        classname: test2.classname
+                        class_name: test2.class_name
                     });
                 }
 
@@ -195,7 +195,7 @@ router.get('/:id1/compare/:id2', async (req, res, next) => {
                     if (percentChange > 20) {
                         regressions.push({
                             name: test2.name,
-                            classname: test2.classname,
+                            class_name: test2.class_name,
                             old_time: test1.time,
                             new_time: test2.time,
                             percent_change: percentChange.toFixed(1)
@@ -210,7 +210,7 @@ router.get('/:id1/compare/:id2', async (req, res, next) => {
             if (!cases2Map.has(key)) {
                 removedTests.push({
                     name: test1.name,
-                    classname: test1.classname
+                    class_name: test1.class_name
                 });
             }
         }
@@ -220,18 +220,18 @@ router.get('/:id1/compare/:id2', async (req, res, next) => {
             run1: {
                 id: run1._id,
                 timestamp: run1.timestamp,
-                tests: cases1.length,
+                total_tests: cases1.length,
                 passed: cases1.filter(c => c.status === 'passed').length,
-                failures: cases1.filter(c => c.status === 'failed').length,
+                failed: cases1.filter(c => c.status === 'failed').length,
                 errors: cases1.filter(c => c.status === 'error').length,
                 skipped: cases1.filter(c => c.status === 'skipped').length
             },
             run2: {
                 id: run2._id,
                 timestamp: run2.timestamp,
-                tests: cases2.length,
+                total_tests: cases2.length,
                 passed: cases2.filter(c => c.status === 'passed').length,
-                failures: cases2.filter(c => c.status === 'failed').length,
+                failed: cases2.filter(c => c.status === 'failed').length,
                 errors: cases2.filter(c => c.status === 'error').length,
                 skipped: cases2.filter(c => c.status === 'skipped').length
             }

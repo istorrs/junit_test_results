@@ -120,21 +120,20 @@
       </template>
 
       <template #cell-summary="{ row }">
-        <div v-if="(row as any).summary" class="summary-badges">
-          <span class="badge passed">✓ {{ (row as any).summary.passed }}</span>
-          <span class="badge failed">✗ {{ (row as any).summary.failed }}</span>
-          <span v-if="(row as any).summary.errors" class="badge error">⚠ {{ (row as any).summary.errors }}</span>
-          <span v-if="(row as any).summary.skipped" class="badge skipped">⊘ {{ (row as any).summary.skipped }}</span>
+        <div class="summary-badges">
+          <span class="badge passed">✓ {{ (row as any).passed }}</span>
+          <span class="badge failed">✗ {{ (row as any).failed }}</span>
+          <span v-if="(row as any).errors" class="badge error">⚠ {{ (row as any).errors }}</span>
+          <span v-if="(row as any).skipped" class="badge skipped">⊘ {{ (row as any).skipped }}</span>
         </div>
-        <span v-else class="no-data">No data</span>
       </template>
 
       <template #cell-total="{ row }">
-        <strong>{{ (row as any).summary?.total || 0 }}</strong>
+        <strong>{{ (row as any).total_tests }}</strong>
       </template>
 
       <template #cell-rate="{ row }">
-        <div v-if="(row as any).summary && (row as any).summary.total > 0" class="success-rate">
+        <div v-if="(row as any).total_tests > 0" class="success-rate">
           <span :class="getSuccessRateClass(calculateSuccessRate(row as any))">
             {{ calculateSuccessRate(row as any) }}%
           </span>
@@ -202,8 +201,7 @@ const filteredRuns = computed(() => {
   // Status filter
   if (selectedStatus.value) {
     filtered = filtered.filter(run => {
-      if (!run.summary) return false
-      const hasFailures = (run.summary.failed || 0) > 0 || (run.summary.errors || 0) > 0
+      const hasFailures = run.failed > 0 || run.errors > 0
       const rate = calculateSuccessRate(run)
       if (selectedStatus.value === 'passed') return rate === 100
       if (selectedStatus.value === 'failed') return hasFailures
@@ -237,8 +235,8 @@ const hasActiveFilters = computed(() => {
 })
 
 const calculateSuccessRate = (run: TestRun): number => {
-  if (!run.summary || run.summary.total === 0) return 0
-  return Math.round((run.summary.passed / run.summary.total) * 100)
+  if (!run.total_tests || run.total_tests === 0) return 0
+  return Math.round((run.passed / run.total_tests) * 100)
 }
 
 const getSuccessRateClass = (rate: number): string => {

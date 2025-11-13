@@ -37,8 +37,8 @@ router.get('/runs', async (req, res) => {
         ]);
 
         // Create maps for quick lookup
-        const cases1Map = new Map(cases1.map(c => [`${c.classname}.${c.name}`, c]));
-        const cases2Map = new Map(cases2.map(c => [`${c.classname}.${c.name}`, c]));
+        const cases1Map = new Map(cases1.map(c => [`${c.class_name}.${c.name}`, c]));
+        const cases2Map = new Map(cases2.map(c => [`${c.class_name}.${c.name}`, c]));
 
         // Get all unique test identifiers
         const allTestIds = new Set([...cases1Map.keys(), ...cases2Map.keys()]);
@@ -61,7 +61,7 @@ router.get('/runs', async (req, res) => {
                 newTests.push({
                     test_id: testId,
                     test_name: case2.name,
-                    class_name: case2.classname,
+                    class_name: case2.class_name,
                     status: case2.status,
                     time: case2.time
                 });
@@ -73,7 +73,7 @@ router.get('/runs', async (req, res) => {
                 removedTests.push({
                     test_id: testId,
                     test_name: case1.name,
-                    class_name: case1.classname,
+                    class_name: case1.class_name,
                     status: case1.status,
                     time: case1.time
                 });
@@ -87,7 +87,7 @@ router.get('/runs', async (req, res) => {
             const testInfo = {
                 test_id: testId,
                 test_name: case2.name,
-                class_name: case2.classname,
+                class_name: case2.class_name,
                 status_before: status1,
                 status_after: status2,
                 time_before: case1.time || 0,
@@ -133,19 +133,19 @@ router.get('/runs', async (req, res) => {
             }
         });
 
-        // Helper to handle both old (total_*) and new field names
+        // Get run metrics using standard field names
         const getRunMetrics = run => {
-            const tests = run.tests || run.total_tests || 0;
-            const failures = run.failures || run.total_failures || 0;
-            const errors = run.errors || run.total_errors || 0;
-            const skipped = run.skipped || run.total_skipped || 0;
+            const total_tests = run.total_tests || 0;
+            const failed = run.failed || 0;
+            const errors = run.errors || 0;
+            const skipped = run.skipped || 0;
 
             return {
-                tests,
-                failures,
+                total_tests,
+                failed,
                 errors,
                 skipped,
-                pass_rate: tests > 0 ? ((tests - failures - errors - skipped) / tests) * 100 : 0
+                pass_rate: total_tests > 0 ? ((total_tests - failed - errors - skipped) / total_tests) * 100 : 0
             };
         };
 
@@ -157,8 +157,8 @@ router.get('/runs', async (req, res) => {
             run1: {
                 id: testRun1._id,
                 timestamp: testRun1.timestamp,
-                tests: run1Metrics.tests,
-                failures: run1Metrics.failures,
+                total_tests: run1Metrics.total_tests,
+                failed: run1Metrics.failed,
                 errors: run1Metrics.errors,
                 skipped: run1Metrics.skipped,
                 time: testRun1.time,
@@ -169,8 +169,8 @@ router.get('/runs', async (req, res) => {
             run2: {
                 id: testRun2._id,
                 timestamp: testRun2.timestamp,
-                tests: run2Metrics.tests,
-                failures: run2Metrics.failures,
+                total_tests: run2Metrics.total_tests,
+                failed: run2Metrics.failed,
                 errors: run2Metrics.errors,
                 skipped: run2Metrics.skipped,
                 time: testRun2.time,
@@ -268,7 +268,7 @@ router.get('/test/:testId', async (req, res) => {
             data: {
                 test_id: testId,
                 test_name: testCases[0].name,
-                class_name: testCases[0].classname,
+                class_name: testCases[0].class_name,
                 statistics: {
                     total_runs: totalRuns,
                     passed_count: passedCount,

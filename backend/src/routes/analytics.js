@@ -42,11 +42,9 @@ router.get('/failure-patterns', async (req, res, next) => {
             {
                 $group: {
                     _id: {
-                        error_type: {
-                            $ifNull: ['$error_type', '$failure_type']
-                        },
+                        error_type: '$error_type',
                         error_message_prefix: {
-                            $substr: [{ $ifNull: ['$error_message', '$failure_message'] }, 0, 100]
+                            $substr: ['$error_message', 0, 100]
                         }
                     },
                     count: { $sum: 1 },
@@ -143,7 +141,7 @@ router.get('/flaky-tests', async (req, res, next) => {
                 $group: {
                     _id: {
                         name: '$name',
-                        classname: '$classname'
+                        class_name: '$class_name'
                     },
                     test_id: { $first: '$_id' },
                     total_runs: { $sum: 1 },
@@ -209,7 +207,7 @@ router.get('/flaky-tests', async (req, res, next) => {
                 $project: {
                     test_id: { $toString: '$test_id' },
                     test_name: '$_id.name',
-                    class_name: '$_id.classname',
+                    class_name: '$_id.class_name',
                     pass_rate: { $round: ['$pass_rate', 2] },
                     flakiness_score: { $round: ['$flakiness_score', 2] },
                     recent_runs: '$total_runs',

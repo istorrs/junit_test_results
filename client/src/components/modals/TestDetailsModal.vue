@@ -130,7 +130,7 @@
                       <td>
                         <span :class="['status-badge', run.status]">{{ run.status }}</span>
                       </td>
-                      <td>{{ formatDuration(run.duration * 1000) }}</td>
+                      <td>{{ formatDuration(run.time * 1000) }}</td>
                       <td class="run-id">{{ run.run_id.slice(0, 8) }}</td>
                     </tr>
                   </tbody>

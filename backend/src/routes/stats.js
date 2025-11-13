@@ -110,7 +110,7 @@ router.get('/flaky-tests', async (req, res, next) => {
             { $match: { is_flaky: true } },
             {
                 $group: {
-                    _id: { name: '$name', classname: '$classname' },
+                    _id: { name: '$name', class_name: '$class_name' },
                     failure_count: {
                         $sum: {
                             $cond: [{ $in: ['$status', ['failed', 'error']] }, 1, 0]
@@ -123,7 +123,7 @@ router.get('/flaky-tests', async (req, res, next) => {
             {
                 $project: {
                     name: '$_id.name',
-                    classname: '$_id.classname',
+                    class_name: '$_id.class_name',
                     failure_count: 1,
                     total_runs: 1,
                     failure_rate: {
@@ -153,7 +153,7 @@ router.get('/performance-regressions', async (req, res, next) => {
         const uniqueTests = await TestCase.aggregate([
             {
                 $group: {
-                    _id: { name: '$name', classname: '$classname' }
+                    _id: { name: '$name', class_name: '$class_name' }
                 }
             }
         ]);
@@ -163,7 +163,7 @@ router.get('/performance-regressions', async (req, res, next) => {
         for (const test of uniqueTests) {
             const cases = await TestCase.find({
                 name: test._id.name,
-                classname: test._id.classname,
+                class_name: test._id.class_name,
                 status: 'passed'
             })
                 .sort({ created_at: -1 })
@@ -183,7 +183,7 @@ router.get('/performance-regressions', async (req, res, next) => {
                     if (percentChange > threshold) {
                         regressions.push({
                             name: test._id.name,
-                            classname: test._id.classname,
+                            class_name: test._id.class_name,
                             baseline_avg: baselineAvg.toFixed(3),
                             recent_avg: recentAvg.toFixed(3),
                             percent_change: percentChange.toFixed(1)
@@ -212,7 +212,7 @@ router.get('/slowest-tests', async (req, res, next) => {
         const slowestTests = await TestCase.aggregate([
             {
                 $group: {
-                    _id: { name: '$name', classname: '$classname' },
+                    _id: { name: '$name', class_name: '$class_name' },
                     avg_time: { $avg: '$time' },
                     max_time: { $max: '$time' },
                     min_time: { $min: '$time' },
@@ -222,7 +222,7 @@ router.get('/slowest-tests', async (req, res, next) => {
             {
                 $project: {
                     name: '$_id.name',
-                    classname: '$_id.classname',
+                    class_name: '$_id.class_name',
                     avg_time: { $round: ['$avg_time', 3] },
                     max_time: { $round: ['$max_time', 3] },
                     min_time: { $round: ['$min_time', 3] },
@@ -248,7 +248,7 @@ router.get('/suite-performance', async (req, res, next) => {
         const suites = await TestCase.aggregate([
             {
                 $group: {
-                    _id: '$classname',
+                    _id: '$class_name',
                     total_tests: { $sum: 1 },
                     passed: {
                         $sum: { $cond: [{ $eq: ['$status', 'passed'] }, 1, 0] }
@@ -265,7 +265,7 @@ router.get('/suite-performance', async (req, res, next) => {
             },
             {
                 $project: {
-                    suite_name: '$_id',
+                    class_name: '$_id',
                     total_tests: 1,
                     passed: 1,
                     failed: 1,

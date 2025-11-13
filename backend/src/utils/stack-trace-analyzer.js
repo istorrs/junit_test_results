@@ -271,12 +271,12 @@ class StackTraceAnalyzer {
      */
     static createFingerprint(testCase) {
         const exceptionType = this.extractExceptionType(
-            testCase.failure_type,
-            testCase.failure_message
+            testCase.stack_trace,
+            testCase.error_message
         );
-        const rootCause = this.extractRootCause(testCase.failure_type);
-        const normalizedMessage = this.normalizeErrorMessage(testCase.failure_message || '');
-        const normalizedTrace = this.normalizeStackTrace(testCase.failure_type || '');
+        const rootCause = this.extractRootCause(testCase.stack_trace);
+        const normalizedMessage = this.normalizeErrorMessage(testCase.error_message || '');
+        const normalizedTrace = this.normalizeStackTrace(testCase.stack_trace || '');
 
         // Take first 5 lines of normalized stack trace for signature
         const traceLines = normalizedTrace.split('\n').slice(0, 5).join('\n');
@@ -414,16 +414,16 @@ class StackTraceAnalyzer {
         for (const test of failedTests) {
             const fingerprint = this.createFingerprint(test);
             const exceptionType = this.extractExceptionType(
-                test.failure_type,
-                test.failure_message
+                test.stack_trace,
+                test.error_message
             );
-            const rootCause = this.extractRootCause(test.failure_type);
+            const rootCause = this.extractRootCause(test.stack_trace);
             const category = this.categorizeFailure(
                 exceptionType,
-                test.failure_message,
-                test.failure_type
+                test.error_message,
+                test.stack_trace
             );
-            const normalizedMessage = this.normalizeErrorMessage(test.failure_message || '');
+            const normalizedMessage = this.normalizeErrorMessage(test.error_message || '');
 
             // Find existing cluster with same fingerprint or high similarity
             let matchedCluster = clusters.find(cluster => cluster.fingerprint === fingerprint);
@@ -455,8 +455,8 @@ class StackTraceAnalyzer {
                     rootCause: rootCause.location,
                     category,
                     normalizedMessage,
-                    exampleMessage: test.failure_message || 'No error message',
-                    exampleStackTrace: test.failure_type || '',
+                    exampleMessage: test.error_message || 'No error message',
+                    exampleStackTrace: test.stack_trace || '',
                     count: 1,
                     tests: [test]
                 });
@@ -510,7 +510,7 @@ class StackTraceAnalyzer {
                 affectedTests: pattern.tests.map(t => ({
                     id: t._id,
                     name: t.name,
-                    classname: t.classname,
+                    class_name: t.class_name,
                     time: t.time
                 }))
             })),

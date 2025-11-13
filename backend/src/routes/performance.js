@@ -25,7 +25,7 @@ router.get('/trends', async (req, res) => {
         }
 
         if (className) {
-            matchCondition.classname = new RegExp(className, 'i');
+            matchCondition.class_name = new RegExp(className, 'i');
         }
 
         // Group by time period based on granularity
@@ -51,7 +51,7 @@ router.get('/trends', async (req, res) => {
                     _id: {
                         period: { $dateToString: { format: dateFormat, date: '$created_at' } },
                         test_name: testId ? '$name' : null,
-                        class_name: className ? '$classname' : null
+                        class_name: className ? '$class_name' : null
                     },
                     avg_time: { $avg: '$time' },
                     min_time: { $min: '$time' },
@@ -115,7 +115,7 @@ router.get('/slowest', async (req, res) => {
                 $group: {
                     _id: {
                         test_name: '$name',
-                        class_name: '$classname'
+                        class_name: '$class_name'
                     },
                     avg_time: { $avg: '$time' },
                     max_time: { $max: '$time' },
@@ -178,7 +178,7 @@ router.get('/regressions', async (req, res) => {
                 $group: {
                     _id: {
                         test_name: '$name',
-                        class_name: '$classname'
+                        class_name: '$class_name'
                     },
                     recent_times: {
                         $push: {
@@ -283,7 +283,7 @@ router.get('/test/:testId', async (req, res) => {
             time: { $exists: true }
         })
             .sort({ created_at: 1 })
-            .select('name classname created_at time status run_id')
+            .select('name class_name created_at time status run_id')
             .lean();
 
         if (testHistory.length === 0) {
@@ -316,7 +316,7 @@ router.get('/test/:testId', async (req, res) => {
             success: true,
             data: {
                 test_name: testHistory[0].name,
-                class_name: testHistory[0].classname,
+                class_name: testHistory[0].class_name,
                 statistics: {
                     avg_time: Math.round(avgTime * 1000) / 1000,
                     min_time: Math.round(minTime * 1000) / 1000,

@@ -15,9 +15,9 @@ const calculateStats = async runId => {
     const cases = await TestCase.find({ run_id: runId });
 
     return {
-        tests: cases.length,
+        total_tests: cases.length,
         passed: cases.filter(c => c.status === 'passed').length,
-        failures: cases.filter(c => c.status === 'failed').length,
+        failed: cases.filter(c => c.status === 'failed').length,
         errors: cases.filter(c => c.status === 'error').length,
         skipped: cases.filter(c => c.status === 'skipped').length,
         time: cases.reduce((sum, c) => sum + c.time, 0)
@@ -29,11 +29,11 @@ async function fixTestRunCounts() {
         await mongoose.connect(MONGODB_URI);
         console.log('Connected to MongoDB\n');
 
-        // Find all test runs with tests = 0 or null (missing/undefined)
+        // Find all test runs with total_tests = 0 or null (missing/undefined)
         const testRuns = await TestRun.find({
-            $or: [{ tests: 0 }, { tests: null }, { tests: { $exists: false } }]
+            $or: [{ total_tests: 0 }, { total_tests: null }, { total_tests: { $exists: false } }]
         });
-        console.log(`Found ${testRuns.length} test runs with tests=0 or null\n`);
+        console.log(`Found ${testRuns.length} test runs with total_tests=0 or null\n`);
 
         let fixed = 0;
         let skipped = 0;
@@ -42,17 +42,18 @@ async function fixTestRunCounts() {
             const stats = await calculateStats(testRun._id);
 
             // Only update if there are actually test cases
-            if (stats.tests > 0) {
+            if (stats.total_tests > 0) {
                 await TestRun.findByIdAndUpdate(testRun._id, {
-                    tests: stats.tests,
-                    failures: stats.failures,
+                    total_tests: stats.total_tests,
+                    passed: stats.passed,
+                    failed: stats.failed,
                     errors: stats.errors,
                     skipped: stats.skipped,
                     time: stats.time
                 });
 
                 console.log(
-                    `✓ Fixed ${testRun.name}: ${stats.tests} tests, ${stats.failures} failures`
+                    `✓ Fixed ${testRun.name}: ${stats.total_tests} tests, ${stats.failed} failures`
                 );
                 fixed++;
             } else {

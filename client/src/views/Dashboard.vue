@@ -206,11 +206,11 @@ const recentRunsData = computed(() => {
     series: [
       {
         name: 'Passed',
-        data: runs.map(run => run.summary?.passed || 0),
+        data: runs.map(run => run.passed),
       },
       {
         name: 'Failed',
-        data: runs.map(run => run.summary?.failed || 0),
+        data: runs.map(run => run.failed),
       },
     ],
   }

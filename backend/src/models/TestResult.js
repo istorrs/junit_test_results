@@ -22,8 +22,6 @@ const testResultSchema = new mongoose.Schema({
         required: true
     },
     time: Number,
-    failure_message: String,
-    failure_type: String,
     error_message: String,
     error_type: String,
     skipped_message: String,
@@ -35,7 +33,15 @@ const testResultSchema = new mongoose.Schema({
         default: Date.now
     }
 }, {
-    timestamps: { createdAt: 'created_at' }
+    timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' },
+    toJSON: {
+        transform: (doc, ret) => {
+            ret.id = ret._id.toString()
+            delete ret._id
+            delete ret.__v
+            return ret
+        }
+    }
 });
 
 module.exports = mongoose.model('TestResult', testResultSchema);

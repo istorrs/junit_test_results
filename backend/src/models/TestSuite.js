@@ -11,8 +11,6 @@ const testSuiteSchema = new mongoose.Schema({
         required: true
     },
     package_name: String,
-    // Legacy field - keep for backwards compatibility
-    classname: String,
     timestamp: {
         type: Date,
         default: Date.now
@@ -25,21 +23,11 @@ const testSuiteSchema = new mongoose.Schema({
         type: Number,
         default: 0
     },
-    // Legacy field - keep for backwards compatibility
-    tests: {
-        type: Number,
-        default: 0
-    },
     passed: {
         type: Number,
         default: 0
     },
     failed: {
-        type: Number,
-        default: 0
-    },
-    // Legacy field - keep for backwards compatibility
-    failures: {
         type: Number,
         default: 0
     },
@@ -63,10 +51,6 @@ const testSuiteSchema = new mongoose.Schema({
             ret.id = ret._id.toString()
             delete ret._id
             delete ret.__v
-            // Prefer package_name over classname for suite
-            if (!ret.package_name && ret.classname) {
-                ret.package_name = ret.classname
-            }
             return ret
         }
     }
