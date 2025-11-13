@@ -241,7 +241,10 @@ const tabs = [
   { id: 'trends', label: 'Trends Over Time' },
 ]
 
-const formatDuration = (seconds: number): string => {
+const formatDuration = (seconds: number | null | undefined): string => {
+  if (seconds == null || isNaN(seconds)) {
+    return 'N/A'
+  }
   if (seconds < 1) {
     return `${(seconds * 1000).toFixed(0)}ms`
   }
@@ -253,8 +256,14 @@ const formatDuration = (seconds: number): string => {
   return `${minutes}m ${remainingSeconds.toFixed(0)}s`
 }
 
-const formatDate = (dateString: string): string => {
+const formatDate = (dateString: string | null | undefined): string => {
+  if (!dateString) {
+    return 'N/A'
+  }
   const date = new Date(dateString)
+  if (isNaN(date.getTime())) {
+    return 'N/A'
+  }
   return date.toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'short',

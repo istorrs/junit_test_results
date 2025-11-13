@@ -162,7 +162,7 @@
             <div v-if="comparison.details.new_failures.length === 0" class="empty-state">
               No new failures
             </div>
-            <div v-else v-for="test in comparison.details.new_failures" :key="test.test_id" class="test-item">
+            <div v-else v-for="test in comparison.details.new_failures" :key="test.test_id" class="test-item clickable" @click="openTestModal(test)">
               <div class="test-header">
                 <span class="test-name">{{ test.test_name }}</span>
                 <span class="badge badge-error">{{ test.status_after }}</span>
@@ -181,7 +181,7 @@
             <div v-if="comparison.details.fixed_tests.length === 0" class="empty-state">
               No fixed tests
             </div>
-            <div v-else v-for="test in comparison.details.fixed_tests" :key="test.test_id" class="test-item">
+            <div v-else v-for="test in comparison.details.fixed_tests" :key="test.test_id" class="test-item clickable" @click="openTestModal(test)">
               <div class="test-header">
                 <span class="test-name">{{ test.test_name }}</span>
                 <span class="badge badge-success">Fixed</span>
@@ -198,7 +198,7 @@
             <div v-if="comparison.details.still_failing.length === 0" class="empty-state">
               No tests still failing
             </div>
-            <div v-else v-for="test in comparison.details.still_failing" :key="test.test_id" class="test-item">
+            <div v-else v-for="test in comparison.details.still_failing" :key="test.test_id" class="test-item clickable" @click="openTestModal(test)">
               <div class="test-header">
                 <span class="test-name">{{ test.test_name }}</span>
                 <span class="badge badge-error">{{ test.status_after }}</span>
@@ -214,7 +214,7 @@
             <div v-if="comparison.details.performance_changes.length === 0" class="empty-state">
               No significant performance changes
             </div>
-            <div v-else v-for="test in comparison.details.performance_changes" :key="test.test_id" class="test-item">
+            <div v-else v-for="test in comparison.details.performance_changes" :key="test.test_id" class="test-item clickable" @click="openTestModal(test)">
               <div class="test-header">
                 <span class="test-name">{{ test.test_name }}</span>
                 <span
@@ -239,7 +239,7 @@
             <div v-if="comparison.details.new_tests.length === 0" class="empty-state">
               No new tests
             </div>
-            <div v-else v-for="test in comparison.details.new_tests" :key="test.test_id" class="test-item">
+            <div v-else v-for="test in comparison.details.new_tests" :key="test.test_id" class="test-item clickable" @click="openTestModal(test)">
               <div class="test-header">
                 <span class="test-name">{{ test.test_name }}</span>
                 <span class="badge badge-info">New</span>
@@ -255,7 +255,7 @@
             <div v-if="comparison.details.removed_tests.length === 0" class="empty-state">
               No removed tests
             </div>
-            <div v-else v-for="test in comparison.details.removed_tests" :key="test.test_id" class="test-item">
+            <div v-else v-for="test in comparison.details.removed_tests" :key="test.test_id" class="test-item clickable" @click="openTestModal(test)">
               <div class="test-header">
                 <span class="test-name">{{ test.test_name }}</span>
                 <span class="badge badge-secondary">Removed</span>
@@ -268,12 +268,22 @@
         </div>
       </Card>
     </div>
+
+    <!-- Test Details Modal -->
+    <TestDetailsModal
+      v-if="selectedTest"
+      :open="modalOpen"
+      :test-id="selectedTest.test_id"
+      :test-name="selectedTest.test_name"
+      @close="closeModal"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import Card from '../components/shared/Card.vue'
+import TestDetailsModal from '../components/modals/TestDetailsModal.vue'
 import { apiClient, type TestRun, type RunComparisonResponse } from '../api/client'
 
 const runs = ref<TestRun[]>([])
@@ -283,6 +293,8 @@ const comparison = ref<RunComparisonResponse | null>(null)
 const loading = ref(false)
 const error = ref<string>('')
 const activeTab = ref('new-failures')
+const modalOpen = ref(false)
+const selectedTest = ref<any>(null)
 
 const tabs = [
   { id: 'new-failures', label: 'New Failures' },
@@ -329,6 +341,16 @@ const formatDuration = (seconds: number): string => {
   const minutes = Math.floor(seconds / 60)
   const remainingSeconds = seconds % 60
   return `${minutes}m ${remainingSeconds.toFixed(0)}s`
+}
+
+const openTestModal = (test: any) => {
+  selectedTest.value = test
+  modalOpen.value = true
+}
+
+const closeModal = () => {
+  modalOpen.value = false
+  selectedTest.value = null
 }
 
 const compareRuns = async () => {
@@ -577,6 +599,18 @@ onMounted(async () => {
   border: 1px solid var(--border-color);
   border-radius: 0.375rem;
   background-color: var(--surface-color);
+}
+
+.test-item.clickable {
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.test-item.clickable:hover {
+  background-color: var(--hover-bg);
+  border-color: var(--primary-color);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .test-header {
