@@ -140,6 +140,7 @@ const suites = computed(() => {
 
 const filteredCases = computed(() => {
   let filtered = [...store.cases]
+  console.log('[TestCases] Total cases before filtering:', filtered.length)
 
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase()
@@ -147,16 +148,20 @@ const filteredCases = computed(() => {
       testCase.name?.toLowerCase().includes(query) ||
       testCase.classname?.toLowerCase().includes(query)
     )
+    console.log('[TestCases] After search filter:', filtered.length)
   }
 
   if (selectedStatus.value) {
     filtered = filtered.filter(testCase => testCase.status === selectedStatus.value)
+    console.log('[TestCases] After status filter:', filtered.length, 'status:', selectedStatus.value)
   }
 
   if (selectedSuite.value) {
     filtered = filtered.filter(testCase => testCase.suite_name === selectedSuite.value)
+    console.log('[TestCases] After suite filter:', filtered.length, 'suite:', selectedSuite.value)
   }
 
+  console.log('[TestCases] Final filtered count:', filtered.length)
   return filtered
 })
 
@@ -173,7 +178,10 @@ const clearFilters = () => {
 const loadData = async () => {
   try {
     const filters = route.query.run_id ? { run_id: route.query.run_id as string } : {}
-    await store.fetchCases(filters)
+    console.log('[TestCases] Loading with filters:', filters)
+    const response = await store.fetchCases(filters)
+    console.log('[TestCases] Loaded cases:', store.cases.length, 'cases from API')
+    console.log('[TestCases] Pagination:', response?.pagination)
   } catch (error) {
     console.error('Failed to load test cases:', error)
   }
