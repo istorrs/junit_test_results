@@ -275,6 +275,10 @@
       :open="modalOpen"
       :test-id="selectedTest.test_id"
       :test-name="selectedTest.test_name"
+      :status="selectedTest.status_after || selectedTest.status_before || 'unknown'"
+      :error-message="selectedTest.error_message"
+      :error-type="selectedTest.error_type"
+      :class-name="selectedTest.class_name"
       @close="closeModal"
     />
   </div>
