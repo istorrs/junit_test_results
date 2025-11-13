@@ -87,11 +87,23 @@
         </div>
       </template>
 
+      <template #header-select>
+        <input
+          ref="selectAllCheckbox"
+          type="checkbox"
+          :checked="allRunsSelected"
+          @change="toggleAllRuns"
+          class="run-checkbox"
+          title="Select/Deselect All"
+        />
+      </template>
+
       <template #cell-select="{ row }">
         <input
           type="checkbox"
           :checked="selectedRuns.has((row as any).id)"
-          @click.stop="toggleRunSelection((row as any).id)"
+          @change="toggleRunSelection((row as any).id)"
+          @click.stop
           class="run-checkbox"
         />
       </template>
@@ -151,7 +163,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useTestDataStore } from '../stores/testData'
 import { formatDate } from '../utils/formatters'
@@ -171,6 +183,7 @@ const dateFrom = ref('')
 const dateTo = ref('')
 const selectedRuns = ref<Set<string>>(new Set())
 const showReleaseModal = ref(false)
+const selectAllCheckbox = ref<HTMLInputElement | null>(null)
 
 const columns = [
   { key: 'select', label: '', sortable: false },
@@ -275,6 +288,29 @@ const viewRunDetails = (run: TestRun) => {
   router.push(`/cases?run_id=${run.id}`)
 }
 
+// Select All functionality
+const allRunsSelected = computed(() => {
+  if (filteredRuns.value.length === 0) return false
+  return filteredRuns.value.every(run => selectedRuns.value.has(run.id))
+})
+
+const someRunsSelected = computed(() => {
+  if (selectedRuns.value.size === 0) return false
+  return !allRunsSelected.value && filteredRuns.value.some(run => selectedRuns.value.has(run.id))
+})
+
+const toggleAllRuns = () => {
+  if (allRunsSelected.value) {
+    // Deselect all visible runs
+    filteredRuns.value.forEach(run => selectedRuns.value.delete(run.id))
+  } else {
+    // Select all visible runs
+    filteredRuns.value.forEach(run => selectedRuns.value.add(run.id))
+  }
+  // Force reactivity
+  selectedRuns.value = new Set(selectedRuns.value)
+}
+
 const toggleRunSelection = (runId: string) => {
   if (selectedRuns.value.has(runId)) {
     selectedRuns.value.delete(runId)
@@ -310,6 +346,13 @@ const loadData = async () => {
     console.error('Failed to load test runs:', error)
   }
 }
+
+// Update indeterminate state of select-all checkbox
+watch(someRunsSelected, (value) => {
+  if (selectAllCheckbox.value) {
+    selectAllCheckbox.value.indeterminate = value
+  }
+})
 
 onMounted(() => {
   loadData()
@@ -485,5 +528,10 @@ h1 {
 
 .run-checkbox:hover {
   transform: scale(1.1);
+}
+
+.run-checkbox:indeterminate {
+  accent-color: var(--primary-color);
+  opacity: 0.7;
 }
 </style>
