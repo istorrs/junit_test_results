@@ -14,6 +14,7 @@ export interface StatsFilters {
   run_id?: string
   from_date?: string
   to_date?: string
+  job_name?: string
 }
 
 export interface TestCaseFilters extends PaginationParams {
@@ -46,10 +47,10 @@ export interface TestCase {
   name: string
   status: 'passed' | 'failed' | 'error' | 'skipped'
   time: number
-  classname?: string
-  suite_name?: string
+  class_name?: string
   error_message?: string
   error_type?: string
+  stack_trace?: string
 }
 
 export interface Stats {
@@ -142,10 +143,9 @@ export interface Release {
   first_run: string
   last_run: string
   total_runs: number
-  tests: number
   total_tests: number
-  failures: number
-  total_failures: number
+  passed: number
+  failed: number
   errors: number
   skipped: number
   pass_rate: number
@@ -158,11 +158,9 @@ export interface ReleasesResponse {
 
 export interface ReleaseMetrics {
   total_runs: number
-  tests: number
   total_tests: number
   passed: number
-  failures: number
-  total_failures: number
+  failed: number
   errors: number
   skipped: number
   pass_rate: number
@@ -194,8 +192,9 @@ export interface ReleaseComparisonResponse {
 export interface RunSummary {
   id: string
   timestamp: string
-  tests: number
-  failures: number
+  total_tests: number
+  passed: number
+  failed: number
   errors: number
   skipped: number
   time: number
@@ -402,11 +401,10 @@ class ApiClient {
     // Transform backend response to match frontend expectations
     const transformedRuns = response.runs.map((run: any) => ({
       ...run,
-      id: run._id || run.id,
       summary: {
-        total: run.tests || 0,
-        passed: (run.tests || 0) - (run.failures || 0) - (run.errors || 0) - (run.skipped || 0),
-        failed: run.failures || 0,
+        total: run.total_tests || 0,
+        passed: run.passed || 0,
+        failed: run.failed || 0,
         errors: run.errors || 0,
         skipped: run.skipped || 0,
       }
@@ -421,6 +419,18 @@ class ApiClient {
   async getProjects(): Promise<string[]> {
     const response = await this.request<{ projects: string[] }>('/runs/projects')
     return response.projects
+  }
+
+  async batchUpdateRuns(runIds: string[], updates: { release_tag: string | null; release_version: string | null }): Promise<{ matched_count: number; modified_count: number }> {
+    const response = await this.request<any>('/runs/batch', {
+      method: 'PATCH',
+      body: JSON.stringify({
+        run_ids: runIds,
+        release_tag: updates.release_tag,
+        release_version: updates.release_version
+      })
+    })
+    return response
   }
 
   async getStats(filters: StatsFilters = {}): Promise<Stats> {
@@ -439,12 +449,12 @@ class ApiClient {
     const response = await this.request<any>(`/cases${queryString}`)
 
     // Transform backend response to match frontend expectations
+    // Backend now returns standardized field names via toJSON transforms
     const transformedCases = response.cases.map((testCase: any) => ({
       ...testCase,
-      id: testCase._id || testCase.id,
-      suite_name: testCase.classname || testCase.suite_name,
-      error_message: testCase.result?.error_message || testCase.result?.failure_message || testCase.error_message,
-      error_type: testCase.result?.error_type || testCase.result?.failure_type || testCase.error_type,
+      // Backend provides standard names; keep minimal fallbacks for safety
+      error_message: testCase.error_message || testCase.result?.error_message || testCase.result?.failure_message,
+      error_type: testCase.error_type || testCase.result?.error_type || testCase.result?.failure_type,
     }))
 
     return {

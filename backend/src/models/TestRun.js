@@ -17,10 +17,24 @@ const testRunSchema = new mongoose.Schema(
             type: Number,
             default: 0
         },
+        total_tests: {
+            type: Number,
+            default: 0
+        },
+        // Legacy field - keep for backwards compatibility but prefer total_tests
         tests: {
             type: Number,
             default: 0
         },
+        passed: {
+            type: Number,
+            default: 0
+        },
+        failed: {
+            type: Number,
+            default: 0
+        },
+        // Legacy field - keep for backwards compatibility but prefer failed
         failures: {
             type: Number,
             default: 0
@@ -91,7 +105,15 @@ const testRunSchema = new mongoose.Schema(
     },
     {
         timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' },
-        toJSON: { virtuals: true },
+        toJSON: {
+            virtuals: true,
+            transform: (doc, ret) => {
+                ret.id = ret._id.toString()
+                delete ret._id
+                delete ret.__v
+                return ret
+            }
+        },
         toObject: { virtuals: true }
     }
 );

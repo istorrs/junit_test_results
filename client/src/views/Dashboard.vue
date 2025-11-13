@@ -2,9 +2,17 @@
   <div class="dashboard">
     <div class="dashboard-header">
       <h1>Dashboard</h1>
-      <Button @click="refreshData" :loading="store.loading">
-        Refresh
-      </Button>
+      <div class="header-controls">
+        <select v-model="selectedProject" class="project-filter">
+          <option value="">All Projects</option>
+          <option v-for="project in projects" :key="project" :value="project">
+            {{ project }}
+          </option>
+        </select>
+        <Button @click="refreshData" :loading="store.loading">
+          Refresh
+        </Button>
+      </div>
     </div>
 
     <div v-if="store.loading && !store.stats" class="loading">
@@ -171,7 +179,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, computed } from 'vue'
+import { onMounted, computed, ref, watch } from 'vue'
 import { useTestDataStore } from '../stores/testData'
 import { formatNumber, formatDuration } from '../utils/formatters'
 import Button from '../components/shared/Button.vue'
@@ -182,6 +190,18 @@ import FlakyTestsWidget from '../components/widgets/FlakyTestsWidget.vue'
 import FailurePatternsSummary from '../components/analytics/FailurePatternsSummary.vue'
 
 const store = useTestDataStore()
+const selectedProject = ref('')
+
+// Extract unique projects from runs
+const projects = computed(() => {
+  const uniqueProjects = new Set<string>()
+  store.runs.forEach(run => {
+    if (run.ci_metadata?.job_name) {
+      uniqueProjects.add(run.ci_metadata.job_name)
+    }
+  })
+  return Array.from(uniqueProjects).sort()
+})
 
 const testResultsChartData = computed(() => {
   if (!store.stats) return []
@@ -214,14 +234,24 @@ const recentRunsData = computed(() => {
 
 const refreshData = async () => {
   try {
+    const filters: any = {}
+    if (selectedProject.value) {
+      filters.job_name = selectedProject.value
+    }
+
     await Promise.all([
-      store.fetchStats(),
+      store.fetchStats(filters),
       store.fetchRuns({ limit: 10 }),
     ])
   } catch (error) {
     console.error('Failed to refresh dashboard:', error)
   }
 }
+
+// Watch for project changes and reload data
+watch(selectedProject, () => {
+  refreshData()
+})
 
 onMounted(() => {
   refreshData()
@@ -240,6 +270,34 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 2rem;
+}
+
+.header-controls {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.project-filter {
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 0.375rem;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-width: 200px;
+}
+
+.project-filter:hover {
+  border-color: var(--primary-color);
+}
+
+.project-filter:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px var(--primary-bg);
 }
 
 h1 {
