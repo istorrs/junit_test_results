@@ -22,6 +22,7 @@ export interface TestCaseFilters extends PaginationParams {
   status?: string
   suite_name?: string
   class_name?: string
+  job_name?: string
 }
 
 export interface TestRun {
@@ -506,17 +507,13 @@ class ApiClient {
     return this.request<FailurePatternsResponse>(`/analytics/failure-patterns${queryString}`)
   }
 
-  async getFlakyTests(limit: number = 100, job_name?: string): Promise<FlakyTestsResponse> {
-    const params: any = { limit }
-    if (job_name) {
-      params.job_name = job_name
-    }
-    const queryString = this.buildQueryString(params)
+  async getFlakyTests(params?: { limit?: number; job_name?: string }): Promise<FlakyTestsResponse> {
+    const queryString = this.buildQueryString(params || {})
     return this.request<FlakyTestsResponse>(`/analytics/flaky-tests${queryString}`)
   }
 
   // Tier 2: Release Comparison
-  async getReleases(params?: { limit?: number; skip?: number }): Promise<ReleasesResponse> {
+  async getReleases(params?: { limit?: number; skip?: number; job_name?: string }): Promise<ReleasesResponse> {
     const queryString = this.buildQueryString(params || {})
     return this.request<ReleasesResponse>(`/releases${queryString}`)
   }

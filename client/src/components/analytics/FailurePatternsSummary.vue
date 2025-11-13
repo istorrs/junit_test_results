@@ -63,22 +63,22 @@ import { useRouter } from 'vue-router'
 import Card from '../shared/Card.vue'
 import { apiClient } from '../../api/client'
 import type { FailurePattern } from '../../api/client'
+import { useTestDataStore } from '../../stores/testData'
 
 interface Props {
   days?: number
   limit?: number
   showTimeRange?: boolean
-  jobName?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
   days: 7,
   limit: 5,
-  showTimeRange: true,
-  jobName: undefined
+  showTimeRange: true
 })
 
 const router = useRouter()
+const store = useTestDataStore()
 
 const loading = ref(false)
 const error = ref<string | null>(null)
@@ -89,11 +89,14 @@ const loadFailurePatterns = async () => {
   error.value = null
 
   try {
-    const response = await apiClient.getFailurePatterns({
+    const params: any = {
       days: props.days,
-      limit: props.limit,
-      job_name: props.jobName
-    })
+      limit: props.limit
+    }
+    if (store.globalProjectFilter) {
+      params.job_name = store.globalProjectFilter
+    }
+    const response = await apiClient.getFailurePatterns(params)
     patterns.value = response.patterns
   } catch (err) {
     error.value = 'Failed to load failure patterns'
@@ -103,8 +106,8 @@ const loadFailurePatterns = async () => {
   }
 }
 
-// Reload when jobName changes
-watch(() => props.jobName, () => {
+// Watch for global project filter changes and reload
+watch(() => store.globalProjectFilter, () => {
   loadFailurePatterns()
 })
 

@@ -103,7 +103,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useTestDataStore } from '../stores/testData'
 import { formatDuration, getStatusIcon, truncateText } from '../utils/formatters'
@@ -176,7 +176,13 @@ const clearFilters = () => {
 
 const loadData = async () => {
   try {
-    const filters = route.query.run_id ? { run_id: route.query.run_id as string } : {}
+    const filters: any = route.query.run_id ? { run_id: route.query.run_id as string } : {}
+
+    // Apply global project filter if set
+    if (store.globalProjectFilter) {
+      filters.job_name = store.globalProjectFilter
+    }
+
     console.log('[TestCases] Loading with filters:', filters)
     const response = await store.fetchCases(filters)
     console.log('[TestCases] Loaded cases:', store.cases.length, 'cases from API')
@@ -185,6 +191,11 @@ const loadData = async () => {
     console.error('Failed to load test cases:', error)
   }
 }
+
+// Watch for global project filter changes and reload data
+watch(() => store.globalProjectFilter, () => {
+  loadData()
+})
 
 const handleRowClick = (row: any) => {
   selectedTest.value = row

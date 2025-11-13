@@ -35,16 +35,6 @@
           </div>
 
           <div class="filter-group">
-            <label>Project/Job</label>
-            <select v-model="selectedProject" class="filter-select">
-              <option value="">All Projects</option>
-              <option v-for="project in projects" :key="project" :value="project">
-                {{ project }}
-              </option>
-            </select>
-          </div>
-
-          <div class="filter-group">
             <label>Status</label>
             <select v-model="selectedStatus" class="filter-select">
               <option value="">All</option>
@@ -177,7 +167,6 @@ const router = useRouter()
 const store = useTestDataStore()
 
 const searchQuery = ref('')
-const selectedProject = ref('')
 const selectedStatus = ref('')
 const dateFrom = ref('')
 const dateTo = ref('')
@@ -194,16 +183,6 @@ const columns = [
   { key: 'rate', label: 'Success Rate', sortable: true },
 ]
 
-const projects = computed(() => {
-  const uniqueProjects = new Set<string>()
-  store.runs.forEach(run => {
-    if (run.ci_metadata?.job_name) {
-      uniqueProjects.add(run.ci_metadata.job_name)
-    }
-  })
-  return Array.from(uniqueProjects).sort()
-})
-
 const filteredRuns = computed(() => {
   let filtered = [...store.runs]
 
@@ -218,11 +197,6 @@ const filteredRuns = computed(() => {
         run.id?.toLowerCase().includes(query)
       )
     })
-  }
-
-  // Project filter
-  if (selectedProject.value) {
-    filtered = filtered.filter(run => run.ci_metadata?.job_name === selectedProject.value)
   }
 
   // Status filter
@@ -256,7 +230,6 @@ const filteredRuns = computed(() => {
 const hasActiveFilters = computed(() => {
   return !!(
     searchQuery.value ||
-    selectedProject.value ||
     selectedStatus.value ||
     dateFrom.value ||
     dateTo.value
@@ -277,7 +250,6 @@ const getSuccessRateClass = (rate: number): string => {
 
 const clearFilters = () => {
   searchQuery.value = ''
-  selectedProject.value = ''
   selectedStatus.value = ''
   dateFrom.value = ''
   dateTo.value = ''
@@ -341,7 +313,11 @@ const handleReleaseTagged = () => {
 
 const loadData = async () => {
   try {
-    await store.fetchRuns({ limit: 100 })
+    const filters: any = { limit: 100 }
+    if (store.globalProjectFilter) {
+      filters.job_name = store.globalProjectFilter
+    }
+    await store.fetchRuns(filters)
   } catch (error) {
     console.error('Failed to load test runs:', error)
   }
@@ -352,6 +328,11 @@ watch(someRunsSelected, (value) => {
   if (selectAllCheckbox.value) {
     selectAllCheckbox.value.indeterminate = value
   }
+})
+
+// Watch for global project filter changes and reload data
+watch(() => store.globalProjectFilter, () => {
+  loadData()
 })
 
 onMounted(() => {

@@ -12,10 +12,20 @@ export const useTestDataStore = defineStore('testData', () => {
   const projects = ref<string[]>([])
   const loading = ref(false)
   const error = ref<string | null>(null)
+  const globalProjectFilter = ref<string>('')
 
   // Computed
   const hasData = computed(() => runs.value.length > 0 || cases.value.length > 0)
   const latestRun = computed(() => (runs.value.length > 0 ? runs.value[0] : null))
+  const availableProjects = computed(() => {
+    const uniqueProjects = new Set<string>()
+    runs.value.forEach(run => {
+      if (run.ci_metadata?.job_name) {
+        uniqueProjects.add(run.ci_metadata.job_name)
+      }
+    })
+    return Array.from(uniqueProjects).sort()
+  })
 
   // Actions
   async function fetchProjects() {
@@ -99,6 +109,10 @@ export const useTestDataStore = defineStore('testData', () => {
     error.value = null
   }
 
+  function setGlobalProjectFilter(projectName: string) {
+    globalProjectFilter.value = projectName
+  }
+
   function reset() {
     runs.value = []
     currentRun.value = null
@@ -107,6 +121,7 @@ export const useTestDataStore = defineStore('testData', () => {
     projects.value = []
     loading.value = false
     error.value = null
+    globalProjectFilter.value = ''
   }
 
   return {
@@ -118,9 +133,11 @@ export const useTestDataStore = defineStore('testData', () => {
     projects,
     loading,
     error,
+    globalProjectFilter,
     // Computed
     hasData,
     latestRun,
+    availableProjects,
     // Actions
     fetchProjects,
     fetchRuns,
@@ -129,6 +146,7 @@ export const useTestDataStore = defineStore('testData', () => {
     uploadFile,
     setCurrentRun,
     clearError,
+    setGlobalProjectFilter,
     reset,
   }
 })

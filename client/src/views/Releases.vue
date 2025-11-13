@@ -119,11 +119,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { apiClient } from '../api/client'
 import type { Release, ReleaseComparisonResponse } from '../api/client'
 import Card from '../components/shared/Card.vue'
+import { useTestDataStore } from '../stores/testData'
 
+const store = useTestDataStore()
 const releases = ref<Release[]>([])
 const selectedRelease1 = ref('')
 const selectedRelease2 = ref('')
@@ -131,14 +133,31 @@ const comparison = ref<ReleaseComparisonResponse | null>(null)
 const loading = ref(false)
 const error = ref('')
 
-onMounted(async () => {
+const loadReleases = async () => {
   try {
-    const data = await apiClient.getReleases({ limit: 100 })
+    const params: any = { limit: 100 }
+    if (store.globalProjectFilter) {
+      params.job_name = store.globalProjectFilter
+    }
+    const data = await apiClient.getReleases(params)
     releases.value = data.releases
   } catch (err) {
     error.value = 'Failed to load releases'
     console.error(err)
   }
+}
+
+// Watch for global project filter changes and reload releases
+watch(() => store.globalProjectFilter, () => {
+  loadReleases()
+  // Clear selections when filter changes
+  selectedRelease1.value = ''
+  selectedRelease2.value = ''
+  comparison.value = null
+})
+
+onMounted(() => {
+  loadReleases()
 })
 
 const compareReleases = async () => {

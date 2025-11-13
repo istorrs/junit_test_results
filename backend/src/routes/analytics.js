@@ -155,9 +155,7 @@ router.get('/flaky-tests', async (req, res, next) => {
                     },
                     statuses: { $push: '$status' }
                 }
-            });
-
-        aggregatePipeline.push(
+            },
             {
                 $match: {
                     total_runs: { $gte: minRuns },
@@ -217,7 +215,8 @@ router.get('/flaky-tests', async (req, res, next) => {
                     recent_runs: '$total_runs',
                     recent_failures: '$failed_runs'
                 }
-            });
+            }
+        );
 
         const flakyTests = await TestCase.aggregate(aggregatePipeline);
 
