@@ -135,6 +135,7 @@
 
         <FlakyTestsWidget
           :limit="5"
+          :job-name="selectedProject"
           class="chart-card"
         />
       </div>
@@ -144,6 +145,7 @@
         :days="7"
         :limit="5"
         :show-time-range="true"
+        :job-name="selectedProject"
       />
 
       <!-- Quick Actions -->

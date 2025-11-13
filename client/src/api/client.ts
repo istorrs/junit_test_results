@@ -501,13 +501,18 @@ class ApiClient {
     return this.request<FlakinessData>(`/cases/${testId}/flakiness`)
   }
 
-  async getFailurePatterns(params?: { days?: number; limit?: number }): Promise<FailurePatternsResponse> {
+  async getFailurePatterns(params?: { days?: number; limit?: number; job_name?: string }): Promise<FailurePatternsResponse> {
     const queryString = this.buildQueryString(params || {})
     return this.request<FailurePatternsResponse>(`/analytics/failure-patterns${queryString}`)
   }
 
-  async getFlakyTests(limit: number = 100): Promise<FlakyTestsResponse> {
-    return this.request<FlakyTestsResponse>(`/analytics/flaky-tests?limit=${limit}`)
+  async getFlakyTests(limit: number = 100, job_name?: string): Promise<FlakyTestsResponse> {
+    const params: any = { limit }
+    if (job_name) {
+      params.job_name = job_name
+    }
+    const queryString = this.buildQueryString(params)
+    return this.request<FlakyTestsResponse>(`/analytics/flaky-tests${queryString}`)
   }
 
   // Tier 2: Release Comparison
