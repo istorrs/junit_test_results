@@ -24,6 +24,20 @@ router.get('/overview', async (req, res, next) => {
             runQuery.created_at = { ...runQuery.created_at, $lte: new Date(req.query.to_date) };
         }
 
+        // Filter by job_name (project)
+        if (req.query.job_name) {
+            runQuery['ci_metadata.job_name'] = req.query.job_name;
+
+            // Get all runs with this job_name
+            const runs = await TestRun.find(runQuery).select('_id');
+            const runIds = runs.map(r => r._id);
+
+            // Filter test cases to only these runs
+            query.run_id = { $in: runIds };
+
+            logger.info(`Filtering by job_name: ${req.query.job_name}, found ${runIds.length} runs`);
+        }
+
         logger.info(`Query for test cases: ${JSON.stringify(query)}`);
         const totalRuns = await TestRun.countDocuments(runQuery);
         const cases = await TestCase.find(query);

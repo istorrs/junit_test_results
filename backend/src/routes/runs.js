@@ -252,4 +252,55 @@ router.get('/:id1/compare/:id2', async (req, res, next) => {
     }
 });
 
+// PATCH /api/v1/runs/batch - Bulk update test runs (for release tagging)
+router.patch('/batch', async (req, res, next) => {
+    try {
+        const { run_ids, release_tag, release_version } = req.body;
+
+        // Validation
+        if (!run_ids || !Array.isArray(run_ids) || run_ids.length === 0) {
+            return res.status(400).json({
+                success: false,
+                error: 'run_ids array is required and must not be empty'
+            });
+        }
+
+        if (!release_tag && !release_version) {
+            return res.status(400).json({
+                success: false,
+                error: 'At least one of release_tag or release_version must be provided'
+            });
+        }
+
+        // Build update object
+        const updateFields = {};
+        if (release_tag !== undefined) {
+            updateFields.release_tag = release_tag;
+        }
+        if (release_version !== undefined) {
+            updateFields.release_version = release_version;
+        }
+
+        // Convert string IDs to ObjectIds
+        const objectIds = run_ids.map(id => new mongoose.Types.ObjectId(id));
+
+        // Update all runs
+        const result = await TestRun.updateMany(
+            { _id: { $in: objectIds } },
+            { $set: updateFields }
+        );
+
+        res.json({
+            success: true,
+            data: {
+                matched_count: result.matchedCount,
+                modified_count: result.modifiedCount,
+                updated_fields: updateFields
+            }
+        });
+    } catch (error) {
+        next(error);
+    }
+});
+
 module.exports = router;

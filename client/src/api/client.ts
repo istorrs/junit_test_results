@@ -14,6 +14,7 @@ export interface StatsFilters {
   run_id?: string
   from_date?: string
   to_date?: string
+  job_name?: string
 }
 
 export interface TestCaseFilters extends PaginationParams {
@@ -418,6 +419,18 @@ class ApiClient {
   async getProjects(): Promise<string[]> {
     const response = await this.request<{ projects: string[] }>('/runs/projects')
     return response.projects
+  }
+
+  async batchUpdateRuns(runIds: string[], updates: { release_tag: string | null; release_version: string | null }): Promise<{ matched_count: number; modified_count: number }> {
+    const response = await this.request<any>('/runs/batch', {
+      method: 'PATCH',
+      body: JSON.stringify({
+        run_ids: runIds,
+        release_tag: updates.release_tag,
+        release_version: updates.release_version
+      })
+    })
+    return response
   }
 
   async getStats(filters: StatsFilters = {}): Promise<Stats> {

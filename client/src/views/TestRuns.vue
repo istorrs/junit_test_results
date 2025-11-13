@@ -3,6 +3,13 @@
     <div class="page-header">
       <h1>Test Runs</h1>
       <div class="header-actions">
+        <Button
+          v-if="selectedRuns.size > 0"
+          @click="openReleaseTagModal"
+          variant="primary"
+        >
+          Tag {{ selectedRuns.size }} Run{{ selectedRuns.size > 1 ? 's' : '' }} as Release
+        </Button>
         <Button @click="loadData" :loading="store.loading" variant="secondary">
           Refresh
         </Button>
@@ -80,6 +87,15 @@
         </div>
       </template>
 
+      <template #cell-select="{ row }">
+        <input
+          type="checkbox"
+          :checked="selectedRuns.has((row as any).id)"
+          @click.stop="toggleRunSelection((row as any).id)"
+          class="run-checkbox"
+        />
+      </template>
+
       <template #cell-name="{ row }">
         <div class="run-name">
           <strong>{{ (row as any).name || `Run ${(row as any).id?.slice(0, 8)}` }}</strong>
@@ -124,6 +140,13 @@
         <span v-else class="no-data">-</span>
       </template>
     </DataTable>
+
+    <ReleaseTagModal
+      :open="showReleaseModal"
+      :run-ids="Array.from(selectedRuns)"
+      @close="closeReleaseTagModal"
+      @success="handleReleaseTagged"
+    />
   </div>
 </template>
 
@@ -136,6 +159,7 @@ import type { TestRun } from '../api/client'
 import Button from '../components/shared/Button.vue'
 import DataTable from '../components/shared/DataTable.vue'
 import SearchInput from '../components/shared/SearchInput.vue'
+import ReleaseTagModal from '../components/modals/ReleaseTagModal.vue'
 
 const router = useRouter()
 const store = useTestDataStore()
@@ -145,8 +169,11 @@ const selectedProject = ref('')
 const selectedStatus = ref('')
 const dateFrom = ref('')
 const dateTo = ref('')
+const selectedRuns = ref<Set<string>>(new Set())
+const showReleaseModal = ref(false)
 
 const columns = [
+  { key: 'select', label: '', sortable: false },
   { key: 'name', label: 'Run Name', sortable: true },
   { key: 'timestamp', label: 'Date', sortable: true },
   { key: 'total', label: 'Total Tests', sortable: true },
@@ -246,6 +273,34 @@ const clearFilters = () => {
 const viewRunDetails = (run: TestRun) => {
   store.setCurrentRun(run)
   router.push(`/cases?run_id=${run.id}`)
+}
+
+const toggleRunSelection = (runId: string) => {
+  if (selectedRuns.value.has(runId)) {
+    selectedRuns.value.delete(runId)
+  } else {
+    selectedRuns.value.add(runId)
+  }
+  // Force reactivity
+  selectedRuns.value = new Set(selectedRuns.value)
+}
+
+const clearSelection = () => {
+  selectedRuns.value.clear()
+  selectedRuns.value = new Set()
+}
+
+const openReleaseTagModal = () => {
+  showReleaseModal.value = true
+}
+
+const closeReleaseTagModal = () => {
+  showReleaseModal.value = false
+}
+
+const handleReleaseTagged = () => {
+  clearSelection()
+  loadData()
 }
 
 const loadData = async () => {
@@ -419,5 +474,16 @@ h1 {
 .no-data {
   color: var(--text-tertiary);
   font-size: 0.875rem;
+}
+
+.run-checkbox {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: var(--primary-color);
+}
+
+.run-checkbox:hover {
+  transform: scale(1.1);
 }
 </style>

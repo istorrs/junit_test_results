@@ -7,7 +7,7 @@ const FileUpload = require('../models/FileUpload');
 const { generateHash } = require('./hashGenerator');
 const logger = require('../utils/logger');
 
-const parseJUnitXML = async (xmlContent, filename, ciMetadata = null, uploaderInfo = {}) => {
+const parseJUnitXML = async (xmlContent, filename, ciMetadata = null, uploaderInfo = {}, releaseMetadata = {}) => {
     try {
         const parser = new xml2js.Parser({
             explicitArray: false,
@@ -137,7 +137,9 @@ const parseJUnitXML = async (xmlContent, filename, ciMetadata = null, uploaderIn
                     skipped: 0,
                     file_upload_id: fileUpload._id,
                     source: 'ci_cd',
-                    ci_metadata: ciMetadata
+                    ci_metadata: ciMetadata,
+                    release_tag: releaseMetadata.release_tag || null,
+                    release_version: releaseMetadata.release_version || null
                 });
 
                 logger.info('Created new test run from CI metadata', {
@@ -164,7 +166,9 @@ const parseJUnitXML = async (xmlContent, filename, ciMetadata = null, uploaderIn
                 file_upload_id: fileUpload._id,
                 content_hash: contentHash,
                 source: 'api',
-                ci_metadata: null
+                ci_metadata: null,
+                release_tag: releaseMetadata.release_tag || null,
+                release_version: releaseMetadata.release_version || null
             });
 
             logger.info('Created test run without CI metadata', {

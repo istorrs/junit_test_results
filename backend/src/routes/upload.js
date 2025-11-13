@@ -47,6 +47,16 @@ router.post('/', upload.single('file'), validateUpload, async (req, res, next) =
             logger.info('No CI metadata in request', { filename });
         }
 
+        // Parse release metadata from request body
+        const releaseMetadata = {
+            release_tag: req.body.release_tag || null,
+            release_version: req.body.release_version || null
+        };
+
+        if (releaseMetadata.release_tag || releaseMetadata.release_version) {
+            logger.info('Release metadata provided', releaseMetadata);
+        }
+
         // Uploader info
         const uploaderInfo = {
             ip: req.ip,
@@ -55,7 +65,7 @@ router.post('/', upload.single('file'), validateUpload, async (req, res, next) =
         };
 
         // Parse and store
-        const result = await parseJUnitXML(xmlContent, filename, ciMetadata, uploaderInfo);
+        const result = await parseJUnitXML(xmlContent, filename, ciMetadata, uploaderInfo, releaseMetadata);
 
         if (!result.success) {
             return res.status(409).json(result);
@@ -100,6 +110,11 @@ router.post(
                                 : req.body.ci_metadata;
                     }
 
+                    const releaseMetadata = {
+                        release_tag: req.body.release_tag || null,
+                        release_version: req.body.release_version || null
+                    };
+
                     const uploaderInfo = {
                         ip: req.ip,
                         user_agent: req.headers['user-agent'],
@@ -110,7 +125,8 @@ router.post(
                         xmlContent,
                         filename,
                         ciMetadata,
-                        uploaderInfo
+                        uploaderInfo,
+                        releaseMetadata
                     );
 
                     results.push({
