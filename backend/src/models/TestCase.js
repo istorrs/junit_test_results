@@ -15,6 +15,8 @@ const testCaseSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    class_name: String,
+    // Legacy field - keep for backwards compatibility but prefer class_name
     classname: String,
     time: {
         type: Number,
@@ -25,6 +27,9 @@ const testCaseSchema = new mongoose.Schema({
         enum: ['passed', 'failed', 'error', 'skipped'],
         required: true
     },
+    error_message: String,
+    error_type: String,
+    stack_trace: String,
     assertions: Number,
     file: String,
     line: Number,
@@ -40,7 +45,19 @@ const testCaseSchema = new mongoose.Schema({
         ref: 'FileUpload'
     }
 }, {
-    timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }
+    timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' },
+    toJSON: {
+        transform: (doc, ret) => {
+            ret.id = ret._id.toString()
+            delete ret._id
+            delete ret.__v
+            // Prefer class_name over classname
+            if (!ret.class_name && ret.classname) {
+                ret.class_name = ret.classname
+            }
+            return ret
+        }
+    }
 });
 
 module.exports = mongoose.model('TestCase', testCaseSchema);

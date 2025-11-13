@@ -128,8 +128,11 @@ const parseJUnitXML = async (xmlContent, filename, ciMetadata = null, uploaderIn
                     name: testRunName,
                     timestamp,
                     time: 0, // Will be calculated from test cases
-                    tests: 0, // Will be calculated from test cases
-                    failures: 0,
+                    total_tests: 0, // Will be calculated from test cases
+                    tests: 0, // Legacy field for backwards compatibility
+                    passed: 0,
+                    failed: 0,
+                    failures: 0, // Legacy field for backwards compatibility
                     errors: 0,
                     skipped: 0,
                     file_upload_id: fileUpload._id,
@@ -151,8 +154,11 @@ const parseJUnitXML = async (xmlContent, filename, ciMetadata = null, uploaderIn
                 name: suiteElement.name || filename,
                 timestamp,
                 time: 0, // Will be calculated from test cases
-                tests: 0,
-                failures: 0,
+                total_tests: 0,
+                tests: 0, // Legacy field for backwards compatibility
+                passed: 0,
+                failed: 0,
+                failures: 0, // Legacy field for backwards compatibility
                 errors: 0,
                 skipped: 0,
                 file_upload_id: fileUpload._id,
@@ -212,11 +218,15 @@ const processTestSuite = async (suiteData, runId, fileUploadId, testRunTimestamp
     const testSuite = await TestSuite.create({
         run_id: runId,
         name: suiteData.name || 'Unnamed Suite',
-        classname: suiteData.classname || '',
+        package_name: suiteData.classname || suiteData.package || '',
+        classname: suiteData.classname || '', // Legacy field
         timestamp: suiteTimestamp,
         time: parseFloat(suiteData.time || 0),
-        tests: parseInt(suiteData.tests || 0),
-        failures: parseInt(suiteData.failures || 0),
+        total_tests: parseInt(suiteData.tests || 0),
+        tests: parseInt(suiteData.tests || 0), // Legacy field
+        passed: 0, // Will be calculated from test cases
+        failed: parseInt(suiteData.failures || 0),
+        failures: parseInt(suiteData.failures || 0), // Legacy field
         errors: parseInt(suiteData.errors || 0),
         skipped: parseInt(suiteData.skipped || 0),
         hostname: suiteData.hostname || '',
@@ -389,9 +399,13 @@ const processTestCase = async (caseData, suiteId, runId, fileUploadId, testStart
         suite_id: suiteId,
         run_id: runId,
         name: caseData.name || 'Unnamed Test',
-        classname: caseData.classname || '',
+        class_name: caseData.classname || '',
+        classname: caseData.classname || '', // Legacy field
         time: parseFloat(caseData.time || 0),
         status,
+        error_message: errorMessage,
+        error_type: errorType,
+        stack_trace: stackTrace,
         assertions: parseInt(caseData.assertions || 0),
         file: caseData.file || '',
         line: parseInt(caseData.line || 0),
@@ -421,14 +435,20 @@ const processTestCase = async (caseData, suiteId, runId, fileUploadId, testStart
 
 const calculateStats = async runId => {
     const cases = await TestCase.find({ run_id: runId });
+    const passed = cases.filter(c => c.status === 'passed').length;
+    const failed = cases.filter(c => c.status === 'failed').length;
 
     return {
-        tests: cases.length,
-        passed: cases.filter(c => c.status === 'passed').length,
-        failures: cases.filter(c => c.status === 'failed').length,
+        // Standard field names
+        total_tests: cases.length,
+        passed,
+        failed,
         errors: cases.filter(c => c.status === 'error').length,
         skipped: cases.filter(c => c.status === 'skipped').length,
-        time: cases.reduce((sum, c) => sum + c.time, 0)
+        time: cases.reduce((sum, c) => sum + c.time, 0),
+        // Legacy field names for backwards compatibility
+        tests: cases.length,
+        failures: failed
     };
 };
 
