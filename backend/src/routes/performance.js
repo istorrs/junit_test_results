@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const TestCase = require('../models/TestCase');
 const TestRun = require('../models/TestRun');
+const _ = require('lodash');
 
 /**
  * GET /api/v1/performance/trends
@@ -25,7 +26,7 @@ router.get('/trends', async (req, res) => {
         }
 
         if (className) {
-            matchCondition.class_name = new RegExp(className, 'i');
+            matchCondition.class_name = new RegExp(_.escapeRegExp(className), 'i');
         }
 
         // Group by time period based on granularity
