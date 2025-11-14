@@ -237,6 +237,7 @@ export interface RunSummary {
 
 export interface TestDiff {
   test_id: string
+  test_case_id?: string // Actual MongoDB ID for fetching full test case details
   test_name: string
   class_name: string
   status_before?: string
@@ -247,6 +248,8 @@ export interface TestDiff {
   time_diff_percent?: number
   error_message?: string
   error_type?: string
+  status?: string // For new/removed tests
+  time?: number // For new/removed tests
 }
 
 export interface RunComparisonSummary {
