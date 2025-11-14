@@ -192,6 +192,17 @@
                   <span class="code-value">{{ ciMetadata.branch || 'N/A' }}</span>
                 </div>
               </div>
+
+              <!-- Test Run Properties (from JUnit XML) -->
+              <div v-if="runProperties && Object.keys(runProperties).length > 0" class="properties-section">
+                <h3>Test Run Properties</h3>
+                <div class="metadata-grid">
+                  <div v-for="(value, key) in runProperties" :key="key" class="metadata-item">
+                    <label>{{ key }}</label>
+                    <span class="code-value">{{ value }}</span>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -248,6 +259,7 @@ interface Props {
   className?: string
   lastRun?: string
   ciMetadata?: Record<string, any>
+  runProperties?: Record<string, any>
   systemOut?: string
   systemErr?: string
 }
@@ -763,6 +775,19 @@ const copyErrorToClipboard = () => {
 }
 
 .metadata-section h3 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+  color: var(--text-primary);
+}
+
+.properties-section {
+  margin-top: 2rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.properties-section h3 {
   font-size: 1.125rem;
   font-weight: 600;
   margin-bottom: 1.5rem;

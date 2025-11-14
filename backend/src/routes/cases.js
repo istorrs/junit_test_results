@@ -75,7 +75,8 @@ router.get('/', async (req, res, next) => {
                     timestamp: '$run.timestamp',
                     run_name: '$run.name',
                     run_source: '$run.source',
-                    run_ci_metadata: '$run.ci_metadata'
+                    run_ci_metadata: '$run.ci_metadata',
+                    run_properties: '$run.properties'
                 }
             }
         ];
