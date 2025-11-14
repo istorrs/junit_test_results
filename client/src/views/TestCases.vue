@@ -202,10 +202,11 @@ const handleRowClick = (row: any) => {
     id: row.id,
     name: row.name,
     class_name: row.class_name,
+    suite_id: row.suite_id,
     run_id: row.run_id,
     run_name: row.run_name,
-    has_run_properties: !!row.run_properties,
-    run_properties_keys: row.run_properties ? Object.keys(row.run_properties) : null
+    has_suite_properties: !!row.suite_properties,
+    suite_properties_keys: row.suite_properties ? Object.keys(row.suite_properties) : null
   })
   selectedTest.value = row
   modalOpen.value = true
