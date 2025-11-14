@@ -72,7 +72,6 @@ export interface TestCase {
   is_flaky?: boolean
   flaky_detected_at?: string
   file_upload_id?: string
-  suite_id?: string
   timestamp?: string
   run_name?: string
   run_source?: string
