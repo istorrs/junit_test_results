@@ -304,12 +304,16 @@ const statusClass = computed(() => {
 // Convert ANSI codes to HTML for colored output
 const systemOutHtml = computed(() => {
   if (!props.systemOut) return ''
-  return ansiConverter.toHtml(props.systemOut)
+  // Replace literal #x1B with actual ESC character (\x1B)
+  const withRealEscapes = props.systemOut.replace(/#x1B/g, '\x1B')
+  return ansiConverter.toHtml(withRealEscapes)
 })
 
 const systemErrHtml = computed(() => {
   if (!props.systemErr) return ''
-  return ansiConverter.toHtml(props.systemErr)
+  // Replace literal #x1B with actual ESC character (\x1B)
+  const withRealEscapes = props.systemErr.replace(/#x1B/g, '\x1B')
+  return ansiConverter.toHtml(withRealEscapes)
 })
 
 // Fetch additional data when modal opens
