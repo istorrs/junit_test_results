@@ -91,17 +91,22 @@ const testRunSchema = new mongoose.Schema(
             {
                 type: String
             }
-        ]
+        ],
+        // JUnit XML properties - free-form metadata
+        properties: {
+            type: mongoose.Schema.Types.Mixed,
+            default: {}
+        }
     },
     {
         timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' },
         toJSON: {
             virtuals: true,
             transform: (doc, ret) => {
-                ret.id = ret._id.toString()
-                delete ret._id
-                delete ret.__v
-                return ret
+                ret.id = ret._id.toString();
+                delete ret._id;
+                delete ret.__v;
+                return ret;
             }
         },
         toObject: { virtuals: true }

@@ -1,4 +1,5 @@
 const express = require('express');
+const { MAX_QUERY_LIMIT, DEFAULT_QUERY_LIMIT } = require('../config/constants');
 const router = express.Router();
 const TestRun = require('../models/TestRun');
 
@@ -8,7 +9,7 @@ const TestRun = require('../models/TestRun');
  */
 router.get('/', async (req, res) => {
     try {
-        const { limit = 500, skip = 0, job_name } = req.query;
+        const { limit = DEFAULT_QUERY_LIMIT, skip = 0, job_name } = req.query;
 
         // Build match criteria
         const matchCriteria = {
@@ -190,7 +191,7 @@ router.get('/compare', async (req, res) => {
 router.get('/:tag/runs', async (req, res) => {
     try {
         const { tag } = req.params;
-        const { limit = 500, skip = 0 } = req.query;
+        const { limit = DEFAULT_QUERY_LIMIT, skip = 0 } = req.query;
 
         const runs = await TestRun.find({ release_tag: tag })
             .sort({ timestamp: -1 })

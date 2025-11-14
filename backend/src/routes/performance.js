@@ -1,4 +1,5 @@
 const express = require('express');
+const { MAX_QUERY_LIMIT, DEFAULT_QUERY_LIMIT } = require('../config/constants');
 const router = express.Router();
 const TestCase = require('../models/TestCase');
 const TestRun = require('../models/TestRun');
@@ -100,7 +101,7 @@ router.get('/trends', async (req, res) => {
  */
 router.get('/slowest', async (req, res) => {
     try {
-        const { limit = 100, days = 7, threshold = 0 } = req.query;
+        const { limit = DEFAULT_QUERY_LIMIT, days = 7, threshold = 0 } = req.query;
 
         const cutoffDate = new Date();
         cutoffDate.setDate(cutoffDate.getDate() - parseInt(days));
@@ -246,7 +247,7 @@ router.get('/regressions', async (req, res) => {
                 }
             },
             { $sort: { percent_increase: -1 } },
-            { $limit: 50 }
+            { $limit: MAX_QUERY_LIMIT }
         ]);
 
         res.json({

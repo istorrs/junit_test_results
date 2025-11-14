@@ -6,6 +6,7 @@ const TestSuite = require('../models/TestSuite');
 const TestCase = require('../models/TestCase');
 const TestResult = require('../models/TestResult');
 const logger = require('../utils/logger');
+const { MAX_QUERY_LIMIT, DEFAULT_QUERY_LIMIT } = require('../config/constants');
 
 // GET /api/v1/runs/projects - Get all unique job names (projects)
 router.get('/projects', async (req, res, next) => {
@@ -28,7 +29,7 @@ router.get('/projects', async (req, res, next) => {
 router.get('/', async (req, res, next) => {
     try {
         const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 500;
+        const limit = Math.min(parseInt(req.query.limit) || DEFAULT_QUERY_LIMIT, MAX_QUERY_LIMIT);
         const skip = (page - 1) * limit;
 
         const query = {};

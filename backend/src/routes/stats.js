@@ -4,6 +4,7 @@ const mongoose = require('mongoose');
 const TestRun = require('../models/TestRun');
 const TestCase = require('../models/TestCase');
 const logger = require('../utils/logger');
+const { MAX_QUERY_LIMIT, DEFAULT_QUERY_LIMIT } = require('../config/constants');
 
 // GET /api/v1/stats/overview - Get overall statistics
 router.get('/overview', async (req, res, next) => {
@@ -35,7 +36,9 @@ router.get('/overview', async (req, res, next) => {
             // Filter test cases to only these runs
             query.run_id = { $in: runIds };
 
-            logger.info(`Filtering by job_name: ${req.query.job_name}, found ${runIds.length} runs`);
+            logger.info(
+                `Filtering by job_name: ${req.query.job_name}, found ${runIds.length} runs`
+            );
         }
 
         logger.info(`Query for test cases: ${JSON.stringify(query)}`);
@@ -207,7 +210,7 @@ router.get('/performance-regressions', async (req, res, next) => {
 // GET /api/v1/stats/slowest-tests - Get slowest tests
 router.get('/slowest-tests', async (req, res, next) => {
     try {
-        const limit = parseInt(req.query.limit) || 100;
+        const limit = Math.min(parseInt(req.query.limit) || DEFAULT_QUERY_LIMIT, MAX_QUERY_LIMIT);
 
         const slowestTests = await TestCase.aggregate([
             {

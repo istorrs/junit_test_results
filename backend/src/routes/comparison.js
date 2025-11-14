@@ -1,4 +1,5 @@
 const express = require('express');
+const { MAX_QUERY_LIMIT, DEFAULT_QUERY_LIMIT } = require('../config/constants');
 const router = express.Router();
 const TestRun = require('../models/TestRun');
 const TestCase = require('../models/TestCase');
@@ -145,7 +146,10 @@ router.get('/runs', async (req, res) => {
                 failed,
                 errors,
                 skipped,
-                pass_rate: total_tests > 0 ? ((total_tests - failed - errors - skipped) / total_tests) * 100 : 0
+                pass_rate:
+                    total_tests > 0
+                        ? ((total_tests - failed - errors - skipped) / total_tests) * 100
+                        : 0
             };
         };
 
@@ -214,7 +218,7 @@ router.get('/runs', async (req, res) => {
 router.get('/test/:testId', async (req, res) => {
     try {
         const { testId } = req.params;
-        const { limit = 500, days = 30 } = req.query;
+        const { limit = DEFAULT_QUERY_LIMIT, days = 30 } = req.query;
 
         const cutoffDate = new Date();
         cutoffDate.setDate(cutoffDate.getDate() - parseInt(days));

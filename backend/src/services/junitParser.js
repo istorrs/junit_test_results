@@ -7,7 +7,53 @@ const FileUpload = require('../models/FileUpload');
 const { generateHash } = require('./hashGenerator');
 const logger = require('../utils/logger');
 
-const parseJUnitXML = async (xmlContent, filename, ciMetadata = null, uploaderInfo = {}, releaseMetadata = {}) => {
+/**
+ * Extract properties from JUnit XML element
+ * Properties are stored as key-value pairs in <properties><property name="key" value="val"/></properties>
+ */
+const extractProperties = element => {
+    const properties = {};
+
+    if (!element.properties) {
+        return properties;
+    }
+
+    // Handle properties array structure
+    const propertiesArray = Array.isArray(element.properties)
+        ? element.properties[0]
+        : element.properties;
+
+    if (!propertiesArray || !propertiesArray.property) {
+        return properties;
+    }
+
+    // Normalize to array
+    const propertyList = Array.isArray(propertiesArray.property)
+        ? propertiesArray.property
+        : [propertiesArray.property];
+
+    // Extract key-value pairs
+    propertyList.forEach(prop => {
+        if (prop.name) {
+            properties[prop.name] = prop.value || '';
+        }
+    });
+
+    logger.debug('Extracted properties', {
+        count: Object.keys(properties).length,
+        keys: Object.keys(properties)
+    });
+
+    return properties;
+};
+
+const parseJUnitXML = async (
+    xmlContent,
+    filename,
+    ciMetadata = null,
+    uploaderInfo = {},
+    releaseMetadata = {}
+) => {
     try {
         const parser = new xml2js.Parser({
             explicitArray: false,
@@ -60,6 +106,10 @@ const parseJUnitXML = async (xmlContent, filename, ciMetadata = null, uploaderIn
         if (!Array.isArray(testsuites)) {
             testsuites = [testsuites];
         }
+
+        // Extract properties from first testsuite element (typically contains test run level properties)
+        const suiteElement = testsuites[0];
+        const runProperties = extractProperties(suiteElement.testsuite || suiteElement);
 
         let testRun;
 
@@ -137,7 +187,8 @@ const parseJUnitXML = async (xmlContent, filename, ciMetadata = null, uploaderIn
                     source: 'ci_cd',
                     ci_metadata: ciMetadata,
                     release_tag: releaseMetadata.release_tag || null,
-                    release_version: releaseMetadata.release_version || null
+                    release_version: releaseMetadata.release_version || null,
+                    properties: runProperties
                 });
 
                 logger.info('Created new test run from CI metadata', {
@@ -164,7 +215,8 @@ const parseJUnitXML = async (xmlContent, filename, ciMetadata = null, uploaderIn
                 source: 'api',
                 ci_metadata: null,
                 release_tag: releaseMetadata.release_tag || null,
-                release_version: releaseMetadata.release_version || null
+                release_version: releaseMetadata.release_version || null,
+                properties: runProperties
             });
 
             logger.info('Created test run without CI metadata', {
@@ -215,6 +267,9 @@ const processTestSuite = async (suiteData, runId, fileUploadId, testRunTimestamp
     // Determine suite timestamp: use suite's own timestamp if available, otherwise use test run timestamp
     const suiteTimestamp = suiteData.timestamp ? new Date(suiteData.timestamp) : testRunTimestamp;
 
+    // Extract properties from suite element
+    const suiteProperties = extractProperties(suiteData);
+
     const testSuite = await TestSuite.create({
         run_id: runId,
         name: suiteData.name || 'Unnamed Suite',
@@ -227,7 +282,8 @@ const processTestSuite = async (suiteData, runId, fileUploadId, testRunTimestamp
         errors: parseInt(suiteData.errors || 0),
         skipped: parseInt(suiteData.skipped || 0),
         hostname: suiteData.hostname || '',
-        file_upload_id: fileUploadId
+        file_upload_id: fileUploadId,
+        properties: suiteProperties
     });
 
     // Process test cases

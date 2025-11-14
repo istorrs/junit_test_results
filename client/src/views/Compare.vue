@@ -279,6 +279,8 @@
       :error-message="selectedTest.error_message"
       :error-type="selectedTest.error_type"
       :class-name="selectedTest.class_name"
+      :system-out="selectedTest.system_out"
+      :system-err="selectedTest.system_err"
       @close="closeModal"
     />
   </div>

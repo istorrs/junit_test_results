@@ -3,12 +3,13 @@ const router = express.Router();
 const mongoose = require('mongoose');
 const TestCase = require('../models/TestCase');
 const TestResult = require('../models/TestResult');
+const { MAX_QUERY_LIMIT, DEFAULT_QUERY_LIMIT } = require('../config/constants');
 
 // GET /api/v1/cases - Get test cases with filtering
 router.get('/', async (req, res, next) => {
     try {
         const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 500;
+        const limit = Math.min(parseInt(req.query.limit) || DEFAULT_QUERY_LIMIT, MAX_QUERY_LIMIT);
         const skip = (page - 1) * limit;
 
         const matchQuery = {};
@@ -298,7 +299,7 @@ router.get('/:id/flakiness', async (req, res, next) => {
                 $sort: { 'run.timestamp': -1 }
             },
             {
-                $limit: 50 // Look at last 50 runs
+                $limit: MAX_QUERY_LIMIT // Look at all available runs
             },
             {
                 $group: {

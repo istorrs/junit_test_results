@@ -367,6 +367,9 @@ export interface PerformanceRegressionsResponse {
   }
 }
 
+// Import global constants
+import { DEFAULT_QUERY_LIMIT } from '../config/constants'
+
 export interface TestPerformanceHistoryResponse {
   test_name: string
   class_name: string
@@ -430,7 +433,7 @@ class ApiClient {
   async getRuns(filters: RunFilters = {}): Promise<RunsResponse> {
     const params = {
       page: filters.page || 1,
-      limit: filters.limit || 500,
+      limit: filters.limit || DEFAULT_QUERY_LIMIT,
       ...filters,
     }
 
@@ -471,7 +474,7 @@ class ApiClient {
   async getTestCases(filters: TestCaseFilters = {}): Promise<TestCasesResponse> {
     const params = {
       page: filters.page || 1,
-      limit: filters.limit || 500,
+      limit: filters.limit || DEFAULT_QUERY_LIMIT,
       ...filters,
     }
 

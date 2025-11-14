@@ -4,12 +4,13 @@ const mongoose = require('mongoose');
 const TestCase = require('../models/TestCase');
 const TestResult = require('../models/TestResult');
 const TestRun = require('../models/TestRun');
+const { MAX_QUERY_LIMIT, DEFAULT_QUERY_LIMIT } = require('../config/constants');
 
 // GET /api/v1/analytics/failure-patterns - Get common failure patterns across recent runs
 router.get('/failure-patterns', async (req, res, next) => {
     try {
         const days = parseInt(req.query.days) || 7;
-        const limit = parseInt(req.query.limit) || 100;
+        const limit = Math.min(parseInt(req.query.limit) || DEFAULT_QUERY_LIMIT, MAX_QUERY_LIMIT);
         const job_name = req.query.job_name;
 
         // Calculate date threshold
@@ -114,7 +115,7 @@ router.get('/failure-patterns', async (req, res, next) => {
 // GET /api/v1/analytics/flaky-tests - Get top flaky tests
 router.get('/flaky-tests', async (req, res, next) => {
     try {
-        const limit = parseInt(req.query.limit) || 100;
+        const limit = Math.min(parseInt(req.query.limit) || DEFAULT_QUERY_LIMIT, MAX_QUERY_LIMIT);
         const minRuns = parseInt(req.query.min_runs) || 5; // Minimum runs to be considered
         const job_name = req.query.job_name;
 
