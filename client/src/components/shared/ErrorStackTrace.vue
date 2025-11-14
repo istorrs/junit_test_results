@@ -105,11 +105,48 @@ const getLineClass = (line: string): string => {
 
 const copyToClipboard = () => {
   console.log('[ErrorStackTrace] copyToClipboard called, stackTrace length:', props.stackTrace?.length)
-  navigator.clipboard.writeText(props.stackTrace).then(() => {
-    console.log('[ErrorStackTrace] Stack trace copied to clipboard successfully')
-  }).catch(err => {
-    console.error('[ErrorStackTrace] Failed to copy stack trace to clipboard:', err)
-  })
+
+  // Check if Clipboard API is available
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(props.stackTrace).then(() => {
+      console.log('[ErrorStackTrace] Stack trace copied to clipboard successfully')
+      alert('Stack trace copied to clipboard!')
+    }).catch(err => {
+      console.error('[ErrorStackTrace] Failed to copy stack trace to clipboard:', err)
+      alert(`Failed to copy stack trace: ${err.message}`)
+    })
+  } else {
+    // Fallback for browsers/contexts where Clipboard API is not available
+    console.warn('[ErrorStackTrace] Clipboard API not available, using fallback')
+    fallbackCopyToClipboard()
+  }
+}
+
+const fallbackCopyToClipboard = () => {
+  const textArea = document.createElement('textarea')
+  textArea.value = props.stackTrace
+  textArea.style.position = 'fixed'
+  textArea.style.left = '-999999px'
+  textArea.style.top = '-999999px'
+  document.body.appendChild(textArea)
+  textArea.focus()
+  textArea.select()
+
+  try {
+    const successful = document.execCommand('copy')
+    if (successful) {
+      console.log('[ErrorStackTrace] Stack trace copied using fallback method')
+      alert('Stack trace copied to clipboard!')
+    } else {
+      console.error('[ErrorStackTrace] Fallback copy failed')
+      alert('Failed to copy stack trace')
+    }
+  } catch (err) {
+    console.error('[ErrorStackTrace] Fallback copy error:', err)
+    alert(`Failed to copy stack trace: ${err}`)
+  } finally {
+    document.body.removeChild(textArea)
+  }
 }
 </script>
 

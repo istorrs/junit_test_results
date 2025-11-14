@@ -376,11 +376,48 @@ const copyToClipboard = (text: string, label: string) => {
     console.warn('[TestDetailsModal] No text to copy')
     return
   }
-  navigator.clipboard.writeText(text).then(() => {
-    console.log(`[TestDetailsModal] ${label} copied to clipboard successfully`)
-  }).catch(err => {
-    console.error('[TestDetailsModal] Failed to copy to clipboard:', err)
-  })
+
+  // Check if Clipboard API is available
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(() => {
+      console.log(`[TestDetailsModal] ${label} copied to clipboard successfully`)
+      alert(`${label} copied to clipboard!`)
+    }).catch(err => {
+      console.error('[TestDetailsModal] Failed to copy to clipboard:', err)
+      alert(`Failed to copy ${label}: ${err.message}`)
+    })
+  } else {
+    // Fallback for browsers/contexts where Clipboard API is not available
+    console.warn('[TestDetailsModal] Clipboard API not available, using fallback')
+    fallbackCopyToClipboard(text, label)
+  }
+}
+
+const fallbackCopyToClipboard = (text: string, label: string) => {
+  const textArea = document.createElement('textarea')
+  textArea.value = text
+  textArea.style.position = 'fixed'
+  textArea.style.left = '-999999px'
+  textArea.style.top = '-999999px'
+  document.body.appendChild(textArea)
+  textArea.focus()
+  textArea.select()
+
+  try {
+    const successful = document.execCommand('copy')
+    if (successful) {
+      console.log(`[TestDetailsModal] ${label} copied using fallback method`)
+      alert(`${label} copied to clipboard!`)
+    } else {
+      console.error('[TestDetailsModal] Fallback copy failed')
+      alert(`Failed to copy ${label}`)
+    }
+  } catch (err) {
+    console.error('[TestDetailsModal] Fallback copy error:', err)
+    alert(`Failed to copy ${label}: ${err}`)
+  } finally {
+    document.body.removeChild(textArea)
+  }
 }
 
 const copyErrorToClipboard = () => {
@@ -396,11 +433,9 @@ const copyErrorToClipboard = () => {
   ].filter(Boolean).join('\n')
 
   console.log('[TestDetailsModal] Error text length:', text.length)
-  navigator.clipboard.writeText(text).then(() => {
-    console.log('[TestDetailsModal] Error details copied to clipboard successfully')
-  }).catch(err => {
-    console.error('[TestDetailsModal] Failed to copy error details to clipboard:', err)
-  })
+
+  // Use the same copyToClipboard function with fallback
+  copyToClipboard(text, 'Error details')
 }
 </script>
 
