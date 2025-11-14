@@ -153,7 +153,7 @@ router.get('/:id', async (req, res, next) => {
     try {
         console.log('[Cases API] GET /:id - Request ID:', req.params.id);
 
-        // Use aggregation to join with TestRun to get ci_metadata and properties
+        // Use aggregation to join with TestSuite (for suite properties) and TestRun (for ci_metadata)
         const pipeline = [
             { $match: { _id: new mongoose.Types.ObjectId(req.params.id) } },
             {
@@ -167,6 +167,20 @@ router.get('/:id', async (req, res, next) => {
             {
                 $unwind: {
                     path: '$result',
+                    preserveNullAndEmptyArrays: true
+                }
+            },
+            {
+                $lookup: {
+                    from: 'testsuites',
+                    localField: 'suite_id',
+                    foreignField: '_id',
+                    as: 'suite'
+                }
+            },
+            {
+                $unwind: {
+                    path: '$suite',
                     preserveNullAndEmptyArrays: true
                 }
             },
@@ -190,12 +204,13 @@ router.get('/:id', async (req, res, next) => {
                     run_name: '$run.name',
                     run_source: '$run.source',
                     run_ci_metadata: '$run.ci_metadata',
-                    run_properties: '$run.properties'
+                    suite_properties: '$suite.properties' // Get properties from TestSuite, not TestRun
                 }
             },
             {
                 $project: {
-                    run: 0 // Exclude the full run object
+                    run: 0, // Exclude the full run object
+                    suite: 0 // Exclude the full suite object
                 }
             }
         ];
@@ -208,11 +223,12 @@ router.get('/:id', async (req, res, next) => {
             console.log('[Cases API] GET /:id - Returned case ID:', cases[0]._id.toString());
             console.log('[Cases API] GET /:id - Test case name:', cases[0].name);
             console.log('[Cases API] GET /:id - Test case class:', cases[0].class_name);
+            console.log('[Cases API] GET /:id - Suite ID:', cases[0].suite_id?.toString());
             console.log('[Cases API] GET /:id - Run ID:', cases[0].run_id?.toString());
             console.log('[Cases API] GET /:id - Run name:', cases[0].run_name);
             console.log(
-                '[Cases API] GET /:id - Run properties:',
-                cases[0].run_properties ? JSON.stringify(cases[0].run_properties, null, 2) : 'null'
+                '[Cases API] GET /:id - Suite properties:',
+                cases[0].suite_properties ? JSON.stringify(cases[0].suite_properties, null, 2) : 'null'
             );
         }
 

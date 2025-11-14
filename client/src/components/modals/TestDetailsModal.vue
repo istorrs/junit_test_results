@@ -193,11 +193,11 @@
                 </div>
               </div>
 
-              <!-- Test Run Properties (from JUnit XML) -->
-              <div v-if="testCaseDetails?.run_properties && Object.keys(testCaseDetails.run_properties).length > 0" class="properties-section">
-                <h3>Test Run Properties</h3>
+              <!-- Test Suite Properties (from JUnit XML) -->
+              <div v-if="testCaseDetails?.suite_properties && Object.keys(testCaseDetails.suite_properties).length > 0" class="properties-section">
+                <h3>Test Suite Properties</h3>
                 <div class="properties-list">
-                  <div v-for="(value, key) in testCaseDetails.run_properties" :key="key" class="property-item">
+                  <div v-for="(value, key) in testCaseDetails.suite_properties" :key="key" class="property-item">
                     <label class="property-label">{{ key }}</label>
                     <span v-if="isUrl(value)" class="property-value">
                       <a :href="convertToHttpsUrl(value)" target="_blank" rel="noopener noreferrer" class="property-link">
@@ -373,10 +373,11 @@ const loadTestDetails = async () => {
       returned_id: details?.id,
       name: details?.name,
       class_name: details?.class_name,
+      suite_id: details?.suite_id,
       run_id: details?.run_id,
       run_name: details?.run_name,
-      run_properties: details?.run_properties ? details.run_properties : null,
-      run_properties_keys: details?.run_properties ? Object.keys(details.run_properties) : null
+      suite_properties: details?.suite_properties ? details.suite_properties : null,
+      suite_properties_keys: details?.suite_properties ? Object.keys(details.suite_properties) : null
     })
 
     testCaseDetails.value = details
