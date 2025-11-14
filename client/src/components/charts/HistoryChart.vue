@@ -27,6 +27,8 @@ const props = defineProps<Props>()
 
 const chartRef = ref<HTMLElement>()
 let chartInstance: echarts.ECharts | null = null
+let retryCount = 0
+let lastLoggedRetry = 0
 
 const hasData = computed(() => props.data && props.data.length > 0)
 
@@ -59,10 +61,22 @@ const initChart = () => {
   const containerHeight = chartRef.value.offsetHeight
 
   if (containerWidth === 0 || containerHeight === 0) {
-    console.warn('[HistoryChart] Container has no dimensions, delaying init')
-    setTimeout(() => initChart(), 100)
+    retryCount++
+    // Only log every 20 attempts (every 2 seconds) to avoid console spam
+    if (retryCount === 1 || retryCount - lastLoggedRetry >= 20) {
+      console.warn(`[HistoryChart] Container has no dimensions, delaying init (attempt ${retryCount})`)
+      lastLoggedRetry = retryCount
+    }
+    // Stop retrying after 100 attempts (10 seconds)
+    if (retryCount < 100) {
+      setTimeout(() => initChart(), 100)
+    }
     return
   }
+
+  // Reset retry counter on successful init
+  retryCount = 0
+  lastLoggedRetry = 0
 
   console.log('[HistoryChart] Initializing chart with container size:', containerWidth, 'x', containerHeight)
 
