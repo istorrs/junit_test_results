@@ -12,6 +12,8 @@ router.get('/', async (req, res, next) => {
         const limit = Math.min(parseInt(req.query.limit) || DEFAULT_QUERY_LIMIT, MAX_QUERY_LIMIT);
         const skip = (page - 1) * limit;
 
+        console.log('[Cases API] Query params:', { page, limit, skip, run_id: req.query.run_id });
+
         const matchQuery = {};
 
         // Filters
@@ -117,6 +119,8 @@ router.get('/', async (req, res, next) => {
 
         const cases = await TestCase.aggregate(pipeline);
 
+        console.log('[Cases API] Found cases:', cases.length);
+
         // Transform _id to id for each case
         const transformedCases = cases.map(testCase => ({
             ...testCase,
@@ -137,6 +141,7 @@ router.get('/', async (req, res, next) => {
             }
         });
     } catch (error) {
+        console.error('[Cases API] Error:', error);
         next(error);
     }
 });
