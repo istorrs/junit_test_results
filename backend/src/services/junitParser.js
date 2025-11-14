@@ -270,6 +270,12 @@ const processTestSuite = async (suiteData, runId, fileUploadId, testRunTimestamp
     // Extract properties from suite element
     const suiteProperties = extractProperties(suiteData);
 
+    logger.info('Processing test suite', {
+        suite_name: suiteData.name,
+        properties_count: Object.keys(suiteProperties).length,
+        properties_keys: Object.keys(suiteProperties).slice(0, 5) // First 5 keys for logging
+    });
+
     const testSuite = await TestSuite.create({
         run_id: runId,
         name: suiteData.name || 'Unnamed Suite',
