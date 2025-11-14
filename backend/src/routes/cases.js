@@ -202,14 +202,17 @@ router.get('/:id', async (req, res, next) => {
 
         const cases = await TestCase.aggregate(pipeline);
 
-        console.log('[Cases API] Found cases:', cases.length);
+        console.log('[Cases API] GET /:id - Found cases:', cases.length);
         if (cases.length > 0) {
-            console.log('[Cases API] Test case name:', cases[0].name);
-            console.log('[Cases API] Test case class:', cases[0].class_name);
-            console.log('[Cases API] Run ID:', cases[0].run_id);
+            console.log('[Cases API] GET /:id - Requested ID:', req.params.id);
+            console.log('[Cases API] GET /:id - Returned case ID:', cases[0]._id.toString());
+            console.log('[Cases API] GET /:id - Test case name:', cases[0].name);
+            console.log('[Cases API] GET /:id - Test case class:', cases[0].class_name);
+            console.log('[Cases API] GET /:id - Run ID:', cases[0].run_id?.toString());
+            console.log('[Cases API] GET /:id - Run name:', cases[0].run_name);
             console.log(
-                '[Cases API] Run properties keys:',
-                cases[0].run_properties ? Object.keys(cases[0].run_properties) : 'null'
+                '[Cases API] GET /:id - Run properties:',
+                cases[0].run_properties ? JSON.stringify(cases[0].run_properties, null, 2) : 'null'
             );
         }
 

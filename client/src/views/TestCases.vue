@@ -198,6 +198,15 @@ watch(() => store.globalProjectFilter, () => {
 })
 
 const handleRowClick = (row: any) => {
+  console.log('[TestCases] Row clicked:', {
+    id: row.id,
+    name: row.name,
+    class_name: row.class_name,
+    run_id: row.run_id,
+    run_name: row.run_name,
+    has_run_properties: !!row.run_properties,
+    run_properties_keys: row.run_properties ? Object.keys(row.run_properties) : null
+  })
   selectedTest.value = row
   modalOpen.value = true
 }
