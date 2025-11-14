@@ -359,15 +359,20 @@ const handleClose = () => {
 }
 
 const copyToClipboard = (text: string, label: string) => {
+  console.log('[TestDetailsModal] copyToClipboard called with:', { label, textLength: text?.length })
+  if (!text) {
+    console.warn('[TestDetailsModal] No text to copy')
+    return
+  }
   navigator.clipboard.writeText(text).then(() => {
-    // Could add a toast notification here
-    console.log(`${label} copied to clipboard`)
+    console.log(`[TestDetailsModal] ${label} copied to clipboard successfully`)
   }).catch(err => {
-    console.error('Failed to copy to clipboard:', err)
+    console.error('[TestDetailsModal] Failed to copy to clipboard:', err)
   })
 }
 
 const copyErrorToClipboard = () => {
+  console.log('[TestDetailsModal] copyErrorToClipboard called')
   const text = [
     `Test: ${props.testName}`,
     `Status: ${props.status}`,
@@ -378,7 +383,12 @@ const copyErrorToClipboard = () => {
     props.systemErr && `\nSystem Error:\n${props.systemErr}`
   ].filter(Boolean).join('\n')
 
-  navigator.clipboard.writeText(text)
+  console.log('[TestDetailsModal] Error text length:', text.length)
+  navigator.clipboard.writeText(text).then(() => {
+    console.log('[TestDetailsModal] Error details copied to clipboard successfully')
+  }).catch(err => {
+    console.error('[TestDetailsModal] Failed to copy error details to clipboard:', err)
+  })
 }
 </script>
 

@@ -104,7 +104,12 @@ const getLineClass = (line: string): string => {
 }
 
 const copyToClipboard = () => {
-  navigator.clipboard.writeText(props.stackTrace)
+  console.log('[ErrorStackTrace] copyToClipboard called, stackTrace length:', props.stackTrace?.length)
+  navigator.clipboard.writeText(props.stackTrace).then(() => {
+    console.log('[ErrorStackTrace] Stack trace copied to clipboard successfully')
+  }).catch(err => {
+    console.error('[ErrorStackTrace] Failed to copy stack trace to clipboard:', err)
+  })
 }
 </script>
 
