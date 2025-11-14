@@ -98,8 +98,6 @@
       :last-run="selectedTest?.timestamp"
       :ci-metadata="selectedTest?.run_ci_metadata"
       :run-properties="selectedTest?.run_properties"
-      :system-out="selectedTest?.system_out"
-      :system-err="selectedTest?.system_err"
       @close="closeModal"
     />
   </div>

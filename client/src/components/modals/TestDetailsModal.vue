@@ -260,8 +260,8 @@ interface Props {
   lastRun?: string
   ciMetadata?: Record<string, any>
   runProperties?: Record<string, any>
-  systemOut?: string
-  systemErr?: string
+  // Note: systemOut and systemErr are now loaded via API in loadTestDetails()
+  // rather than passed as props, to avoid fetching large data in the list view
 }
 
 const props = defineProps<Props>()
@@ -280,8 +280,8 @@ const historyData = ref<any[]>([])
 const testCaseDetails = ref<any>(null)
 
 const tabs = computed(() => {
-  const systemOut = testCaseDetails.value?.system_out || props.systemOut
-  const systemErr = testCaseDetails.value?.system_err || props.systemErr
+  const systemOut = testCaseDetails.value?.system_out
+  const systemErr = testCaseDetails.value?.system_err
 
   console.log('Computing tabs - systemOut:', !!systemOut, 'systemErr:', !!systemErr)
   const baseTabs = [
@@ -319,8 +319,7 @@ const statusClass = computed(() => {
 
 // Convert ANSI codes to HTML for colored output
 const systemOutHtml = computed(() => {
-  // Use test case details if available, otherwise fall back to props
-  const systemOut = testCaseDetails.value?.system_out || props.systemOut
+  const systemOut = testCaseDetails.value?.system_out
   if (!systemOut) return ''
   // Replace literal #x1B with actual ESC character (\x1B)
   const withRealEscapes = systemOut.replace(/#x1B/g, '\x1B')
@@ -328,8 +327,7 @@ const systemOutHtml = computed(() => {
 })
 
 const systemErrHtml = computed(() => {
-  // Use test case details if available, otherwise fall back to props
-  const systemErr = testCaseDetails.value?.system_err || props.systemErr
+  const systemErr = testCaseDetails.value?.system_err
   if (!systemErr) return ''
   // Replace literal #x1B with actual ESC character (\x1B)
   const withRealEscapes = systemErr.replace(/#x1B/g, '\x1B')
