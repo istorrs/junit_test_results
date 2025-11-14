@@ -61,12 +61,15 @@ router.get('/runs', async (req, res) => {
             if (!case1 && case2) {
                 newTests.push({
                     test_id: testId,
-                    test_case_id: case2._id, // Actual MongoDB ID for fetching full details
+                    test_case_id: case2._id.toString(), // Convert ObjectId to string
                     test_name: case2.name,
                     class_name: case2.class_name,
                     status: case2.status,
                     status_after: case2.status, // For consistency with other test results
-                    time: case2.time
+                    time: case2.time,
+                    error_message: case2.error_message,
+                    error_type: case2.error_type,
+                    stack_trace: case2.stack_trace
                 });
                 return;
             }
@@ -75,12 +78,15 @@ router.get('/runs', async (req, res) => {
             if (case1 && !case2) {
                 removedTests.push({
                     test_id: testId,
-                    test_case_id: case1._id, // Actual MongoDB ID for fetching full details
+                    test_case_id: case1._id.toString(), // Convert ObjectId to string
                     test_name: case1.name,
                     class_name: case1.class_name,
                     status: case1.status,
                     status_before: case1.status, // For consistency with other test results
-                    time: case1.time
+                    time: case1.time,
+                    error_message: case1.error_message,
+                    error_type: case1.error_type,
+                    stack_trace: case1.stack_trace
                 });
                 return;
             }
@@ -91,7 +97,7 @@ router.get('/runs', async (req, res) => {
 
             const testInfo = {
                 test_id: testId,
-                test_case_id: case2._id, // Actual MongoDB ID for fetching full details
+                test_case_id: case2._id.toString(), // Convert ObjectId to string
                 test_name: case2.name,
                 class_name: case2.class_name,
                 status_before: status1,
@@ -102,7 +108,8 @@ router.get('/runs', async (req, res) => {
                 time_diff_percent:
                     case1.time > 0
                         ? (((case2.time || 0) - (case1.time || 0)) / case1.time) * 100
-                        : 0
+                        : 0,
+                stack_trace: case2.stack_trace
             };
 
             // Helper to check if status is a failure
