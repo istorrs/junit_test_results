@@ -369,9 +369,14 @@ const loadTestDetails = async () => {
     ])
 
     console.log('[TestDetailsModal] Loaded details:', {
+      test_id: props.testId,
+      returned_id: details?.id,
       name: details?.name,
       class_name: details?.class_name,
-      run_properties: details?.run_properties ? Object.keys(details.run_properties) : null
+      run_id: details?.run_id,
+      run_name: details?.run_name,
+      run_properties: details?.run_properties ? details.run_properties : null,
+      run_properties_keys: details?.run_properties ? Object.keys(details.run_properties) : null
     })
 
     testCaseDetails.value = details
