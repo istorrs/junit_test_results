@@ -96,8 +96,11 @@ router.get('/', async (req, res, next) => {
         pipeline.push(
             {
                 $project: {
-                    // Exclude the full run object to reduce payload size
-                    run: 0
+                    // Exclude the full run object and large output fields to reduce payload size
+                    // and avoid MongoDB 16MB document size limit
+                    run: 0,
+                    system_out: 0,
+                    system_err: 0
                 }
             },
             { $sort: { timestamp: -1 } },
