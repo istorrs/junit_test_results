@@ -152,7 +152,7 @@
                   Copy to Clipboard
                 </button>
               </div>
-              <pre class="output-content">{{ systemOut }}</pre>
+              <pre class="output-content ansi-output" v-html="systemOutHtml"></pre>
             </div>
           </div>
 
@@ -166,7 +166,7 @@
                   Copy to Clipboard
                 </button>
               </div>
-              <pre class="output-content">{{ systemErr }}</pre>
+              <pre class="output-content ansi-output" v-html="systemErrHtml"></pre>
             </div>
           </div>
 
@@ -211,6 +211,7 @@
 
 <script setup lang="ts">
 import { ref, watch, computed, nextTick } from 'vue'
+import AnsiToHtml from 'ansi-to-html'
 import Modal from '../shared/Modal.vue'
 import Button from '../shared/Button.vue'
 import FlakinessIndicator from '../shared/FlakinessIndicator.vue'
@@ -218,6 +219,22 @@ import ErrorStackTrace from '../shared/ErrorStackTrace.vue'
 import HistoryChart from '../charts/HistoryChart.vue'
 import { formatDate, formatDuration } from '../../utils/formatters'
 import { apiClient } from '../../api/client'
+
+// Configure ANSI to HTML converter
+const ansiConverter = new AnsiToHtml({
+  fg: '#d4d4d4',
+  bg: '#1e1e1e',
+  colors: {
+    0: '#2e3436',   // black
+    1: '#cc0000',   // red
+    2: '#4e9a06',   // green
+    3: '#c4a000',   // yellow
+    4: '#3465a4',   // blue
+    5: '#75507b',   // magenta
+    6: '#06989a',   // cyan
+    7: '#d3d7cf',   // white
+  }
+})
 
 interface Props {
   open: boolean
@@ -282,6 +299,17 @@ const statusClass = computed(() => {
   if (status === 'failed') return 'status-failed'
   if (status === 'error') return 'status-error'
   return 'status-skipped'
+})
+
+// Convert ANSI codes to HTML for colored output
+const systemOutHtml = computed(() => {
+  if (!props.systemOut) return ''
+  return ansiConverter.toHtml(props.systemOut)
+})
+
+const systemErrHtml = computed(() => {
+  if (!props.systemErr) return ''
+  return ansiConverter.toHtml(props.systemErr)
 })
 
 // Fetch additional data when modal opens
@@ -653,6 +681,18 @@ const copyErrorToClipboard = () => {
   max-height: calc(100vh - 400px);
   min-height: 300px;
   overflow-y: auto;
+}
+
+.output-content.ansi-output {
+  background: #1e1e1e;
+  color: #d4d4d4;
+  border-left-color: #569cd6;
+}
+
+/* Ensure ANSI colors render properly */
+.ansi-output :deep(span) {
+  font-family: inherit;
+  line-height: inherit;
 }
 
 .history-section h3 {
