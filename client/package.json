@@ -11,8 +11,8 @@
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage",
-    "lint": "eslint . --ext .ts,.tsx,.vue",
-    "lint:fix": "eslint . --ext .ts,.tsx,.vue --fix",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
     "format": "prettier --write \"src/**/*.{ts,tsx,vue,json,css}\""
   },
   "dependencies": {
@@ -42,6 +42,7 @@
     "postcss": "^8.5.6",
     "prettier": "^3.6.2",
     "tailwindcss": "^4.1.17",
+    "ts-node": "^10.9.2",
     "typescript": "~5.9.3",
     "vite": "^7.2.2",
     "vitest": "^4.0.8",

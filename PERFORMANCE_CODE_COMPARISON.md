@@ -4,26 +4,26 @@
 
 ### Backend File: `/backend/src/routes/performance.js`
 
-| Line(s) | Current Code | Issue | Fix |
-|---------|---|---|---|
-| 19 | `timestamp: { $gte: cutoffDate }` | Wrong field name | `created_at: { $gte: cutoffDate }` |
-| 52 | `date: '$timestamp'` | Wrong field reference | `date: '$created_at'` |
-| 59-60 | `$median` and `$percentile` with method | May not work in all MongoDB versions | Replace with `$avg` or proper syntax |
-| 79-80 | `$arrayElemAt: ['$p50_time', 0]` | Assumes array return | Fix based on operator output |
-| 114 | `timestamp: { $gte: cutoffDate }` | Wrong field name | `created_at: { $gte: cutoffDate }` |
-| 127 | `$percentile` operator | May not work in all MongoDB versions | Replace with `$avg` or proper syntax |
-| 129 | `'$timestamp'` in $max | Wrong field | `'$created_at'` |
-| 140 | `$arrayElemAt: ['$p95_time', 0]` | Assumes array return | Fix based on operator output |
-| 179 | `timestamp: { $gte: baselineDate }` | Wrong field name | `created_at: { $gte: baselineDate }` |
-| 191 | `'$timestamp'` in $cond | Wrong field | `'$created_at'` |
-| 196 | `'$timestamp'` in $cond | Wrong field | `'$created_at'` |
+| Line(s) | Current Code                            | Issue                                | Fix                                  |
+| ------- | --------------------------------------- | ------------------------------------ | ------------------------------------ |
+| 19      | `timestamp: { $gte: cutoffDate }`       | Wrong field name                     | `created_at: { $gte: cutoffDate }`   |
+| 52      | `date: '$timestamp'`                    | Wrong field reference                | `date: '$created_at'`                |
+| 59-60   | `$median` and `$percentile` with method | May not work in all MongoDB versions | Replace with `$avg` or proper syntax |
+| 79-80   | `$arrayElemAt: ['$p50_time', 0]`        | Assumes array return                 | Fix based on operator output         |
+| 114     | `timestamp: { $gte: cutoffDate }`       | Wrong field name                     | `created_at: { $gte: cutoffDate }`   |
+| 127     | `$percentile` operator                  | May not work in all MongoDB versions | Replace with `$avg` or proper syntax |
+| 129     | `'$timestamp'` in $max                  | Wrong field                          | `'$created_at'`                      |
+| 140     | `$arrayElemAt: ['$p95_time', 0]`        | Assumes array return                 | Fix based on operator output         |
+| 179     | `timestamp: { $gte: baselineDate }`     | Wrong field name                     | `created_at: { $gte: baselineDate }` |
+| 191     | `'$timestamp'` in $cond                 | Wrong field                          | `'$created_at'`                      |
+| 196     | `'$timestamp'` in $cond                 | Wrong field                          | `'$created_at'`                      |
 
 ### Frontend File: `/client/src/views/Performance.vue`
 
-| Line(s) | Current Code | Issue | Fix |
-|---------|---|---|---|
-| 244-254 | `formatDuration` function | No null/NaN checks | Add validation at start |
-| 256-263 | `formatDate` function | No null/undefined checks | Add validation at start |
+| Line(s) | Current Code              | Issue                    | Fix                     |
+| ------- | ------------------------- | ------------------------ | ----------------------- |
+| 244-254 | `formatDuration` function | No null/NaN checks       | Add validation at start |
+| 256-263 | `formatDate` function     | No null/undefined checks | Add validation at start |
 
 ---
 
@@ -32,6 +32,7 @@
 ### Issue #1: Field Name Mismatch - /trends Endpoint
 
 **CURRENT CODE (BROKEN)**:
+
 ```javascript
 // Line 19 - WRONG FIELD
 let matchCondition = {
@@ -52,6 +53,7 @@ let matchCondition = {
 ```
 
 **CORRECTED CODE**:
+
 ```javascript
 // Line 19 - CORRECT FIELD
 let matchCondition = {
@@ -76,12 +78,13 @@ let matchCondition = {
 ### Issue #2: Field Name Mismatch - /slowest Endpoint
 
 **CURRENT CODE (BROKEN)**:
+
 ```javascript
 // Line 114 - WRONG FIELD
 const slowestTests = await TestCase.aggregate([
     {
         $match: {
-            timestamp: { $gte: cutoffDate },  // ← Doesn't exist
+            timestamp: { $gte: cutoffDate }, // ← Doesn't exist
             time: { $gt: parseFloat(threshold) }
         }
     },
@@ -92,20 +95,21 @@ const slowestTests = await TestCase.aggregate([
                 class_name: '$classname'
             },
             // ...
-            latest_run: { $max: '$timestamp' }  // ← Line 129, wrong field
+            latest_run: { $max: '$timestamp' } // ← Line 129, wrong field
         }
-    },
+    }
     // ...
 ]);
 ```
 
 **CORRECTED CODE**:
+
 ```javascript
 // Line 114 - CORRECT FIELD
 const slowestTests = await TestCase.aggregate([
     {
         $match: {
-            created_at: { $gte: cutoffDate },  // ✓ Correct field
+            created_at: { $gte: cutoffDate }, // ✓ Correct field
             time: { $gt: parseFloat(threshold) }
         }
     },
@@ -116,9 +120,9 @@ const slowestTests = await TestCase.aggregate([
                 class_name: '$classname'
             },
             // ...
-            latest_run: { $max: '$created_at' }  // ✓ Line 129, correct field
+            latest_run: { $max: '$created_at' } // ✓ Line 129, correct field
         }
-    },
+    }
     // ...
 ]);
 ```
@@ -128,6 +132,7 @@ const slowestTests = await TestCase.aggregate([
 ### Issue #3: Invalid MongoDB Operators - /trends Endpoint
 
 **CURRENT CODE (PROBLEMATIC)**:
+
 ```javascript
 // Lines 59-60 - Operators may not exist or have wrong output format
 {
@@ -156,6 +161,7 @@ const slowestTests = await TestCase.aggregate([
 ```
 
 **OPTION A: Use Averages Instead (Simple Fix)**:
+
 ```javascript
 // Lines 59-60 - Simpler operators that always work
 {
@@ -184,6 +190,7 @@ const slowestTests = await TestCase.aggregate([
 ```
 
 **OPTION B: Use Proper MongoDB 7.0+ Syntax (Best)**:
+
 ```javascript
 // Lines 59-60 - Correct syntax for MongoDB 7.0+
 {
@@ -216,12 +223,13 @@ const slowestTests = await TestCase.aggregate([
 ### Issue #4: Field Name Mismatch - /regressions Endpoint
 
 **CURRENT CODE (BROKEN)**:
+
 ```javascript
 // Line 179 - WRONG FIELD
 const allTests = await TestCase.aggregate([
     {
         $match: {
-            timestamp: { $gte: baselineDate },  // ← Doesn't exist
+            timestamp: { $gte: baselineDate }, // ← Doesn't exist
             time: { $exists: true, $ne: null, $gt: 0.1 }
         }
     },
@@ -233,27 +241,28 @@ const allTests = await TestCase.aggregate([
             },
             recent_times: {
                 $push: {
-                    $cond: [{ $gte: ['$timestamp', cutoffDate] }, '$time', '$$REMOVE']  // ← Lines 191, wrong field
+                    $cond: [{ $gte: ['$timestamp', cutoffDate] }, '$time', '$$REMOVE'] // ← Lines 191, wrong field
                 }
             },
             baseline_times: {
                 $push: {
-                    $cond: [{ $lt: ['$timestamp', cutoffDate] }, '$time', '$$REMOVE']  // ← Line 196, wrong field
+                    $cond: [{ $lt: ['$timestamp', cutoffDate] }, '$time', '$$REMOVE'] // ← Line 196, wrong field
                 }
             }
         }
-    },
+    }
     // ...
 ]);
 ```
 
 **CORRECTED CODE**:
+
 ```javascript
 // Line 179 - CORRECT FIELD
 const allTests = await TestCase.aggregate([
     {
         $match: {
-            created_at: { $gte: baselineDate },  // ✓ Correct field
+            created_at: { $gte: baselineDate }, // ✓ Correct field
             time: { $exists: true, $ne: null, $gt: 0.1 }
         }
     },
@@ -265,16 +274,16 @@ const allTests = await TestCase.aggregate([
             },
             recent_times: {
                 $push: {
-                    $cond: [{ $gte: ['$created_at', cutoffDate] }, '$time', '$$REMOVE']  // ✓ Lines 191, correct
+                    $cond: [{ $gte: ['$created_at', cutoffDate] }, '$time', '$$REMOVE'] // ✓ Lines 191, correct
                 }
             },
             baseline_times: {
                 $push: {
-                    $cond: [{ $lt: ['$created_at', cutoffDate] }, '$time', '$$REMOVE']  // ✓ Line 196, correct
+                    $cond: [{ $lt: ['$created_at', cutoffDate] }, '$time', '$$REMOVE'] // ✓ Line 196, correct
                 }
             }
         }
-    },
+    }
     // ...
 ]);
 ```
@@ -284,18 +293,19 @@ const allTests = await TestCase.aggregate([
 ### Issue #5: Missing Null Safety - Frontend formatDuration
 
 **CURRENT CODE (CRASHES ON NULL)**:
+
 ```typescript
 const formatDuration = (seconds: number): string => {
-  if (seconds < 1) {
-    return `${(seconds * 1000).toFixed(0)}ms`
-  }
-  if (seconds < 60) {
-    return `${seconds.toFixed(2)}s`
-  }
-  const minutes = Math.floor(seconds / 60)
-  const remainingSeconds = seconds % 60
-  return `${minutes}m ${remainingSeconds.toFixed(0)}s`
-}
+    if (seconds < 1) {
+        return `${(seconds * 1000).toFixed(0)}ms`;
+    }
+    if (seconds < 60) {
+        return `${seconds.toFixed(2)}s`;
+    }
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes}m ${remainingSeconds.toFixed(0)}s`;
+};
 
 // When called with null/NaN:
 // formatDuration(null) → "NaNm NaNs" ✗
@@ -304,21 +314,23 @@ const formatDuration = (seconds: number): string => {
 ```
 
 **CORRECTED CODE**:
+
 ```typescript
 const formatDuration = (seconds: number | null | undefined): string => {
-  if (seconds == null || isNaN(seconds)) {  // ✓ Check for null, undefined, NaN
-    return 'N/A'
-  }
-  if (seconds < 1) {
-    return `${(seconds * 1000).toFixed(0)}ms`
-  }
-  if (seconds < 60) {
-    return `${seconds.toFixed(2)}s`
-  }
-  const minutes = Math.floor(seconds / 60)
-  const remainingSeconds = seconds % 60
-  return `${minutes}m ${remainingSeconds.toFixed(0)}s`
-}
+    if (seconds == null || isNaN(seconds)) {
+        // ✓ Check for null, undefined, NaN
+        return 'N/A';
+    }
+    if (seconds < 1) {
+        return `${(seconds * 1000).toFixed(0)}ms`;
+    }
+    if (seconds < 60) {
+        return `${seconds.toFixed(2)}s`;
+    }
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes}m ${remainingSeconds.toFixed(0)}s`;
+};
 
 // Now safe:
 // formatDuration(null) → "N/A" ✓
@@ -333,15 +345,16 @@ const formatDuration = (seconds: number | null | undefined): string => {
 ### Issue #6: Missing Null Safety - Frontend formatDate
 
 **CURRENT CODE (CRASHES ON NULL)**:
+
 ```typescript
 const formatDate = (dateString: string): string => {
-  const date = new Date(dateString)
-  return date.toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric'
-  })
-}
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+    });
+};
 
 // When called with null/undefined:
 // formatDate(null) → "Invalid Date" ✗
@@ -349,21 +362,24 @@ const formatDate = (dateString: string): string => {
 ```
 
 **CORRECTED CODE**:
+
 ```typescript
 const formatDate = (dateString: string | null | undefined): string => {
-  if (!dateString) {  // ✓ Check for null, undefined, empty string
-    return 'N/A'
-  }
-  const date = new Date(dateString)
-  if (isNaN(date.getTime())) {  // ✓ Check for invalid date
-    return 'Invalid Date'
-  }
-  return date.toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric'
-  })
-}
+    if (!dateString) {
+        // ✓ Check for null, undefined, empty string
+        return 'N/A';
+    }
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) {
+        // ✓ Check for invalid date
+        return 'Invalid Date';
+    }
+    return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+    });
+};
 
 // Now safe:
 // formatDate(null) → "N/A" ✓
@@ -378,23 +394,36 @@ const formatDate = (dateString: string | null | undefined): string => {
 ## DATABASE SCHEMA COMPARISON
 
 ### TestCase Schema (CURRENT - WRONG)
+
 ```javascript
 // /backend/src/models/TestCase.js
 
-const testCaseSchema = new mongoose.Schema({
-    suite_id: { /* ... */ },
-    run_id: { /* ... */ },
-    name: { /* ... */ },
-    classname: String,
-    time: { type: Number, default: 0 },
-    status: { /* ... */ },
-    // ... other fields ...
-}, {
-    timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }  // ← Creates created_at, NOT timestamp
-});
+const testCaseSchema = new mongoose.Schema(
+    {
+        suite_id: {
+            /* ... */
+        },
+        run_id: {
+            /* ... */
+        },
+        name: {
+            /* ... */
+        },
+        classname: String,
+        time: { type: Number, default: 0 },
+        status: {
+            /* ... */
+        }
+        // ... other fields ...
+    },
+    {
+        timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } // ← Creates created_at, NOT timestamp
+    }
+);
 ```
 
 **What Mongoose creates**:
+
 ```javascript
 // Actual document structure:
 {
@@ -412,24 +441,29 @@ const testCaseSchema = new mongoose.Schema({
 ```
 
 ### TestRun Schema (CURRENT - CORRECT)
+
 ```javascript
 // /backend/src/models/TestRun.js
 
-const testRunSchema = new mongoose.Schema({
-    // ...
-    timestamp: {
-        type: Date,
-        required: true,
-        default: Date.now,
-        index: true
+const testRunSchema = new mongoose.Schema(
+    {
+        // ...
+        timestamp: {
+            type: Date,
+            required: true,
+            default: Date.now,
+            index: true
+        }
+        // ...
     },
-    // ...
-}, {
-    timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }
-});
+    {
+        timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }
+    }
+);
 ```
 
 **What Mongoose creates**:
+
 ```javascript
 // Actual document structure:
 {
@@ -447,12 +481,13 @@ const testRunSchema = new mongoose.Schema({
 ## WORKING vs BROKEN ENDPOINT COMPARISON
 
 ### Working Example: stats.js
+
 ```javascript
 // /backend/src/routes/stats.js - Lines 18-25 (WORKING)
 
 if (req.query.from_date) {
-    query.created_at = { $gte: new Date(req.query.from_date) };  // ✓ CORRECT FIELD
-    runQuery.created_at = { $gte: new Date(req.query.from_date) };  // ✓ CORRECT FIELD
+    query.created_at = { $gte: new Date(req.query.from_date) }; // ✓ CORRECT FIELD
+    runQuery.created_at = { $gte: new Date(req.query.from_date) }; // ✓ CORRECT FIELD
 }
 if (req.query.to_date) {
     query.created_at = { ...query.created_at, $lte: new Date(req.query.to_date) };
@@ -461,11 +496,12 @@ if (req.query.to_date) {
 ```
 
 ### Broken Example: performance.js
+
 ```javascript
 // /backend/src/routes/performance.js - Line 19 (BROKEN)
 
 let matchCondition = {
-    timestamp: { $gte: cutoffDate },  // ✗ WRONG FIELD - doesn't exist
+    timestamp: { $gte: cutoffDate }, // ✗ WRONG FIELD - doesn't exist
     time: { $exists: true, $ne: null }
 };
 ```
@@ -519,4 +555,3 @@ Aggregation with 2 documents:
 - formatDuration(1.9) → "1.90s"
 - Display: "1.90s" ✓
 ```
-

@@ -61,7 +61,9 @@ export default [
                 flakyTestsPage: 'writable',
                 reportsPage: 'writable',
                 testDetailsModal: 'writable',
-                dashboardDebugger: 'writable'
+                dashboardDebugger: 'writable',
+                db: 'writable',
+                print: 'readonly'
             }
         },
         rules: {

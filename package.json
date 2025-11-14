@@ -4,8 +4,8 @@
   "description": "JUnit Test Results Dashboard - Frontend",
   "type": "module",
   "scripts": {
-    "lint": "eslint *.js --ignore-pattern 'eslint.config.js' --ignore-pattern 'init-mongo.js' --max-warnings 0 --no-warn-ignored",
-    "lint:fix": "eslint *.js --ignore-pattern 'eslint.config.js' --ignore-pattern 'init-mongo.js' --fix --no-warn-ignored",
+    "lint": "eslint '*.js' --ignore-pattern 'eslint.config.js' --ignore-pattern 'init-mongo.js' --max-warnings 0 --no-warn-ignored",
+    "lint:fix": "eslint '*.js' --ignore-pattern 'eslint.config.js' --ignore-pattern 'init-mongo.js' --fix --no-warn-ignored",
     "format": "prettier --write '*.{js,html,css,md}'",
     "format:check": "prettier --check '*.{js,html,css,md}'",
     "validate:html": "node scripts/validate-html.cjs",
@@ -16,16 +16,25 @@
     "@eslint/js": "^9.39.1",
     "eslint": "^9.39.1",
     "eslint-config-prettier": "^9.1.2",
+    "eslint-plugin-prettier": "^5.5.4",
+    "eslint-plugin-vue": "^10.5.1",
     "globals": "^16.5.0",
     "html-validate": "^8.29.0",
     "husky": "^9.1.7",
     "lint-staged": "^15.5.2",
-    "prettier": "^3.6.2"
+    "prettier": "^3.6.2",
+    "typescript-eslint": "^8.46.4",
+    "vue-eslint-parser": "^10.2.0"
   },
   "lint-staged": {
     "*.js": [
       "bash -c 'if [[ \"$0\" != *\"eslint.config.js\" ]]; then eslint --fix --max-warnings 0 \"$0\"; fi'",
       "prettier --write"
+    ],
+    "client/src/**/*.{ts,tsx,vue}": [
+      "bash -c 'cd client && npm run type-check'",
+      "bash -c 'cd client && node --experimental-specifier-resolution=node --no-warnings ./node_modules/eslint/bin/eslint.js . --fix'",
+      "bash -c 'cd client && prettier --write \"$0\"'"
     ],
     "*.html": [
       "prettier --write",

@@ -147,7 +147,7 @@
             <div class="output-section">
               <div class="output-header">
                 <h3>System Output (stdout)</h3>
-                <button @click="copyToClipboard(systemOut || '', 'System output')" class="copy-button">
+                <button @click="copyToClipboard(testCaseDetails?.system_out || '', 'System output')" class="copy-button">
                   <span class="copy-icon">📋</span>
                   Copy to Clipboard
                 </button>
@@ -161,7 +161,7 @@
             <div class="output-section error-output">
               <div class="output-header">
                 <h3>System Error (stderr)</h3>
-                <button @click="copyToClipboard(systemErr || '', 'System error')" class="copy-button">
+                <button @click="copyToClipboard(testCaseDetails?.system_err || '', 'System error')" class="copy-button">
                   <span class="copy-icon">📋</span>
                   Copy to Clipboard
                 </button>
@@ -194,12 +194,17 @@
               </div>
 
               <!-- Test Run Properties (from JUnit XML) -->
-              <div v-if="runProperties && Object.keys(runProperties).length > 0" class="properties-section">
+              <div v-if="testCaseDetails?.run_properties && Object.keys(testCaseDetails.run_properties).length > 0" class="properties-section">
                 <h3>Test Run Properties</h3>
-                <div class="metadata-grid">
-                  <div v-for="(value, key) in runProperties" :key="key" class="metadata-item">
-                    <label>{{ key }}</label>
-                    <span class="code-value">{{ value }}</span>
+                <div class="properties-list">
+                  <div v-for="(value, key) in testCaseDetails.run_properties" :key="key" class="property-item">
+                    <label class="property-label">{{ key }}</label>
+                    <span v-if="isUrl(value)" class="property-value">
+                      <a :href="convertToHttpsUrl(value)" target="_blank" rel="noopener noreferrer" class="property-link">
+                        {{ value }}
+                      </a>
+                    </span>
+                    <span v-else class="property-value">{{ value }}</span>
                   </div>
                 </div>
               </div>
@@ -259,8 +264,7 @@ interface Props {
   className?: string
   lastRun?: string
   ciMetadata?: Record<string, any>
-  runProperties?: Record<string, any>
-  // Note: systemOut and systemErr are now loaded via API in loadTestDetails()
+  // Note: systemOut, systemErr, and runProperties are now loaded via API in loadTestDetails()
   // rather than passed as props, to avoid fetching large data in the list view
 }
 
@@ -354,12 +358,21 @@ const loadTestDetails = async () => {
   error.value = null
 
   try {
+    console.log('[TestDetailsModal] Loading details for test ID:', props.testId)
+    console.log('[TestDetailsModal] Test name from props:', props.testName)
+
     // Load full test case details (including system_out/system_err), flakiness, and history in parallel
     const [details, flakiness, history] = await Promise.all([
       apiClient.getTestCase(props.testId).catch(() => null),
       apiClient.getTestFlakiness(props.testId).catch(() => null),
       apiClient.getTestHistory(props.testId).catch(() => ({ runs: [] }))
     ])
+
+    console.log('[TestDetailsModal] Loaded details:', {
+      name: details?.name,
+      class_name: details?.class_name,
+      run_properties: details?.run_properties ? Object.keys(details.run_properties) : null
+    })
 
     testCaseDetails.value = details
     flakinessData.value = flakiness
@@ -376,6 +389,44 @@ const handleClose = () => {
   emit('close')
   // Reset to overview tab when closing
   activeTab.value = 'overview'
+  // Clear cached data to prevent showing stale data on next open
+  testCaseDetails.value = null
+  flakinessData.value = null
+  historyData.value = []
+}
+
+// Helper function to detect if a string is a URL or Git SSH URL
+const isUrl = (str: string): boolean => {
+  if (typeof str !== 'string') return false
+
+  // Check for Git SSH format (git@host:path)
+  if (/^git@[a-zA-Z0-9.-]+:[a-zA-Z0-9._/-]+$/.test(str)) {
+    return true
+  }
+
+  // Check for standard HTTP/HTTPS URLs
+  try {
+    const url = new URL(str)
+    return url.protocol === 'http:' || url.protocol === 'https:'
+  } catch {
+    return false
+  }
+}
+
+// Helper function to convert Git SSH URLs to HTTPS URLs
+const convertToHttpsUrl = (str: string): string => {
+  if (typeof str !== 'string') return str
+
+  // Convert git@github.com:user/repo format to https://github.com/user/repo
+  const gitSshMatch = str.match(/^git@([a-zA-Z0-9.-]+):([a-zA-Z0-9._/-]+)$/)
+  if (gitSshMatch) {
+    const host = gitSshMatch[1]
+    const path = gitSshMatch[2]
+    return `https://${host}/${path}`
+  }
+
+  // Return as-is if already a valid URL
+  return str
 }
 
 const copyToClipboard = (text: string, label: string) => {
@@ -436,8 +487,8 @@ const copyErrorToClipboard = () => {
     props.errorType && `Error Type: ${props.errorType}`,
     props.errorMessage && `\nError Message:\n${props.errorMessage}`,
     props.stackTrace && `\nStack Trace:\n${props.stackTrace}`,
-    props.systemOut && `\nSystem Output:\n${props.systemOut}`,
-    props.systemErr && `\nSystem Error:\n${props.systemErr}`
+    testCaseDetails.value?.system_out && `\nSystem Output:\n${testCaseDetails.value.system_out}`,
+    testCaseDetails.value?.system_err && `\nSystem Error:\n${testCaseDetails.value.system_err}`
   ].filter(Boolean).join('\n')
 
   console.log('[TestDetailsModal] Error text length:', text.length)
@@ -870,5 +921,61 @@ const copyErrorToClipboard = () => {
   display: flex;
   gap: 0.75rem;
   justify-content: flex-end;
+}
+
+/* Test Run Properties styling - better layout for long values */
+.properties-section {
+  margin-top: 2rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.properties-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.property-item {
+  display: grid;
+  grid-template-columns: minmax(150px, 200px) 1fr;
+  gap: 1rem;
+  align-items: start;
+  padding: 0.75rem;
+  background: var(--bg-secondary);
+  border-radius: 0.375rem;
+  border: 1px solid var(--border-color);
+}
+
+.property-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+  padding-top: 0.25rem;
+}
+
+.property-value {
+  font-family: monospace;
+  font-size: 0.875rem;
+  color: var(--text-primary);
+  word-break: break-all;
+  line-height: 1.5;
+}
+
+.property-link {
+  color: var(--primary-color);
+  text-decoration: none;
+  transition: all 0.2s;
+}
+
+.property-link:hover {
+  color: var(--primary-hover);
+  text-decoration: underline;
+}
+
+.property-link:visited {
+  color: #7c3aed;
 }
 </style>

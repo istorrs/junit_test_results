@@ -8,7 +8,13 @@ const filesToValidate = process.argv.slice(2);
 if (filesToValidate.length === 0) {
     // Default: validate all HTML files in root
     const files = fs.readdirSync('.')
-        .filter(file => file.endsWith('.html'));
+        .filter(file => {
+            try {
+                return file.endsWith('.html') && fs.statSync(file).isFile();
+            } catch (e) {
+                return false;
+            }
+        });
     filesToValidate.push(...files);
 }
 

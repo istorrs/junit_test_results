@@ -83,6 +83,7 @@ App (Vue 3 SPA)
 ```
 
 **Key Improvements over Vanilla JS:**
+
 - Single-page application with proper routing (back button works!)
 - Modal-driven drill-down (no context loss)
 - Centralized state management with Pinia
@@ -212,6 +213,7 @@ JUNIT_API_URL=http://your-server:5000 ./ci-cd-examples/upload-test-results.sh ./
 ### API Endpoints
 
 #### Core Endpoints
+
 ```
 POST   /api/v1/upload              - Upload JUnit XML file
 POST   /api/v1/upload/batch        - Upload multiple files
@@ -222,6 +224,7 @@ GET    /health                     - Health check
 ```
 
 #### Test Case Endpoints
+
 ```
 GET    /api/v1/cases               - Get test cases (filtered)
 GET    /api/v1/cases/:id           - Get test case details
@@ -231,6 +234,7 @@ GET    /api/v1/cases/:id/trends    - Get performance trends
 ```
 
 #### Statistics & Analytics
+
 ```
 GET    /api/v1/stats/overview      - Get overall statistics
 GET    /api/v1/stats/trends        - Get test trends
@@ -411,6 +415,7 @@ npm run test:coverage     # Run with coverage
 ### Test-Driven Development
 
 This project was built using TDD methodology:
+
 1. Write test for new feature
 2. Implement feature to pass test
 3. Refactor while keeping tests green
@@ -492,11 +497,11 @@ The application is designed for easy cloud deployment:
 - **MongoDB**: Migrate to MongoDB Atlas
 - **Backend**: Deploy to AWS, GCP, Azure, Heroku, or Railway
 - **Frontend**: Build static files (`npm run build`) and deploy to:
-  - Netlify
-  - Vercel
-  - GitHub Pages
-  - AWS S3 + CloudFront
-  - Any static file hosting
+    - Netlify
+    - Vercel
+    - GitHub Pages
+    - AWS S3 + CloudFront
+    - Any static file hosting
 
 ## Backup and Recovery
 
@@ -581,11 +586,11 @@ This is a modern test results viewer built with Vue 3 and MongoDB. Feel free to 
 - ✅ Test-Driven Development (TDD) approach
 - ✅ Comprehensive test suite with Vitest
 - ✅ **Tier 1 Analytics:**
-  - TestDetailsModal with execution history
-  - FlakyTestsWidget with real-time detection
-  - FailurePatternsSummary with AI-powered grouping
-  - Enhanced backend analytics endpoints
-  - Performance trend tracking
+    - TestDetailsModal with execution history
+    - FlakyTestsWidget with real-time detection
+    - FailurePatternsSummary with AI-powered grouping
+    - Enhanced backend analytics endpoints
+    - Performance trend tracking
 - ✅ Responsive, mobile-friendly design
 - ✅ Modal-driven drill-down navigation
 - ✅ Progressive disclosure architecture

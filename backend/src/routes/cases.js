@@ -2,7 +2,6 @@ const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
 const TestCase = require('../models/TestCase');
-const TestResult = require('../models/TestResult');
 const { MAX_QUERY_LIMIT, DEFAULT_QUERY_LIMIT } = require('../config/constants');
 
 // GET /api/v1/cases - Get test cases with filtering
@@ -152,38 +151,96 @@ router.get('/', async (req, res, next) => {
 // GET /api/v1/cases/:id - Get specific test case with result
 router.get('/:id', async (req, res, next) => {
     try {
-        const testCase = await TestCase.findById(req.params.id).lean();
+        console.log('[Cases API] GET /:id - Request ID:', req.params.id);
 
-        if (!testCase) {
+        // Use aggregation to join with TestRun to get ci_metadata and properties
+        const pipeline = [
+            { $match: { _id: new mongoose.Types.ObjectId(req.params.id) } },
+            {
+                $lookup: {
+                    from: 'testresults',
+                    localField: '_id',
+                    foreignField: 'case_id',
+                    as: 'result'
+                }
+            },
+            {
+                $unwind: {
+                    path: '$result',
+                    preserveNullAndEmptyArrays: true
+                }
+            },
+            {
+                $lookup: {
+                    from: 'testruns',
+                    localField: 'run_id',
+                    foreignField: '_id',
+                    as: 'run'
+                }
+            },
+            {
+                $unwind: {
+                    path: '$run',
+                    preserveNullAndEmptyArrays: true
+                }
+            },
+            {
+                $addFields: {
+                    timestamp: '$run.timestamp',
+                    run_name: '$run.name',
+                    run_source: '$run.source',
+                    run_ci_metadata: '$run.ci_metadata',
+                    run_properties: '$run.properties'
+                }
+            },
+            {
+                $project: {
+                    run: 0 // Exclude the full run object
+                }
+            }
+        ];
+
+        const cases = await TestCase.aggregate(pipeline);
+
+        console.log('[Cases API] Found cases:', cases.length);
+        if (cases.length > 0) {
+            console.log('[Cases API] Test case name:', cases[0].name);
+            console.log('[Cases API] Test case class:', cases[0].class_name);
+            console.log('[Cases API] Run ID:', cases[0].run_id);
+            console.log(
+                '[Cases API] Run properties keys:',
+                cases[0].run_properties ? Object.keys(cases[0].run_properties) : 'null'
+            );
+        }
+
+        if (!cases || cases.length === 0) {
             return res.status(404).json({
                 success: false,
                 error: 'Test case not found'
             });
         }
 
-        const result = await TestResult.findOne({ case_id: req.params.id }).lean();
+        const testCase = cases[0];
 
-        // Transform _id to id for testCase and result
+        // Transform _id to id
         const transformedCase = {
             ...testCase,
             id: testCase._id.toString(),
             _id: undefined
         };
 
-        const transformedResult = result
-            ? {
-                  ...result,
-                  id: result._id.toString(),
-                  _id: undefined
-              }
-            : null;
+        // Transform result if it exists
+        if (transformedCase.result) {
+            transformedCase.result = {
+                ...transformedCase.result,
+                id: transformedCase.result._id?.toString(),
+                _id: undefined
+            };
+        }
 
         res.json({
             success: true,
-            data: {
-                ...transformedCase,
-                result: transformedResult
-            }
+            data: transformedCase
         });
     } catch (error) {
         next(error);

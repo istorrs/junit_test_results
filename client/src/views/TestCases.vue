@@ -97,7 +97,6 @@
       :class-name="selectedTest?.class_name"
       :last-run="selectedTest?.timestamp"
       :ci-metadata="selectedTest?.run_ci_metadata"
-      :run-properties="selectedTest?.run_properties"
       @close="closeModal"
     />
   </div>

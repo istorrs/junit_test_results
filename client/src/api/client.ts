@@ -80,6 +80,7 @@ export interface TestCase {
     branch?: string
     build_number?: string
   }
+  run_properties?: Record<string, any>
   created_at?: string
   updated_at?: string
 }
@@ -494,6 +495,10 @@ class ApiClient {
       cases: transformedCases,
       pagination: response.pagination
     }
+  }
+
+  async getTestCase(testId: string): Promise<TestCase> {
+    return this.request<TestCase>(`/cases/${testId}`)
   }
 
   async uploadTestResults(file: File): Promise<UploadResponse> {
