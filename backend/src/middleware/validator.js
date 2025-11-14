@@ -1,4 +1,4 @@
-const Joi = require('joi');
+const _Joi = require('joi');
 
 const validateUpload = (req, res, next) => {
     if (!req.file && !req.files) {

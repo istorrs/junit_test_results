@@ -12,7 +12,7 @@ const { MAX_QUERY_LIMIT, DEFAULT_QUERY_LIMIT } = require('../config/constants');
 router.get('/projects', async (req, res, next) => {
     try {
         const projects = await TestRun.distinct('ci_metadata.job_name');
-        const projectsFiltered = projects.filter(p => p != null && p !== '');
+        const projectsFiltered = projects.filter(p => p !== null && p !== '');
 
         res.json({
             success: true,

@@ -88,7 +88,7 @@ async function repairTimestamps() {
                         `  ✓ Updated test run and ${suitesResult.modifiedCount} test suites`
                     );
                 } else {
-                    console.log(`  [DRY RUN] Would update this test run`);
+                    console.log('  [DRY RUN] Would update this test run');
                 }
 
                 updatedCount++;

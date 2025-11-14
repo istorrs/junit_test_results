@@ -273,14 +273,13 @@
     <TestDetailsModal
       v-if="selectedTest"
       :open="modalOpen"
-      :test-id="selectedTest.test_id"
+      :test-id="selectedTest.test_case_id || selectedTest.test_id"
       :test-name="selectedTest.test_name"
-      :status="selectedTest.status_after || selectedTest.status_before || 'unknown'"
+      :status="selectedTest.status_after || selectedTest.status_before || selectedTest.status || 'unknown'"
+      :duration="selectedTest.time_after || selectedTest.time"
       :error-message="selectedTest.error_message"
       :error-type="selectedTest.error_type"
       :class-name="selectedTest.class_name"
-      :system-out="selectedTest.system_out"
-      :system-err="selectedTest.system_err"
       @close="closeModal"
     />
   </div>
@@ -457,11 +456,17 @@ onMounted(() => {
   background-color: var(--surface-color);
   color: var(--text-primary);
   cursor: pointer;
+  color-scheme: light dark;
 }
 
 .run-select:focus {
   outline: none;
   border-color: var(--primary-color);
+}
+
+.run-select option {
+  background-color: var(--surface-color);
+  color: var(--text-primary);
 }
 
 .compare-button {

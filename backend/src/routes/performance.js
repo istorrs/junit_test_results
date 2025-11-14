@@ -2,7 +2,7 @@ const express = require('express');
 const { MAX_QUERY_LIMIT, DEFAULT_QUERY_LIMIT } = require('../config/constants');
 const router = express.Router();
 const TestCase = require('../models/TestCase');
-const TestRun = require('../models/TestRun');
+const _TestRun = require('../models/TestRun');
 const _ = require('lodash');
 
 /**
@@ -17,7 +17,7 @@ router.get('/trends', async (req, res) => {
         const cutoffDate = new Date();
         cutoffDate.setDate(cutoffDate.getDate() - parseInt(days));
 
-        let matchCondition = {
+        const matchCondition = {
             created_at: { $gte: cutoffDate },
             time: { $exists: true, $ne: null }
         };

@@ -38,6 +38,19 @@ if git diff --cached --name-only | grep -q "^client/"; then
     fi
 
     echo "✅ TypeScript type check passed!"
+
+    # Run security audit
+    echo "Running security audit..."
+    if ! npm audit --audit-level=moderate 2>&1; then
+        echo ""
+        echo "❌ Security vulnerabilities detected!"
+        echo "Please fix the vulnerabilities before committing."
+        echo "Run 'cd client && npm audit' to see details."
+        echo "Run 'cd client && npm audit fix' to attempt automatic fixes."
+        exit 1
+    fi
+
+    echo "✅ Security audit passed!"
     cd ..
 fi
 
@@ -74,6 +87,19 @@ if git diff --cached --name-only | grep -q "^backend/"; then
     fi
 
     echo "✅ Backend lint check passed!"
+
+    # Run security audit
+    echo "Running security audit..."
+    if ! npm audit --audit-level=moderate 2>&1; then
+        echo ""
+        echo "❌ Security vulnerabilities detected!"
+        echo "Please fix the vulnerabilities before committing."
+        echo "Run 'cd backend && npm audit' to see details."
+        echo "Run 'cd backend && npm audit fix' to attempt automatic fixes."
+        exit 1
+    fi
+
+    echo "✅ Security audit passed!"
     cd ..
 fi
 

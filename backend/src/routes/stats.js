@@ -90,9 +90,9 @@ router.get('/trends', async (req, res, next) => {
                 success_rate:
                     cases.length > 0
                         ? (
-                              (cases.filter(c => c.status === 'passed').length / cases.length) *
+                            (cases.filter(c => c.status === 'passed').length / cases.length) *
                               100
-                          ).toFixed(2)
+                        ).toFixed(2)
                         : 0
             });
         }

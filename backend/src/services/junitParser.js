@@ -116,15 +116,15 @@ const parseJUnitXML = async (
         // Determine the correct timestamp
         // Priority: CI metadata build_time > XML timestamp > current time
         let timestamp;
-        let timestampSource;
 
         if (ciMetadata && ciMetadata.build_time) {
             // Use build time from CI metadata (most accurate for test run identification)
             timestamp = new Date(ciMetadata.build_time);
-            timestampSource = 'ci_metadata.build_time';
+            const _timestampSource = 'ci_metadata.build_time';
             logger.info('Using CI metadata timestamp', {
                 build_time: ciMetadata.build_time,
-                parsed_timestamp: timestamp.toISOString()
+                parsed_timestamp: timestamp.toISOString(),
+                source: _timestampSource
             });
         } else {
             // Check for timestamp in XML
@@ -138,18 +138,20 @@ const parseJUnitXML = async (
 
             if (timestampValue) {
                 timestamp = new Date(timestampValue);
-                timestampSource = 'junit_xml';
+                const _timestampSource = 'junit_xml';
                 logger.info('Using JUnit XML timestamp', {
                     xml_timestamp: timestampValue,
-                    parsed_timestamp: timestamp.toISOString()
+                    parsed_timestamp: timestamp.toISOString(),
+                    source: _timestampSource
                 });
             } else {
                 // Last resort: use current time
                 timestamp = new Date();
-                timestampSource = 'current_time';
+                const _timestampSource = 'current_time';
                 logger.warn('No timestamp found - using current time', {
                     timestamp: timestamp.toISOString(),
-                    filename
+                    filename,
+                    source: _timestampSource
                 });
             }
         }

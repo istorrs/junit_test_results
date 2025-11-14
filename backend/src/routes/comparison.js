@@ -1,5 +1,5 @@
 const express = require('express');
-const { MAX_QUERY_LIMIT, DEFAULT_QUERY_LIMIT } = require('../config/constants');
+const { DEFAULT_QUERY_LIMIT } = require('../config/constants');
 const router = express.Router();
 const TestRun = require('../models/TestRun');
 const TestCase = require('../models/TestCase');
@@ -61,9 +61,11 @@ router.get('/runs', async (req, res) => {
             if (!case1 && case2) {
                 newTests.push({
                     test_id: testId,
+                    test_case_id: case2._id, // Actual MongoDB ID for fetching full details
                     test_name: case2.name,
                     class_name: case2.class_name,
                     status: case2.status,
+                    status_after: case2.status, // For consistency with other test results
                     time: case2.time
                 });
                 return;
@@ -73,9 +75,11 @@ router.get('/runs', async (req, res) => {
             if (case1 && !case2) {
                 removedTests.push({
                     test_id: testId,
+                    test_case_id: case1._id, // Actual MongoDB ID for fetching full details
                     test_name: case1.name,
                     class_name: case1.class_name,
                     status: case1.status,
+                    status_before: case1.status, // For consistency with other test results
                     time: case1.time
                 });
                 return;
@@ -87,6 +91,7 @@ router.get('/runs', async (req, res) => {
 
             const testInfo = {
                 test_id: testId,
+                test_case_id: case2._id, // Actual MongoDB ID for fetching full details
                 test_name: case2.name,
                 class_name: case2.class_name,
                 status_before: status1,

@@ -1,5 +1,5 @@
 const express = require('express');
-const { MAX_QUERY_LIMIT, DEFAULT_QUERY_LIMIT } = require('../config/constants');
+const { DEFAULT_QUERY_LIMIT } = require('../config/constants');
 const router = express.Router();
 const TestRun = require('../models/TestRun');
 
@@ -76,7 +76,7 @@ router.get('/', async (req, res) => {
 
         // Get total count with same filter
         const totalCount = await TestRun.distinct('release_tag', matchCriteria).then(
-            tags => tags.filter(tag => tag != null).length
+            tags => tags.filter(tag => tag !== null).length
         );
 
         res.json({
