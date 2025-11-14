@@ -277,9 +277,13 @@ const historyChartRef = ref<InstanceType<typeof HistoryChart> | null>(null)
 // Data from API
 const flakinessData = ref<any>(null)
 const historyData = ref<any[]>([])
+const testCaseDetails = ref<any>(null)
 
 const tabs = computed(() => {
-  console.log('Computing tabs - systemOut:', !!props.systemOut, 'systemErr:', !!props.systemErr)
+  const systemOut = testCaseDetails.value?.system_out || props.systemOut
+  const systemErr = testCaseDetails.value?.system_err || props.systemErr
+
+  console.log('Computing tabs - systemOut:', !!systemOut, 'systemErr:', !!systemErr)
   const baseTabs = [
     { id: 'overview', label: 'Overview' },
     { id: 'failure', label: 'Failure Details' },
@@ -287,14 +291,14 @@ const tabs = computed(() => {
   ]
 
   // Add System Output tab if data exists
-  if (props.systemOut) {
-    console.log('Adding System Output tab, length:', props.systemOut.length)
+  if (systemOut) {
+    console.log('Adding System Output tab, length:', systemOut.length)
     baseTabs.push({ id: 'system-out', label: 'System Output' })
   }
 
   // Add System Error tab if data exists
-  if (props.systemErr) {
-    console.log('Adding System Error tab, length:', props.systemErr.length)
+  if (systemErr) {
+    console.log('Adding System Error tab, length:', systemErr.length)
     baseTabs.push({ id: 'system-err', label: 'System Error' })
   }
 
@@ -315,16 +319,20 @@ const statusClass = computed(() => {
 
 // Convert ANSI codes to HTML for colored output
 const systemOutHtml = computed(() => {
-  if (!props.systemOut) return ''
+  // Use test case details if available, otherwise fall back to props
+  const systemOut = testCaseDetails.value?.system_out || props.systemOut
+  if (!systemOut) return ''
   // Replace literal #x1B with actual ESC character (\x1B)
-  const withRealEscapes = props.systemOut.replace(/#x1B/g, '\x1B')
+  const withRealEscapes = systemOut.replace(/#x1B/g, '\x1B')
   return ansiConverter.toHtml(withRealEscapes)
 })
 
 const systemErrHtml = computed(() => {
-  if (!props.systemErr) return ''
+  // Use test case details if available, otherwise fall back to props
+  const systemErr = testCaseDetails.value?.system_err || props.systemErr
+  if (!systemErr) return ''
   // Replace literal #x1B with actual ESC character (\x1B)
-  const withRealEscapes = props.systemErr.replace(/#x1B/g, '\x1B')
+  const withRealEscapes = systemErr.replace(/#x1B/g, '\x1B')
   return ansiConverter.toHtml(withRealEscapes)
 })
 
@@ -348,12 +356,14 @@ const loadTestDetails = async () => {
   error.value = null
 
   try {
-    // Load flakiness data and history in parallel
-    const [flakiness, history] = await Promise.all([
+    // Load full test case details (including system_out/system_err), flakiness, and history in parallel
+    const [details, flakiness, history] = await Promise.all([
+      apiClient.getTestCase(props.testId).catch(() => null),
       apiClient.getTestFlakiness(props.testId).catch(() => null),
       apiClient.getTestHistory(props.testId).catch(() => ({ runs: [] }))
     ])
 
+    testCaseDetails.value = details
     flakinessData.value = flakiness
     historyData.value = history.runs || []
   } catch (err) {
