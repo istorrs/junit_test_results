@@ -254,6 +254,10 @@ const clearFilters = () => {
 }
 
 const viewRunDetails = (run: TestRun) => {
+  if (!run || !run.id) {
+    console.error('[TestRuns] Cannot view run details: invalid run or missing ID', run)
+    return
+  }
   store.setCurrentRun(run)
   router.push(`/cases?run_id=${run.id}`)
 }

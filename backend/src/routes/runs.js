@@ -54,10 +54,17 @@ router.get('/', async (req, res, next) => {
             .limit(limit)
             .lean();
 
+        // Transform _id to id for each run
+        const transformedRuns = runs.map(run => ({
+            ...run,
+            id: run._id.toString(),
+            _id: undefined
+        }));
+
         res.json({
             success: true,
             data: {
-                runs,
+                runs: transformedRuns,
                 pagination: {
                     page,
                     limit,
@@ -87,11 +94,25 @@ router.get('/:id', async (req, res, next) => {
             run_id: new mongoose.Types.ObjectId(req.params.id)
         }).lean();
 
+        // Transform _id to id for the run
+        const transformedRun = {
+            ...run,
+            id: run._id.toString(),
+            _id: undefined
+        };
+
+        // Transform _id to id for each suite
+        const transformedSuites = suites.map(suite => ({
+            ...suite,
+            id: suite._id.toString(),
+            _id: undefined
+        }));
+
         res.json({
             success: true,
             data: {
-                ...run,
-                suites
+                ...transformedRun,
+                suites: transformedSuites
             }
         });
     } catch (error) {

@@ -8,7 +8,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch, computed } from 'vue'
+import { ref, onMounted, onUnmounted, watch, computed, nextTick } from 'vue'
 import * as echarts from 'echarts'
 
 interface HistoryRun {
@@ -53,6 +53,18 @@ const chartData = computed(() => {
 
 const initChart = () => {
   if (!chartRef.value || !hasData.value) return
+
+  // Ensure container has dimensions
+  const containerWidth = chartRef.value.offsetWidth
+  const containerHeight = chartRef.value.offsetHeight
+
+  if (containerWidth === 0 || containerHeight === 0) {
+    console.warn('[HistoryChart] Container has no dimensions, delaying init')
+    setTimeout(() => initChart(), 100)
+    return
+  }
+
+  console.log('[HistoryChart] Initializing chart with container size:', containerWidth, 'x', containerHeight)
 
   const isDark = document.documentElement.getAttribute('data-theme') === 'dark'
 
@@ -274,15 +286,27 @@ const handleResize = () => {
   chartInstance?.resize()
 }
 
-watch(() => props.data, () => {
+// Expose resize method for parent components
+const resize = () => {
+  handleResize()
+}
+
+defineExpose({ resize })
+
+watch(() => props.data, async () => {
   if (chartInstance && hasData.value) {
     chartInstance.dispose()
+    await nextTick()
+    initChart()
+  } else if (!chartInstance && hasData.value) {
+    await nextTick()
     initChart()
   }
 }, { deep: true })
 
-onMounted(() => {
+onMounted(async () => {
   if (hasData.value) {
+    await nextTick()
     initChart()
     window.addEventListener('resize', handleResize)
   }

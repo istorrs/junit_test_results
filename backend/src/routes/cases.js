@@ -14,10 +14,10 @@ router.get('/', async (req, res, next) => {
         const matchQuery = {};
 
         // Filters
-        if (req.query.run_id) {
+        if (req.query.run_id && req.query.run_id !== 'undefined') {
             matchQuery.run_id = new mongoose.Types.ObjectId(req.query.run_id);
         }
-        if (req.query.suite_id) {
+        if (req.query.suite_id && req.query.suite_id !== 'undefined') {
             matchQuery.suite_id = new mongoose.Types.ObjectId(req.query.suite_id);
         }
         if (req.query.class_name) {
@@ -115,10 +115,17 @@ router.get('/', async (req, res, next) => {
 
         const cases = await TestCase.aggregate(pipeline);
 
+        // Transform _id to id for each case
+        const transformedCases = cases.map(testCase => ({
+            ...testCase,
+            id: testCase._id.toString(),
+            _id: undefined
+        }));
+
         res.json({
             success: true,
             data: {
-                cases,
+                cases: transformedCases,
                 pagination: {
                     page,
                     limit,
@@ -146,11 +153,26 @@ router.get('/:id', async (req, res, next) => {
 
         const result = await TestResult.findOne({ case_id: req.params.id }).lean();
 
+        // Transform _id to id for testCase and result
+        const transformedCase = {
+            ...testCase,
+            id: testCase._id.toString(),
+            _id: undefined
+        };
+
+        const transformedResult = result
+            ? {
+                  ...result,
+                  id: result._id.toString(),
+                  _id: undefined
+              }
+            : null;
+
         res.json({
             success: true,
             data: {
-                ...testCase,
-                result
+                ...transformedCase,
+                result: transformedResult
             }
         });
     } catch (error) {
@@ -219,10 +241,17 @@ router.get('/:id/history', async (req, res, next) => {
             { $limit: 30 }
         ]);
 
+        // Transform _id to id for each history item
+        const transformedHistory = history.map(item => ({
+            ...item,
+            id: item._id ? item._id.toString() : undefined,
+            _id: undefined
+        }));
+
         res.json({
             success: true,
             data: {
-                runs: history
+                runs: transformedHistory
             }
         });
     } catch (error) {

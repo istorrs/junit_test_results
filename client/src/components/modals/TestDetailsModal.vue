@@ -85,7 +85,7 @@
 
           <!-- Failure Details Tab -->
           <div v-show="activeTab === 'failure'" class="tab-panel">
-            <div v-if="errorMessage || errorType" class="failure-details">
+            <div v-if="errorMessage || errorType || stackTrace" class="failure-details">
               <div class="error-header">
                 <h3>Error Information</h3>
                 <span v-if="errorType" class="error-type-badge">{{ errorType }}</span>
@@ -111,7 +111,7 @@
             <div v-if="historyData && historyData.length > 0" class="history-section">
               <h3>Test Execution History (Last {{ historyData.length }} Runs)</h3>
               <div class="history-chart">
-                <HistoryChart :data="historyData" />
+                <HistoryChart ref="historyChartRef" :data="historyData" />
               </div>
 
               <div class="history-table">
@@ -139,6 +139,34 @@
             </div>
             <div v-else class="empty-state">
               <p>No historical data available</p>
+            </div>
+          </div>
+
+          <!-- System Output Tab -->
+          <div v-show="activeTab === 'system-out'" class="tab-panel">
+            <div class="output-section">
+              <div class="output-header">
+                <h3>System Output (stdout)</h3>
+                <button @click="copyToClipboard(systemOut || '', 'System output')" class="copy-button">
+                  <span class="copy-icon">📋</span>
+                  Copy to Clipboard
+                </button>
+              </div>
+              <pre class="output-content">{{ systemOut }}</pre>
+            </div>
+          </div>
+
+          <!-- System Error Tab -->
+          <div v-show="activeTab === 'system-err'" class="tab-panel">
+            <div class="output-section error-output">
+              <div class="output-header">
+                <h3>System Error (stderr)</h3>
+                <button @click="copyToClipboard(systemErr || '', 'System error')" class="copy-button">
+                  <span class="copy-icon">📋</span>
+                  Copy to Clipboard
+                </button>
+              </div>
+              <pre class="output-content">{{ systemErr }}</pre>
             </div>
           </div>
 
@@ -182,7 +210,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, computed } from 'vue'
+import { ref, watch, computed, nextTick } from 'vue'
 import Modal from '../shared/Modal.vue'
 import Button from '../shared/Button.vue'
 import FlakinessIndicator from '../shared/FlakinessIndicator.vue'
@@ -203,6 +231,8 @@ interface Props {
   className?: string
   lastRun?: string
   ciMetadata?: Record<string, any>
+  systemOut?: string
+  systemErr?: string
 }
 
 const props = defineProps<Props>()
@@ -213,17 +243,38 @@ const emit = defineEmits<{
 const activeTab = ref('overview')
 const loading = ref(false)
 const error = ref<string | null>(null)
+const historyChartRef = ref<InstanceType<typeof HistoryChart> | null>(null)
 
 // Data from API
 const flakinessData = ref<any>(null)
 const historyData = ref<any[]>([])
 
-const tabs = [
-  { id: 'overview', label: 'Overview' },
-  { id: 'failure', label: 'Failure Details' },
-  { id: 'history', label: 'History' },
-  { id: 'metadata', label: 'Metadata' }
-]
+const tabs = computed(() => {
+  console.log('Computing tabs - systemOut:', !!props.systemOut, 'systemErr:', !!props.systemErr)
+  const baseTabs = [
+    { id: 'overview', label: 'Overview' },
+    { id: 'failure', label: 'Failure Details' },
+    { id: 'history', label: 'History' }
+  ]
+
+  // Add System Output tab if data exists
+  if (props.systemOut) {
+    console.log('Adding System Output tab, length:', props.systemOut.length)
+    baseTabs.push({ id: 'system-out', label: 'System Output' })
+  }
+
+  // Add System Error tab if data exists
+  if (props.systemErr) {
+    console.log('Adding System Error tab, length:', props.systemErr.length)
+    baseTabs.push({ id: 'system-err', label: 'System Error' })
+  }
+
+  // Always show metadata last
+  baseTabs.push({ id: 'metadata', label: 'Metadata' })
+
+  console.log('Final tabs:', baseTabs.map(t => t.label))
+  return baseTabs
+})
 
 const statusClass = computed(() => {
   const status = props.status?.toLowerCase()
@@ -237,6 +288,14 @@ const statusClass = computed(() => {
 watch(() => props.open, async (isOpen) => {
   if (isOpen && props.testId) {
     await loadTestDetails()
+  }
+})
+
+// Resize chart when History tab becomes active
+watch(activeTab, async (newTab) => {
+  if (newTab === 'history') {
+    await nextTick()
+    historyChartRef.value?.resize()
   }
 })
 
@@ -267,13 +326,24 @@ const handleClose = () => {
   activeTab.value = 'overview'
 }
 
+const copyToClipboard = (text: string, label: string) => {
+  navigator.clipboard.writeText(text).then(() => {
+    // Could add a toast notification here
+    console.log(`${label} copied to clipboard`)
+  }).catch(err => {
+    console.error('Failed to copy to clipboard:', err)
+  })
+}
+
 const copyErrorToClipboard = () => {
   const text = [
     `Test: ${props.testName}`,
     `Status: ${props.status}`,
     props.errorType && `Error Type: ${props.errorType}`,
     props.errorMessage && `\nError Message:\n${props.errorMessage}`,
-    props.stackTrace && `\nStack Trace:\n${props.stackTrace}`
+    props.stackTrace && `\nStack Trace:\n${props.stackTrace}`,
+    props.systemOut && `\nSystem Output:\n${props.systemOut}`,
+    props.systemErr && `\nSystem Error:\n${props.systemErr}`
   ].filter(Boolean).join('\n')
 
   navigator.clipboard.writeText(text)
@@ -514,6 +584,75 @@ const copyErrorToClipboard = () => {
   font-weight: 600;
   color: var(--text-secondary);
   margin-bottom: 0.75rem;
+}
+
+.output-section {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.output-section.error-output .output-content {
+  border-left-color: var(--error-color);
+}
+
+.output-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.output-header h3 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.copy-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 0.375rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.copy-button:hover {
+  background: var(--bg-hover);
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+.copy-icon {
+  font-size: 1rem;
+}
+
+.output-content {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 0.875rem;
+  line-height: 1.6;
+  color: var(--text-primary);
+  white-space: pre-wrap;
+  word-break: break-word;
+  margin: 0;
+  padding: 1.5rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-left: 4px solid var(--primary-color);
+  border-radius: 0.375rem;
+  max-height: calc(100vh - 400px);
+  min-height: 300px;
+  overflow-y: auto;
 }
 
 .history-section h3 {
