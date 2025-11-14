@@ -62,7 +62,7 @@ async function fixTestRunCounts() {
             }
         }
 
-        console.log(`\n✅ Migration complete!`);
+        console.log('\n✅ Migration complete!');
         console.log(`   Fixed: ${fixed}`);
         console.log(`   Skipped: ${skipped}`);
 

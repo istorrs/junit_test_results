@@ -15,7 +15,7 @@ require('dotenv').config({ path: './backend/.env' });
 const TestSuite = require('../src/models/TestSuite');
 const TestCase = require('../src/models/TestCase');
 const TestResult = require('../src/models/TestResult');
-const TestRun = require('../src/models/TestRun');
+const _TestRun = require('../src/models/TestRun');
 
 async function fixTestTimestamps() {
     try {
@@ -77,7 +77,7 @@ async function fixTestTimestamps() {
             }
         }
 
-        console.log(`\n✅ Migration complete!`);
+        console.log('\n✅ Migration complete!');
         console.log(`   Total test results updated: ${totalUpdated}`);
         console.log(`   Total suites processed: ${suites.length}`);
 

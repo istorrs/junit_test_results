@@ -76,21 +76,17 @@ if git diff --cached --name-only | grep -q "^backend/"; then
         fi
     fi
 
-    # Check if lint script exists
-    if npm run | grep -q "lint$"; then
-        # Run ESLint check
-        if ! npm run lint 2>&1; then
-            echo ""
-            echo "❌ Backend linting errors detected!"
-            echo "Please fix the errors before committing."
-            echo "Run 'cd backend && npm run lint' to see the errors."
-            echo "Or run 'cd backend && npm run lint:fix' to auto-fix some issues."
-            exit 1
-        fi
-        echo "✅ Backend lint check passed!"
-    else
-        echo "⚠️  No lint script found in backend, skipping lint check"
+    # Run ESLint check
+    if ! npm run lint 2>&1; then
+        echo ""
+        echo "❌ Backend linting errors detected!"
+        echo "Please fix the errors before committing."
+        echo "Run 'cd backend && npm run lint' to see the errors."
+        echo "Or run 'cd backend && npm run lint:fix' to auto-fix some issues."
+        exit 1
     fi
+
+    echo "✅ Backend lint check passed!"
 
     # Run security audit
     echo "Running security audit..."

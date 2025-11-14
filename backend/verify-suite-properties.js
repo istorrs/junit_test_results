@@ -33,7 +33,7 @@ async function verifySuiteProperties() {
                 suitesWithoutProperties++;
                 console.log(`✗ Suite: ${suite.name}`);
                 console.log(`  ID: ${suite._id}`);
-                console.log(`  Properties: EMPTY or NULL`);
+                console.log('  Properties: EMPTY or NULL');
                 console.log('');
             }
         }

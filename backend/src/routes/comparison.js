@@ -1,5 +1,5 @@
 const express = require('express');
-const { MAX_QUERY_LIMIT, DEFAULT_QUERY_LIMIT } = require('../config/constants');
+const { DEFAULT_QUERY_LIMIT } = require('../config/constants');
 const router = express.Router();
 const TestRun = require('../models/TestRun');
 const TestCase = require('../models/TestCase');
