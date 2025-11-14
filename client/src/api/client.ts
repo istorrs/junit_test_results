@@ -72,6 +72,7 @@ export interface TestCase {
   is_flaky?: boolean
   flaky_detected_at?: string
   file_upload_id?: string
+  suite_id?: string
   timestamp?: string
   run_name?: string
   run_source?: string
@@ -80,7 +81,7 @@ export interface TestCase {
     branch?: string
     build_number?: string
   }
-  run_properties?: Record<string, any>
+  suite_properties?: Record<string, any>
   created_at?: string
   updated_at?: string
 }
