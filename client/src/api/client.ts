@@ -248,6 +248,7 @@ export interface TestDiff {
   time_diff_percent?: number
   error_message?: string
   error_type?: string
+  stack_trace?: string
   status?: string // For new/removed tests
   time?: number // For new/removed tests
 }

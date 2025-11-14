@@ -279,6 +279,7 @@
       :duration="selectedTest.time_after || selectedTest.time"
       :error-message="selectedTest.error_message"
       :error-type="selectedTest.error_type"
+      :stack-trace="selectedTest.stack_trace"
       :class-name="selectedTest.class_name"
       @close="closeModal"
     />
@@ -453,20 +454,14 @@ onMounted(() => {
   border: 1px solid var(--border-color);
   border-radius: 0.375rem;
   font-size: 0.9375rem;
-  background-color: var(--surface-color);
+  background: var(--bg-primary);
   color: var(--text-primary);
   cursor: pointer;
-  color-scheme: light dark;
 }
 
 .run-select:focus {
   outline: none;
   border-color: var(--primary-color);
-}
-
-.run-select option {
-  background-color: var(--surface-color);
-  color: var(--text-primary);
 }
 
 .compare-button {
