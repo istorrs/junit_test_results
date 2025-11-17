@@ -394,17 +394,21 @@ const testSteps = computed(() => {
     if (upperLine.includes('TPAPI') && upperLine.includes('TEST_POINT_START')) {
       console.log('[TestDetailsModal] Found TEST_POINT_START line:', line.substring(0, 200))
 
+      // Remove ANSI codes from the line FIRST before pattern matching
+      // ANSI codes are embedded within the text itself (e.g., #x1B[92mTPAPI#x1B[0m)
+      let cleanLine = line
+      // eslint-disable-next-line no-control-regex
+      cleanLine = cleanLine.replace(/\x1B\[[0-9;]*m/g, '')
+      cleanLine = cleanLine.replace(/#x1B\[[0-9;]*m/g, '')
+
+      console.log('[TestDetailsModal] Cleaned line:', cleanLine.substring(0, 200))
+
       // Pattern to match log format: timestamp - module - line - TPAPI - TEST_POINT_START: message
       // Example: 2025-11-16 19:17:16 - testpoints_cloud - 197 - TPAPI - TEST_POINT_START: ▶️ Update the config.json
-      let match = line.match(/TPAPI\s*-\s*TEST_POINT_START\s*:\s*(.+)$/i)
+      let match = cleanLine.match(/TPAPI\s*-\s*TEST_POINT_START\s*:\s*(.+)$/i)
 
       if (match && match[1]) {
         let stepName = match[1].trim()
-
-        // Remove ANSI color codes if present
-        // eslint-disable-next-line no-control-regex
-        stepName = stepName.replace(/\x1B\[[0-9;]*m/g, '')
-        stepName = stepName.replace(/#x1B\[[0-9;]*m/g, '')
 
         // Remove emoji prefix if present (▶️, ✅, etc.) but keep the actual message
         // The emoji might be followed by a space
@@ -423,12 +427,9 @@ const testSteps = computed(() => {
         console.log('[TestDetailsModal] No match found for line, trying alternate patterns')
 
         // Try without colon
-        match = line.match(/TPAPI\s*-\s*TEST_POINT_START\s+(.+)$/i)
+        match = cleanLine.match(/TPAPI\s*-\s*TEST_POINT_START\s+(.+)$/i)
         if (match && match[1]) {
           let stepName = match[1].trim()
-          // eslint-disable-next-line no-control-regex
-          stepName = stepName.replace(/\x1B\[[0-9;]*m/g, '')
-          stepName = stepName.replace(/#x1B\[[0-9;]*m/g, '')
           stepName = stepName.replace(
             /^[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]\s*/u,
             ''
