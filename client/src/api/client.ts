@@ -407,9 +407,10 @@ class ApiClient {
       // Try to extract error message from response body
       try {
         const errorData = await response.json()
-        const errorMessage = errorData.error || errorData.message || `Request failed with status ${response.status}`
+        const errorMessage =
+          errorData.error || errorData.message || `Request failed with status ${response.status}`
         throw new Error(errorMessage)
-      } catch (e) {
+      } catch {
         // If JSON parsing fails, throw generic error
         throw new Error(`Failed to ${options?.method || 'GET'} ${endpoint}: ${response.status}`)
       }
@@ -428,9 +429,7 @@ class ApiClient {
       return ''
     }
 
-    const queryString = new URLSearchParams(
-      filtered as Record<string, string>
-    ).toString()
+    const queryString = new URLSearchParams(filtered as Record<string, string>).toString()
 
     return `?${queryString}`
   }
@@ -447,7 +446,7 @@ class ApiClient {
 
     return {
       runs: response.runs,
-      pagination: response.pagination
+      pagination: response.pagination,
     }
   }
 
@@ -456,24 +455,27 @@ class ApiClient {
     return response.projects
   }
 
-  async batchUpdateRuns(runIds: string[], updates: { release_tag: string | null; release_version: string | null }): Promise<{ matched_count: number; modified_count: number }> {
+  async batchUpdateRuns(
+    runIds: string[],
+    updates: { release_tag: string | null; release_version: string | null }
+  ): Promise<{ matched_count: number; modified_count: number }> {
     const response = await this.request<any>('/runs/batch', {
       method: 'PATCH',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         run_ids: runIds,
         release_tag: updates.release_tag,
-        release_version: updates.release_version
-      })
+        release_version: updates.release_version,
+      }),
     })
     return response
   }
 
   async deleteRun(runId: string): Promise<{ success: boolean; message: string }> {
     const response = await this.request<any>(`/runs/${runId}`, {
-      method: 'DELETE'
+      method: 'DELETE',
     })
     return response
   }
@@ -504,7 +506,7 @@ class ApiClient {
 
     return {
       cases: transformedCases,
-      pagination: response.pagination
+      pagination: response.pagination,
     }
   }
 
@@ -539,7 +541,11 @@ class ApiClient {
     return this.request<FlakinessData>(`/cases/${testId}/flakiness`)
   }
 
-  async getFailurePatterns(params?: { days?: number; limit?: number; job_name?: string }): Promise<FailurePatternsResponse> {
+  async getFailurePatterns(params?: {
+    days?: number
+    limit?: number
+    job_name?: string
+  }): Promise<FailurePatternsResponse> {
     const queryString = this.buildQueryString(params || {})
     return this.request<FailurePatternsResponse>(`/analytics/failure-patterns${queryString}`)
   }
@@ -550,16 +556,25 @@ class ApiClient {
   }
 
   // Tier 2: Release Comparison
-  async getReleases(params?: { limit?: number; skip?: number; job_name?: string }): Promise<ReleasesResponse> {
+  async getReleases(params?: {
+    limit?: number
+    skip?: number
+    job_name?: string
+  }): Promise<ReleasesResponse> {
     const queryString = this.buildQueryString(params || {})
     return this.request<ReleasesResponse>(`/releases${queryString}`)
   }
 
   async compareReleases(release1: string, release2: string): Promise<ReleaseComparisonResponse> {
-    return this.request<ReleaseComparisonResponse>(`/releases/compare?release1=${release1}&release2=${release2}`)
+    return this.request<ReleaseComparisonResponse>(
+      `/releases/compare?release1=${release1}&release2=${release2}`
+    )
   }
 
-  async getReleaseRuns(tag: string, params?: { limit?: number; skip?: number }): Promise<RunsResponse> {
+  async getReleaseRuns(
+    tag: string,
+    params?: { limit?: number; skip?: number }
+  ): Promise<RunsResponse> {
     const queryString = this.buildQueryString(params || {})
     return this.request<RunsResponse>(`/releases/${tag}/runs${queryString}`)
   }
@@ -569,7 +584,10 @@ class ApiClient {
     return this.request<RunComparisonResponse>(`/comparison/runs?run1=${run1}&run2=${run2}`)
   }
 
-  async getTestComparisonHistory(testId: string, params?: { limit?: number; days?: number }): Promise<TestComparisonHistoryResponse> {
+  async getTestComparisonHistory(
+    testId: string,
+    params?: { limit?: number; days?: number }
+  ): Promise<TestComparisonHistoryResponse> {
     const queryString = this.buildQueryString(params || {})
     return this.request<TestComparisonHistoryResponse>(`/comparison/test/${testId}${queryString}`)
   }
@@ -580,17 +598,28 @@ class ApiClient {
     return this.request<PerformanceTrendsResponse>(`/performance/trends${queryString}`)
   }
 
-  async getSlowestTests(params?: { limit?: number; days?: number; threshold?: number }): Promise<SlowestTestsResponse> {
+  async getSlowestTests(params?: {
+    limit?: number
+    days?: number
+    threshold?: number
+  }): Promise<SlowestTestsResponse> {
     const queryString = this.buildQueryString(params || {})
     return this.request<SlowestTestsResponse>(`/performance/slowest${queryString}`)
   }
 
-  async getPerformanceRegressions(params?: { days?: number; threshold_percent?: number; min_baseline_runs?: number }): Promise<PerformanceRegressionsResponse> {
+  async getPerformanceRegressions(params?: {
+    days?: number
+    threshold_percent?: number
+    min_baseline_runs?: number
+  }): Promise<PerformanceRegressionsResponse> {
     const queryString = this.buildQueryString(params || {})
     return this.request<PerformanceRegressionsResponse>(`/performance/regressions${queryString}`)
   }
 
-  async getTestPerformanceHistory(testId: string, params?: { days?: number }): Promise<TestPerformanceHistoryResponse> {
+  async getTestPerformanceHistory(
+    testId: string,
+    params?: { days?: number }
+  ): Promise<TestPerformanceHistoryResponse> {
     const queryString = this.buildQueryString(params || {})
     return this.request<TestPerformanceHistoryResponse>(`/performance/test/${testId}${queryString}`)
   }

@@ -13,10 +13,10 @@ export default [
   js.configs.recommended,
 
   // ── TypeScript recommended rules (only for .ts/.tsx) ─────
-  {
-    ...ts.configs.recommended,
+  ...ts.configs.recommended.map(config => ({
+    ...config,
     files: ['**/*.ts', '**/*.tsx'],
-  },
+  })),
 
   // ── Shared parser / globals / custom rules ───────────────
   {
