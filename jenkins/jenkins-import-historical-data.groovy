@@ -220,6 +220,10 @@ pipeline {
                                 } else {
                                     echo "  ✗ Upload failed: ${uploadResult.error}"
                                     failedCount++
+
+                                    // Fetch backend logs for this failure
+                                    def backendLogs = fetchBackendLogs(params.DASHBOARD_API_URL, 2)
+
                                     // Record failure details
                                     failedUploads.add([
                                         buildNumber: buildNumber,
@@ -227,7 +231,8 @@ pipeline {
                                         filePath: xmlFilePath,
                                         error: uploadResult.error,
                                         httpCode: uploadResult.httpCode ?: 'unknown',
-                                        responseBody: uploadResult.responseBody ?: 'no response'
+                                        responseBody: uploadResult.responseBody ?: 'no response',
+                                        backendLogs: backendLogs
                                     ])
                                 }
                             }
@@ -289,6 +294,14 @@ pipeline {
                             echo "  HTTP Code: ${failure.httpCode}"
                             echo "  Error: ${failure.error}"
                             echo "  Response: ${failure.responseBody?.take(200)}"
+
+                            // Display backend logs if available
+                            if (failure.backendLogs && failure.backendLogs.size() > 0) {
+                                echo "  Backend Logs (${failure.backendLogs.size()} entries):"
+                                failure.backendLogs.each { log ->
+                                    echo "    [${log.timestamp}] ${log.level?.toUpperCase()}: ${log.message}"
+                                }
+                            }
                         }
                         echo "========================================="
                     }
@@ -381,5 +394,30 @@ def uploadJUnitXMLFile(String xmlFilePath, String apiUrl, int buildNumber, Strin
             httpCode: 'exception',
             responseBody: e.toString()
         ]
+    }
+}
+
+/**
+ * Fetch recent backend error logs to help diagnose upload failures
+ */
+def fetchBackendLogs(String apiUrl, int minutes = 2) {
+    try {
+        def logsResponse = sh(
+            script: """
+                curl -s -X GET "${apiUrl}/logs/errors?minutes=${minutes}&limit=10"
+            """,
+            returnStdout: true
+        ).trim()
+
+        def logsJson = new groovy.json.JsonSlurper().parseText(logsResponse)
+
+        if (logsJson.success && logsJson.data?.errors) {
+            return logsJson.data.errors
+        } else {
+            return []
+        }
+    } catch (Exception e) {
+        // If we can't fetch logs, return empty array (don't fail the pipeline for this)
+        return []
     }
 }
