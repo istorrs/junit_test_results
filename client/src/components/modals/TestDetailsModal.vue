@@ -352,25 +352,51 @@ const systemErrHtml = computed(() => {
 // Parse test steps from System Error output
 const testSteps = computed(() => {
   const systemErr = testCaseDetails.value?.system_err
-  if (!systemErr) return []
+  if (!systemErr) {
+    console.log('[TestDetailsModal] No system_err available for test steps')
+    return []
+  }
 
+  console.log('[TestDetailsModal] Parsing test steps from system_err, length:', systemErr.length)
   const steps: string[] = []
   const lines = systemErr.split('\n')
 
   for (const line of lines) {
     if (line.includes('TPAPI - TEST_POINT_START')) {
-      // Extract the test step name after TEST_POINT_START
-      // Format is typically: "... TPAPI - TEST_POINT_START: Step Name ..."
-      const match = line.match(/TPAPI - TEST_POINT_START[:\s]+(.+?)(?:\s*$|[\n\r])/i)
+      console.log('[TestDetailsModal] Found TEST_POINT_START line:', line.substring(0, 200))
+
+      // Try multiple patterns to match test step names
+      // Pattern 1: TPAPI - TEST_POINT_START: Step Name
+      let match = line.match(/TPAPI\s*-\s*TEST_POINT_START\s*[:\s]+(.+?)$/i)
+
+      // Pattern 2: TPAPI - TEST_POINT_START "Step Name"
+      if (!match) {
+        match = line.match(/TPAPI\s*-\s*TEST_POINT_START\s*["']([^"']+)["']/i)
+      }
+
+      // Pattern 3: TPAPI - TEST_POINT_START Step Name (no colon)
+      if (!match) {
+        match = line.match(/TPAPI\s*-\s*TEST_POINT_START\s+(.+?)$/i)
+      }
+
       if (match && match[1]) {
-        const stepName = match[1].trim()
+        let stepName = match[1].trim()
+        // Remove ANSI color codes if present
+        stepName = stepName.replace(/\x1B\[[0-9;]*m/g, '')
+        // Remove #x1B color codes if present
+        stepName = stepName.replace(/#x1B\[[0-9;]*m/g, '')
+
         if (stepName) {
+          console.log('[TestDetailsModal] Extracted step name:', stepName)
           steps.push(stepName)
         }
+      } else {
+        console.log('[TestDetailsModal] No match found for line')
       }
     }
   }
 
+  console.log('[TestDetailsModal] Total test steps found:', steps.length)
   return steps
 })
 
@@ -581,11 +607,16 @@ const copyErrorToClipboard = () => {
   flex: 1;
   padding: 1.5rem;
   overflow-y: auto;
+  display: flex;
+  flex-direction: column;
 }
 
 .tab-panel {
   animation: fadeIn 0.2s ease-in;
-  min-height: 400px;
+  flex: 1;
+  min-height: 500px;
+  display: flex;
+  flex-direction: column;
 }
 
 @keyframes fadeIn {
