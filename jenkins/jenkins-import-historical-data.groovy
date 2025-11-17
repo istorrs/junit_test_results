@@ -133,6 +133,7 @@ pipeline {
                     def skippedCount = 0
                     def failedCount = 0
                     def totalFilesCount = 0
+                    def failedUploads = []  // Track all failed uploads with details
 
                     // Iterate through builds
                     for (int buildNumber = startBuild; buildNumber <= endBuild; buildNumber++) {
@@ -219,6 +220,15 @@ pipeline {
                                 } else {
                                     echo "  ✗ Upload failed: ${uploadResult.error}"
                                     failedCount++
+                                    // Record failure details
+                                    failedUploads.add([
+                                        buildNumber: buildNumber,
+                                        fileName: fileName,
+                                        filePath: xmlFilePath,
+                                        error: uploadResult.error,
+                                        httpCode: uploadResult.httpCode ?: 'unknown',
+                                        responseBody: uploadResult.responseBody ?: 'no response'
+                                    ])
                                 }
                             }
                         }
@@ -231,6 +241,9 @@ pipeline {
                     env.UPLOADED_FILES = uploadedCount.toString()
                     env.SKIPPED_FILES = skippedCount.toString()
                     env.FAILED_FILES = failedCount.toString()
+
+                    // Store failed uploads for reporting in Summary stage
+                    env.FAILED_UPLOADS_JSON = groovy.json.JsonOutput.toJson(failedUploads)
                 }
             }
         }
@@ -253,6 +266,33 @@ pipeline {
                         echo "\n⚠ This was a DRY RUN - no files were actually uploaded"
                     }
 
+                    // Parse failed uploads from JSON
+                    def failedUploads = []
+                    if (env.FAILED_UPLOADS_JSON) {
+                        try {
+                            failedUploads = new groovy.json.JsonSlurper().parseText(env.FAILED_UPLOADS_JSON)
+                        } catch (Exception e) {
+                            echo "Warning: Could not parse failed uploads JSON: ${e.message}"
+                        }
+                    }
+
+                    // Display detailed failure information
+                    if (failedUploads.size() > 0) {
+                        echo "\n========================================="
+                        echo "=== FAILED UPLOADS (${failedUploads.size()}) ==="
+                        echo "========================================="
+                        failedUploads.eachWithIndex { failure, index ->
+                            echo "\nFailure #${index + 1}:"
+                            echo "  Build: #${failure.buildNumber}"
+                            echo "  File: ${failure.fileName}"
+                            echo "  Path: ${failure.filePath}"
+                            echo "  HTTP Code: ${failure.httpCode}"
+                            echo "  Error: ${failure.error}"
+                            echo "  Response: ${failure.responseBody?.take(200)}"
+                        }
+                        echo "========================================="
+                    }
+
                     // Write statistics to file
                     def stats = [
                         timestamp: new Date().format("yyyy-MM-dd'T'HH:mm:ss'Z'"),
@@ -267,11 +307,17 @@ pipeline {
                         uploadedFiles: env.UPLOADED_FILES.toInteger(),
                         skippedFiles: env.SKIPPED_FILES.toInteger(),
                         failedFiles: env.FAILED_FILES.toInteger(),
-                        dryRun: params.DRY_RUN
+                        dryRun: params.DRY_RUN,
+                        failures: failedUploads
                     ]
 
                     writeJSON file: env.IMPORT_STATS, json: stats
                     archiveArtifacts artifacts: 'import-stats.json', fingerprint: true
+
+                    // Fail the pipeline if there were any upload failures (unless dry run)
+                    if (env.FAILED_FILES.toInteger() > 0 && !params.DRY_RUN) {
+                        error("Pipeline failed: ${env.FAILED_FILES} file(s) failed to upload. See detailed failures above.")
+                    }
                 }
             }
         }
@@ -311,17 +357,29 @@ def uploadJUnitXMLFile(String xmlFilePath, String apiUrl, int buildNumber, Strin
         def body = lines.size() > 1 ? lines[0..-2].join('\n') : ''
 
         if (httpCode == '200' || httpCode == '201') {
-            return [success: true, duplicate: false]
+            return [success: true, duplicate: false, httpCode: httpCode]
         } else if (httpCode == '409' || body.contains('Duplicate')) {
             if (skipDuplicates) {
-                return [success: false, duplicate: true]
+                return [success: false, duplicate: true, httpCode: httpCode, responseBody: body]
             } else {
-                return [success: false, duplicate: true, error: 'Duplicate content']
+                return [success: false, duplicate: true, error: 'Duplicate content', httpCode: httpCode, responseBody: body]
             }
         } else {
-            return [success: false, duplicate: false, error: "HTTP ${httpCode}: ${body.take(200)}"]
+            return [
+                success: false,
+                duplicate: false,
+                error: "HTTP ${httpCode}: ${body.take(200)}",
+                httpCode: httpCode,
+                responseBody: body
+            ]
         }
     } catch (Exception e) {
-        return [success: false, duplicate: false, error: e.message]
+        return [
+            success: false,
+            duplicate: false,
+            error: e.message,
+            httpCode: 'exception',
+            responseBody: e.toString()
+        ]
     }
 }
