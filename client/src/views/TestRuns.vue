@@ -5,6 +5,13 @@
       <div class="header-actions">
         <Button
           v-if="selectedRuns.size > 0"
+          @click="deleteSelectedRuns"
+          variant="danger"
+        >
+          Delete {{ selectedRuns.size }} Run{{ selectedRuns.size > 1 ? 's' : '' }}
+        </Button>
+        <Button
+          v-if="selectedRuns.size > 0"
           @click="openReleaseTagModal"
           variant="primary"
         >
@@ -157,6 +164,7 @@ import { useRouter } from 'vue-router'
 import { useTestDataStore } from '../stores/testData'
 import { formatDate } from '../utils/formatters'
 import type { TestRun } from '../api/client'
+import { apiClient } from '../api/client'
 import Button from '../components/shared/Button.vue'
 import DataTable from '../components/shared/DataTable.vue'
 import SearchInput from '../components/shared/SearchInput.vue'
@@ -311,6 +319,40 @@ const closeReleaseTagModal = () => {
 const handleReleaseTagged = () => {
   clearSelection()
   loadData()
+}
+
+const deleteSelectedRuns = async () => {
+  const count = selectedRuns.value.size
+  const runText = count === 1 ? 'run' : 'runs'
+
+  const confirmed = confirm(
+    `Are you sure you want to delete ${count} test ${runText}?\n\n` +
+    'This will permanently delete:\n' +
+    '- Test run records\n' +
+    '- All test cases and results\n' +
+    '- All test suites\n' +
+    '- Associated file uploads\n\n' +
+    'This action cannot be undone.'
+  )
+
+  if (!confirmed) {
+    return
+  }
+
+  try {
+    const runIds = Array.from(selectedRuns.value)
+    const deletePromises = runIds.map(runId => apiClient.deleteRun(runId))
+
+    await Promise.all(deletePromises)
+
+    clearSelection()
+    await loadData()
+
+    alert(`Successfully deleted ${count} test ${runText}`)
+  } catch (error) {
+    console.error('Failed to delete test runs:', error)
+    alert(`Failed to delete test runs: ${error instanceof Error ? error.message : 'Unknown error'}`)
+  }
 }
 
 const loadData = async () => {

@@ -471,6 +471,13 @@ class ApiClient {
     return response
   }
 
+  async deleteRun(runId: string): Promise<{ success: boolean; message: string }> {
+    const response = await this.request<any>(`/runs/${runId}`, {
+      method: 'DELETE'
+    })
+    return response
+  }
+
   async getStats(filters: StatsFilters = {}): Promise<Stats> {
     const queryString = this.buildQueryString(filters)
     return this.request<Stats>(`/stats/overview${queryString}`)
