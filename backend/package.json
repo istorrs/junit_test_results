@@ -29,7 +29,8 @@
     "morgan": "^1.10.0",
     "joi": "^17.11.0",
     "xml2js": "^0.6.2",
-    "lodash": "^4.17.21"
+    "lodash": "^4.17.21",
+    "express-rate-limit": "^7.4.1"
   },
   "devDependencies": {
     "nodemon": "^3.0.2",

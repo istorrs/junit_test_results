@@ -18,6 +18,7 @@ const analyticsRoutes = require('./routes/analytics');
 const releasesRoutes = require('./routes/releases');
 const comparisonRoutes = require('./routes/comparison');
 const performanceRoutes = require('./routes/performance');
+const logsRoutes = require('./routes/logs');
 
 // Initialize express app
 const app = express();
@@ -66,6 +67,7 @@ app.use('/api/v1/cases', casesRoutes);
 app.use('/api/v1/stats', statsRoutes);
 app.use('/api/v1/analysis', analysisRoutes);
 app.use('/api/v1/analytics', analyticsRoutes);
+app.use('/api/v1/logs', logsRoutes);
 // Tier 2 routes
 app.use('/api/v1/releases', releasesRoutes);
 app.use('/api/v1/comparison', comparisonRoutes);
