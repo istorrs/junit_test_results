@@ -5,6 +5,7 @@ const TestRun = require('../models/TestRun');
 const TestSuite = require('../models/TestSuite');
 const TestCase = require('../models/TestCase');
 const TestResult = require('../models/TestResult');
+const FileUpload = require('../models/FileUpload');
 const logger = require('../utils/logger');
 const { MAX_QUERY_LIMIT, DEFAULT_QUERY_LIMIT } = require('../config/constants');
 
@@ -138,6 +139,7 @@ router.delete('/:id', async (req, res, next) => {
         await TestResult.deleteMany({ run_id: runObjectId });
         await TestCase.deleteMany({ run_id: runObjectId });
         await TestSuite.deleteMany({ run_id: runObjectId });
+        await FileUpload.deleteMany({ run_id: runObjectId });
         await TestRun.findByIdAndDelete(req.params.id);
 
         res.json({
@@ -328,6 +330,58 @@ router.patch('/batch', async (req, res, next) => {
                 matched_count: result.matchedCount,
                 modified_count: result.modifiedCount,
                 updated_fields: updateFields
+            }
+        });
+    } catch (error) {
+        next(error);
+    }
+});
+
+// POST /api/v1/runs/:id/recalculate-stats - Recalculate test run statistics
+router.post('/:id/recalculate-stats', async (req, res, next) => {
+    try {
+        const runId = req.params.id;
+
+        // Find the test run
+        const testRun = await TestRun.findById(runId);
+        if (!testRun) {
+            return res.status(404).json({
+                success: false,
+                error: 'Test run not found'
+            });
+        }
+
+        // Get all test cases for this run
+        const cases = await TestCase.find({ run_id: runId });
+
+        // Calculate stats
+        const stats = {
+            total_tests: cases.length,
+            passed: cases.filter(c => c.status === 'passed').length,
+            failed: cases.filter(c => c.status === 'failed').length,
+            errors: cases.filter(c => c.status === 'error').length,
+            skipped: cases.filter(c => c.status === 'skipped').length,
+            time: cases.reduce((sum, c) => sum + c.time, 0)
+        };
+
+        // Update the test run
+        await TestRun.findByIdAndUpdate(runId, stats);
+
+        logger.info(`Recalculated stats for run ${runId}`, stats);
+
+        res.json({
+            success: true,
+            data: {
+                run_id: runId,
+                name: testRun.name,
+                old_stats: {
+                    total_tests: testRun.total_tests,
+                    passed: testRun.passed,
+                    failed: testRun.failed,
+                    errors: testRun.errors,
+                    skipped: testRun.skipped
+                },
+                new_stats: stats
             }
         });
     } catch (error) {

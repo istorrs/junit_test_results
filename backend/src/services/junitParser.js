@@ -8,6 +8,24 @@ const { generateHash } = require('./hashGenerator');
 const logger = require('../utils/logger');
 
 /**
+ * Normalize a value to a string, handling arrays and other types
+ * XML parsers sometimes return arrays when multiple elements exist
+ */
+const normalizeToString = value => {
+    if (!value) {
+        return '';
+    }
+    if (typeof value === 'string') {
+        return value;
+    }
+    if (Array.isArray(value)) {
+        // Join array elements with newlines
+        return value.map(v => String(v || '')).join('\n');
+    }
+    return String(value);
+};
+
+/**
  * Extract properties from JUnit XML element
  * Properties are stored as key-value pairs in <properties><property name="key" value="val"/></properties>
  */
@@ -467,8 +485,8 @@ const processTestCase = async (caseData, suiteId, runId, fileUploadId, testStart
         assertions: parseInt(caseData.assertions || 0),
         file: caseData.file || '',
         line: parseInt(caseData.line || 0),
-        system_out: caseData['system-out'] || '',
-        system_err: caseData['system-err'] || '',
+        system_out: normalizeToString(caseData['system-out']),
+        system_err: normalizeToString(caseData['system-err']),
         file_upload_id: fileUploadId
     });
 
