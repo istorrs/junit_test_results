@@ -2,9 +2,31 @@ const express = require('express');
 const router = express.Router();
 const fs = require('fs');
 const path = require('path');
-const readline = require('readline');
+const { logsRateLimiter } = require('../middleware/rateLimiter');
 
 const logDir = process.env.LOG_DIR || './logs';
+
+// Whitelist of allowed log levels to prevent path traversal
+const ALLOWED_LOG_LEVELS = ['error', 'warn', 'info', 'debug'];
+
+/**
+ * Validate and sanitize log level parameter
+ * @param {string} level - User-provided log level
+ * @returns {string[]} - Array of validated log levels
+ */
+function validateLogLevel(level) {
+    if (!level || level === 'all') {
+        return ALLOWED_LOG_LEVELS;
+    }
+
+    // Only allow whitelisted values
+    if (ALLOWED_LOG_LEVELS.includes(level)) {
+        return [level];
+    }
+
+    // Invalid level - return empty array
+    return [];
+}
 
 /**
  * GET /api/v1/logs - Fetch recent log entries
@@ -15,22 +37,28 @@ const logDir = process.env.LOG_DIR || './logs';
  * - minutes: Fetch logs from the last N minutes - default: 60
  * - since: ISO timestamp to fetch logs after this time
  */
-router.get('/', async (req, res, next) => {
+router.get('/', logsRateLimiter, async (req, res, next) => {
     try {
         const level = req.query.level || 'all';
         const limit = Math.min(parseInt(req.query.limit) || 100, 1000);
         const minutes = parseInt(req.query.minutes) || 60;
         const since = req.query.since ? new Date(req.query.since) : new Date(Date.now() - minutes * 60 * 1000);
 
-        // Determine which log files to read
-        const logLevels = level === 'all'
-            ? ['error', 'warn', 'info', 'debug']
-            : [level];
+        // Validate log level to prevent path traversal
+        const logLevels = validateLogLevel(level);
+
+        if (logLevels.length === 0) {
+            return res.status(400).json({
+                success: false,
+                error: `Invalid log level. Allowed values: ${ALLOWED_LOG_LEVELS.join(', ')}, all`
+            });
+        }
 
         const logs = [];
 
         // Read logs from each file
         for (const logLevel of logLevels) {
+            // Construct safe file path using only whitelisted values
             const logFile = path.join(logDir, `${logLevel}.log`);
 
             if (!fs.existsSync(logFile)) {
@@ -79,12 +107,13 @@ router.get('/', async (req, res, next) => {
 /**
  * GET /api/v1/logs/errors - Fetch only error logs (convenience endpoint)
  */
-router.get('/errors', async (req, res, next) => {
+router.get('/errors', logsRateLimiter, async (req, res, next) => {
     try {
         const limit = Math.min(parseInt(req.query.limit) || 50, 1000);
         const minutes = parseInt(req.query.minutes) || 10;
         const since = req.query.since ? new Date(req.query.since) : new Date(Date.now() - minutes * 60 * 1000);
 
+        // Use hardcoded 'error' level - no user input in path
         const logFile = path.join(logDir, 'error.log');
         const errors = [];
 
@@ -130,18 +159,25 @@ router.get('/errors', async (req, res, next) => {
  * - level: Log level to tail (default: all)
  * - lines: Number of lines to return (default: 50, max: 500)
  */
-router.get('/tail', async (req, res, next) => {
+router.get('/tail', logsRateLimiter, async (req, res, next) => {
     try {
         const level = req.query.level || 'all';
         const lines = Math.min(parseInt(req.query.lines) || 50, 500);
 
-        const logLevels = level === 'all'
-            ? ['error', 'warn', 'info', 'debug']
-            : [level];
+        // Validate log level to prevent path traversal
+        const logLevels = validateLogLevel(level);
+
+        if (logLevels.length === 0) {
+            return res.status(400).json({
+                success: false,
+                error: `Invalid log level. Allowed values: ${ALLOWED_LOG_LEVELS.join(', ')}, all`
+            });
+        }
 
         const logs = [];
 
         for (const logLevel of logLevels) {
+            // Construct safe file path using only whitelisted values
             const logFile = path.join(logDir, `${logLevel}.log`);
 
             if (!fs.existsSync(logFile)) {
