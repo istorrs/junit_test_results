@@ -64,6 +64,17 @@
               </div>
             </div>
 
+            <!-- Test Steps Section -->
+            <div v-if="testSteps.length > 0" class="test-steps-section">
+              <h3>Test Steps</h3>
+              <div class="test-steps-list">
+                <div v-for="(step, index) in testSteps" :key="index" class="test-step-item">
+                  <div class="step-number">{{ index + 1 }}</div>
+                  <div class="step-content">{{ step }}</div>
+                </div>
+              </div>
+            </div>
+
             <div v-if="flakinessData" class="flakiness-summary">
               <h3>Stability</h3>
               <div class="stability-stats">
@@ -338,6 +349,31 @@ const systemErrHtml = computed(() => {
   return ansiConverter.toHtml(withRealEscapes)
 })
 
+// Parse test steps from System Error output
+const testSteps = computed(() => {
+  const systemErr = testCaseDetails.value?.system_err
+  if (!systemErr) return []
+
+  const steps: string[] = []
+  const lines = systemErr.split('\n')
+
+  for (const line of lines) {
+    if (line.includes('TPAPI - TEST_POINT_START')) {
+      // Extract the test step name after TEST_POINT_START
+      // Format is typically: "... TPAPI - TEST_POINT_START: Step Name ..."
+      const match = line.match(/TPAPI - TEST_POINT_START[:\s]+(.+?)(?:\s*$|[\n\r])/i)
+      if (match && match[1]) {
+        const stepName = match[1].trim()
+        if (stepName) {
+          steps.push(stepName)
+        }
+      }
+    }
+  }
+
+  return steps
+})
+
 // Fetch additional data when modal opens
 watch(() => props.open, async (isOpen) => {
   if (isOpen && props.testId) {
@@ -549,6 +585,7 @@ const copyErrorToClipboard = () => {
 
 .tab-panel {
   animation: fadeIn 0.2s ease-in;
+  min-height: 400px;
 }
 
 @keyframes fadeIn {
@@ -983,5 +1020,65 @@ const copyErrorToClipboard = () => {
 
 .property-link:visited {
   color: #7c3aed;
+}
+
+/* Test Steps Section */
+.test-steps-section {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background: var(--bg-secondary);
+  border-radius: 0.5rem;
+  border: 1px solid var(--border-color);
+}
+
+.test-steps-section h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: var(--text-primary);
+}
+
+.test-steps-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.test-step-item {
+  display: flex;
+  align-items: start;
+  gap: 1rem;
+  padding: 0.75rem;
+  background: var(--bg-primary);
+  border-radius: 0.375rem;
+  border: 1px solid var(--border-color);
+  transition: all 0.2s;
+}
+
+.test-step-item:hover {
+  background: var(--bg-hover);
+  border-color: var(--primary-color);
+}
+
+.step-number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2rem;
+  height: 2rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--primary-color);
+  background: var(--primary-bg);
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.step-content {
+  flex: 1;
+  font-size: 0.875rem;
+  color: var(--text-primary);
+  line-height: 1.6;
+  padding-top: 0.25rem;
 }
 </style>
