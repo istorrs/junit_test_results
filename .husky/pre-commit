@@ -7,7 +7,7 @@ npx lint-staged
 # If lint-staged passed, show success message
 if [ $? -eq 0 ]; then
   echo ""
-  echo "✅ All code quality checks passed!"
+  echo "✅ Linting checks passed!"
   echo ""
 else
   echo ""
@@ -16,3 +16,37 @@ else
   echo ""
   exit 1
 fi
+
+# Run npm audit in client directory
+echo "🔒 Running security audit for client..."
+cd client
+npm audit --audit-level=moderate
+CLIENT_AUDIT=$?
+cd ..
+
+if [ $CLIENT_AUDIT -ne 0 ]; then
+  echo ""
+  echo "❌ Client security audit failed!"
+  echo "💡 Run 'cd client && npm audit fix' to fix vulnerabilities"
+  echo ""
+  exit 1
+fi
+
+# Run npm audit in backend directory
+echo "🔒 Running security audit for backend..."
+cd backend
+npm audit --audit-level=moderate
+BACKEND_AUDIT=$?
+cd ..
+
+if [ $BACKEND_AUDIT -ne 0 ]; then
+  echo ""
+  echo "❌ Backend security audit failed!"
+  echo "💡 Run 'cd backend && npm audit fix' to fix vulnerabilities"
+  echo ""
+  exit 1
+fi
+
+echo ""
+echo "✅ All code quality and security checks passed!"
+echo ""
