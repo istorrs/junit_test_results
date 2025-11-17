@@ -43,10 +43,7 @@ const emit = defineEmits<{
   close: []
 }>()
 
-const modalClasses = computed(() => [
-  'modal-content',
-  `modal-${props.size}`,
-])
+const modalClasses = computed(() => ['modal-content', `modal-${props.size}`])
 
 const handleClose = () => {
   emit('close')
@@ -89,7 +86,9 @@ watch(
 .modal-content {
   background: var(--bg-primary);
   border-radius: 0.5rem;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  box-shadow:
+    0 20px 25px -5px rgba(0, 0, 0, 0.1),
+    0 10px 10px -5px rgba(0, 0, 0, 0.04);
   max-height: 90vh;
   display: flex;
   flex-direction: column;

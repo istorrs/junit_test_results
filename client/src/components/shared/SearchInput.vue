@@ -7,9 +7,7 @@
       :placeholder="placeholder"
       @input="$emit('update:modelValue', ($event.target as HTMLInputElement).value)"
     />
-    <button v-if="modelValue" class="clear-btn" @click="$emit('update:modelValue', '')">
-      ×
-    </button>
+    <button v-if="modelValue" class="clear-btn" @click="$emit('update:modelValue', '')">×</button>
   </div>
 </template>
 

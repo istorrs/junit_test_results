@@ -37,8 +37,8 @@
             <td :colspan="columns.length" class="empty-cell">No data available</td>
           </tr>
           <tr
-            v-else
             v-for="(row, index) in paginatedData"
+            v-else
             :key="index"
             :class="{ clickable: rowClickable }"
             @click="rowClickable ? $emit('row-click', row) : null"

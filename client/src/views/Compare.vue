@@ -28,11 +28,7 @@
           </select>
         </div>
 
-        <button
-          class="compare-button"
-          :disabled="!canCompare || loading"
-          @click="compareRuns"
-        >
+        <button class="compare-button" :disabled="!canCompare || loading" @click="compareRuns">
           {{ loading ? 'Comparing...' : 'Compare' }}
         </button>
       </div>
@@ -162,7 +158,13 @@
             <div v-if="comparison.details.new_failures.length === 0" class="empty-state">
               No new failures
             </div>
-            <div v-else v-for="test in comparison.details.new_failures" :key="test.test_id" class="test-item clickable" @click="openTestModal(test)">
+            <div
+              v-for="test in comparison.details.new_failures"
+              v-else
+              :key="test.test_id"
+              class="test-item clickable"
+              @click="openTestModal(test)"
+            >
               <div class="test-header">
                 <span class="test-name">{{ test.test_name }}</span>
                 <span class="badge badge-error">{{ test.status_after }}</span>
@@ -181,14 +183,22 @@
             <div v-if="comparison.details.fixed_tests.length === 0" class="empty-state">
               No fixed tests
             </div>
-            <div v-else v-for="test in comparison.details.fixed_tests" :key="test.test_id" class="test-item clickable" @click="openTestModal(test)">
+            <div
+              v-for="test in comparison.details.fixed_tests"
+              v-else
+              :key="test.test_id"
+              class="test-item clickable"
+              @click="openTestModal(test)"
+            >
               <div class="test-header">
                 <span class="test-name">{{ test.test_name }}</span>
                 <span class="badge badge-success">Fixed</span>
               </div>
               <div class="test-details">
                 <span class="class-name">{{ test.class_name }}</span>
-                <span class="status-change">{{ test.status_before }} → {{ test.status_after }}</span>
+                <span class="status-change"
+                  >{{ test.status_before }} → {{ test.status_after }}</span
+                >
               </div>
             </div>
           </div>
@@ -198,7 +208,13 @@
             <div v-if="comparison.details.still_failing.length === 0" class="empty-state">
               No tests still failing
             </div>
-            <div v-else v-for="test in comparison.details.still_failing" :key="test.test_id" class="test-item clickable" @click="openTestModal(test)">
+            <div
+              v-for="test in comparison.details.still_failing"
+              v-else
+              :key="test.test_id"
+              class="test-item clickable"
+              @click="openTestModal(test)"
+            >
               <div class="test-header">
                 <span class="test-name">{{ test.test_name }}</span>
                 <span class="badge badge-error">{{ test.status_after }}</span>
@@ -214,12 +230,22 @@
             <div v-if="comparison.details.performance_changes.length === 0" class="empty-state">
               No significant performance changes
             </div>
-            <div v-else v-for="test in comparison.details.performance_changes" :key="test.test_id" class="test-item clickable" @click="openTestModal(test)">
+            <div
+              v-for="test in comparison.details.performance_changes"
+              v-else
+              :key="test.test_id"
+              class="test-item clickable"
+              @click="openTestModal(test)"
+            >
               <div class="test-header">
                 <span class="test-name">{{ test.test_name }}</span>
                 <span
                   class="badge"
-                  :class="test.time_diff_percent && test.time_diff_percent > 0 ? 'badge-warning' : 'badge-success'"
+                  :class="
+                    test.time_diff_percent && test.time_diff_percent > 0
+                      ? 'badge-warning'
+                      : 'badge-success'
+                  "
                 >
                   {{ test.time_diff_percent && test.time_diff_percent > 0 ? 'Slower' : 'Faster' }}
                 </span>
@@ -227,8 +253,12 @@
               <div class="test-details">
                 <span class="class-name">{{ test.class_name }}</span>
                 <span class="time-change">
-                  {{ formatDuration(test.time_before || 0) }} → {{ formatDuration(test.time_after || 0) }}
-                  ({{ test.time_diff_percent ? (test.time_diff_percent > 0 ? '+' : '') + test.time_diff_percent.toFixed(1) : '0' }}%)
+                  {{ formatDuration(test.time_before || 0) }} →
+                  {{ formatDuration(test.time_after || 0) }} ({{
+                    test.time_diff_percent
+                      ? (test.time_diff_percent > 0 ? '+' : '') + test.time_diff_percent.toFixed(1)
+                      : '0'
+                  }}%)
                 </span>
               </div>
             </div>
@@ -239,7 +269,13 @@
             <div v-if="comparison.details.new_tests.length === 0" class="empty-state">
               No new tests
             </div>
-            <div v-else v-for="test in comparison.details.new_tests" :key="test.test_id" class="test-item clickable" @click="openTestModal(test)">
+            <div
+              v-for="test in comparison.details.new_tests"
+              v-else
+              :key="test.test_id"
+              class="test-item clickable"
+              @click="openTestModal(test)"
+            >
               <div class="test-header">
                 <span class="test-name">{{ test.test_name }}</span>
                 <span class="badge badge-info">New</span>
@@ -255,7 +291,13 @@
             <div v-if="comparison.details.removed_tests.length === 0" class="empty-state">
               No removed tests
             </div>
-            <div v-else v-for="test in comparison.details.removed_tests" :key="test.test_id" class="test-item clickable" @click="openTestModal(test)">
+            <div
+              v-for="test in comparison.details.removed_tests"
+              v-else
+              :key="test.test_id"
+              class="test-item clickable"
+              @click="openTestModal(test)"
+            >
               <div class="test-header">
                 <span class="test-name">{{ test.test_name }}</span>
                 <span class="badge badge-secondary">Removed</span>
@@ -275,7 +317,9 @@
       :open="modalOpen"
       :test-id="selectedTest.test_case_id || selectedTest.test_id"
       :test-name="selectedTest.test_name"
-      :status="selectedTest.status_after || selectedTest.status_before || selectedTest.status || 'unknown'"
+      :status="
+        selectedTest.status_after || selectedTest.status_before || selectedTest.status || 'unknown'
+      "
       :duration="selectedTest.time_after || selectedTest.time"
       :error-message="selectedTest.error_message"
       :error-type="selectedTest.error_type"
@@ -321,13 +365,20 @@ const getTabCount = (tabId: string): number => {
   if (!comparison.value) return 0
 
   switch (tabId) {
-    case 'new-failures': return comparison.value.details.new_failures.length
-    case 'fixed-tests': return comparison.value.details.fixed_tests.length
-    case 'still-failing': return comparison.value.details.still_failing.length
-    case 'performance': return comparison.value.details.performance_changes.length
-    case 'new-tests': return comparison.value.details.new_tests.length
-    case 'removed-tests': return comparison.value.details.removed_tests.length
-    default: return 0
+    case 'new-failures':
+      return comparison.value.details.new_failures.length
+    case 'fixed-tests':
+      return comparison.value.details.fixed_tests.length
+    case 'still-failing':
+      return comparison.value.details.still_failing.length
+    case 'performance':
+      return comparison.value.details.performance_changes.length
+    case 'new-tests':
+      return comparison.value.details.new_tests.length
+    case 'removed-tests':
+      return comparison.value.details.removed_tests.length
+    default:
+      return 0
   }
 }
 
@@ -338,7 +389,7 @@ const formatDate = (dateString: string): string => {
     month: 'short',
     day: 'numeric',
     hour: '2-digit',
-    minute: '2-digit'
+    minute: '2-digit',
   })
 }
 
@@ -394,13 +445,16 @@ const loadRuns = async () => {
 }
 
 // Watch for global project filter changes and reload runs
-watch(() => store.globalProjectFilter, () => {
-  loadRuns()
-  // Clear selections when filter changes
-  selectedRun1.value = ''
-  selectedRun2.value = ''
-  comparison.value = null
-})
+watch(
+  () => store.globalProjectFilter,
+  () => {
+    loadRuns()
+    // Clear selections when filter changes
+    selectedRun1.value = ''
+    selectedRun2.value = ''
+    comparison.value = null
+  }
+)
 
 onMounted(() => {
   loadRuns()
@@ -500,7 +554,9 @@ onMounted(() => {
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .error-state {

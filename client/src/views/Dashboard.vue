@@ -3,9 +3,7 @@
     <div class="dashboard-header">
       <h1>Dashboard</h1>
       <div class="header-controls">
-        <Button @click="refreshData" :loading="store.loading">
-          Refresh
-        </Button>
+        <Button :loading="store.loading" @click="refreshData"> Refresh </Button>
       </div>
     </div>
 
@@ -99,7 +97,9 @@
             <div class="stat-icon">⏱️</div>
             <div class="stat-details">
               <div class="stat-label">Avg Duration</div>
-              <div class="stat-value">{{ formatDuration(store.stats.average_duration * 1000) }}</div>
+              <div class="stat-value">
+                {{ formatDuration(store.stats.average_duration * 1000) }}
+              </div>
             </div>
           </div>
         </Card>
@@ -108,10 +108,7 @@
       <!-- Charts and Widgets Row -->
       <div class="charts-grid">
         <Card title="Test Results Distribution" class="chart-card">
-          <PieChart
-            :data="testResultsChartData"
-            height="350px"
-          />
+          <PieChart :data="testResultsChartData" height="350px" />
         </Card>
 
         <Card title="Recent Test Runs" class="chart-card">
@@ -127,18 +124,11 @@
           </div>
         </Card>
 
-        <FlakyTestsWidget
-          :limit="5"
-          class="chart-card"
-        />
+        <FlakyTestsWidget :limit="5" class="chart-card" />
       </div>
 
       <!-- Insights Panel (Full Width) -->
-      <FailurePatternsSummary
-        :days="7"
-        :limit="5"
-        :show-time-range="true"
-      />
+      <FailurePatternsSummary :days="7" :limit="5" :show-time-range="true" />
 
       <!-- Quick Actions -->
       <Card title="Quick Actions" class="actions-card">
@@ -193,7 +183,7 @@ const testResultsChartData = computed(() => {
     { name: 'Failed', value: store.stats.total_failed },
     { name: 'Errors', value: store.stats.total_errors },
     { name: 'Skipped', value: store.stats.total_skipped },
-  ].filter(item => item.value > 0)
+  ].filter((item) => item.value > 0)
 })
 
 const recentRunsData = computed(() => {
@@ -204,11 +194,11 @@ const recentRunsData = computed(() => {
     series: [
       {
         name: 'Passed',
-        data: runs.map(run => run.passed),
+        data: runs.map((run) => run.passed),
       },
       {
         name: 'Failed',
-        data: runs.map(run => run.failed),
+        data: runs.map((run) => run.failed),
       },
     ],
   }
@@ -221,19 +211,19 @@ const refreshData = async () => {
       filters.job_name = store.globalProjectFilter
     }
 
-    await Promise.all([
-      store.fetchStats(filters),
-      store.fetchRuns({ limit: 10, ...filters }),
-    ])
+    await Promise.all([store.fetchStats(filters), store.fetchRuns({ limit: 10, ...filters })])
   } catch (error) {
     console.error('Failed to refresh dashboard:', error)
   }
 }
 
 // Watch for global project filter changes and reload data
-watch(() => store.globalProjectFilter, () => {
-  refreshData()
-})
+watch(
+  () => store.globalProjectFilter,
+  () => {
+    refreshData()
+  }
+)
 
 onMounted(() => {
   refreshData()
@@ -285,7 +275,9 @@ h1 {
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .error-icon,
@@ -346,12 +338,28 @@ h1 {
   background: var(--bg-hover);
 }
 
-.stat-card.success .stat-icon { background: var(--success-bg); }
-.stat-card.passed .stat-icon { background: var(--success-bg); color: var(--success-color); }
-.stat-card.failed .stat-icon { background: var(--error-bg); color: var(--error-color); }
-.stat-card.error .stat-icon { background: var(--warning-bg); color: var(--warning-color); }
-.stat-card.skipped .stat-icon { background: var(--bg-hover); color: var(--text-secondary); }
-.stat-card.duration .stat-icon { background: var(--info-bg); }
+.stat-card.success .stat-icon {
+  background: var(--success-bg);
+}
+.stat-card.passed .stat-icon {
+  background: var(--success-bg);
+  color: var(--success-color);
+}
+.stat-card.failed .stat-icon {
+  background: var(--error-bg);
+  color: var(--error-color);
+}
+.stat-card.error .stat-icon {
+  background: var(--warning-bg);
+  color: var(--warning-color);
+}
+.stat-card.skipped .stat-icon {
+  background: var(--bg-hover);
+  color: var(--text-secondary);
+}
+.stat-card.duration .stat-icon {
+  background: var(--info-bg);
+}
 
 .stat-details {
   flex: 1;

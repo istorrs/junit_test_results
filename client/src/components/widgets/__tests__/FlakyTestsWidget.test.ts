@@ -7,8 +7,8 @@ import FlakyTestsWidget from '../FlakyTestsWidget.vue'
 // Mock the API client module
 vi.mock('../../../api/client', () => ({
   apiClient: {
-    getFlakyTests: vi.fn()
-  }
+    getFlakyTests: vi.fn(),
+  },
 }))
 
 import { apiClient } from '../../../api/client'
@@ -19,8 +19,8 @@ vi.mock('../../shared/Card.vue', () => ({
   default: {
     name: 'Card',
     template: '<div class="mock-card"><slot name="title"></slot><slot></slot></div>',
-    props: ['title']
-  }
+    props: ['title'],
+  },
 }))
 
 describe('FlakyTestsWidget', () => {
@@ -32,9 +32,7 @@ describe('FlakyTestsWidget', () => {
     // Create a mock router
     router = createRouter({
       history: createMemoryHistory(),
-      routes: [
-        { path: '/cases', name: 'cases', component: { template: '<div>Cases</div>' } }
-      ]
+      routes: [{ path: '/cases', name: 'cases', component: { template: '<div>Cases</div>' } }],
     })
   })
 
@@ -46,7 +44,7 @@ describe('FlakyTestsWidget', () => {
       pass_rate: 70,
       flakiness_score: 30,
       recent_runs: 20,
-      recent_failures: 6
+      recent_failures: 6,
     },
     {
       test_id: 'test-2',
@@ -55,18 +53,18 @@ describe('FlakyTestsWidget', () => {
       pass_rate: 85,
       flakiness_score: 15,
       recent_runs: 20,
-      recent_failures: 3
-    }
+      recent_failures: 3,
+    },
   ]
 
   it('renders card with title', () => {
     const wrapper = mount(FlakyTestsWidget, {
       global: {
-        plugins: [router]
+        plugins: [router],
       },
       props: {
-        limit: 5
-      }
+        limit: 5,
+      },
     })
     expect(wrapper.find('.mock-card').exists()).toBe(true)
   })
@@ -76,11 +74,11 @@ describe('FlakyTestsWidget', () => {
 
     const wrapper = mount(FlakyTestsWidget, {
       global: {
-        plugins: [router]
+        plugins: [router],
       },
       props: {
-        limit: 5
-      }
+        limit: 5,
+      },
     })
 
     // Wait for onMounted to run
@@ -92,16 +90,16 @@ describe('FlakyTestsWidget', () => {
 
   it('loads flaky tests on mount', async () => {
     mockGetFlakyTests.mockResolvedValue({
-      flaky_tests: mockFlakyTests
+      flaky_tests: mockFlakyTests,
     })
 
     mount(FlakyTestsWidget, {
       global: {
-        plugins: [router]
+        plugins: [router],
       },
       props: {
-        limit: 5
-      }
+        limit: 5,
+      },
     })
 
     await flushPromises()
@@ -111,16 +109,16 @@ describe('FlakyTestsWidget', () => {
 
   it('displays flaky tests after loading', async () => {
     mockGetFlakyTests.mockResolvedValue({
-      flaky_tests: mockFlakyTests
+      flaky_tests: mockFlakyTests,
     })
 
     const wrapper = mount(FlakyTestsWidget, {
       global: {
-        plugins: [router]
+        plugins: [router],
       },
       props: {
-        limit: 5
-      }
+        limit: 5,
+      },
     })
 
     await flushPromises()
@@ -132,16 +130,16 @@ describe('FlakyTestsWidget', () => {
 
   it('displays flakiness scores', async () => {
     mockGetFlakyTests.mockResolvedValue({
-      flaky_tests: mockFlakyTests
+      flaky_tests: mockFlakyTests,
     })
 
     const wrapper = mount(FlakyTestsWidget, {
       global: {
-        plugins: [router]
+        plugins: [router],
       },
       props: {
-        limit: 5
-      }
+        limit: 5,
+      },
     })
 
     await flushPromises()
@@ -152,16 +150,16 @@ describe('FlakyTestsWidget', () => {
 
   it('applies correct score classes', async () => {
     mockGetFlakyTests.mockResolvedValue({
-      flaky_tests: mockFlakyTests
+      flaky_tests: mockFlakyTests,
     })
 
     const wrapper = mount(FlakyTestsWidget, {
       global: {
-        plugins: [router]
+        plugins: [router],
       },
       props: {
-        limit: 5
-      }
+        limit: 5,
+      },
     })
 
     await flushPromises()
@@ -174,16 +172,16 @@ describe('FlakyTestsWidget', () => {
 
   it('displays empty state when no flaky tests', async () => {
     mockGetFlakyTests.mockResolvedValue({
-      flaky_tests: []
+      flaky_tests: [],
     })
 
     const wrapper = mount(FlakyTestsWidget, {
       global: {
-        plugins: [router]
+        plugins: [router],
       },
       props: {
-        limit: 5
-      }
+        limit: 5,
+      },
     })
 
     await flushPromises()
@@ -197,11 +195,11 @@ describe('FlakyTestsWidget', () => {
 
     const wrapper = mount(FlakyTestsWidget, {
       global: {
-        plugins: [router]
+        plugins: [router],
       },
       props: {
-        limit: 5
-      }
+        limit: 5,
+      },
     })
 
     await flushPromises()
@@ -212,16 +210,16 @@ describe('FlakyTestsWidget', () => {
 
   it('respects limit prop', async () => {
     mockGetFlakyTests.mockResolvedValue({
-      flaky_tests: mockFlakyTests
+      flaky_tests: mockFlakyTests,
     })
 
     mount(FlakyTestsWidget, {
       global: {
-        plugins: [router]
+        plugins: [router],
       },
       props: {
-        limit: 10
-      }
+        limit: 10,
+      },
     })
 
     await flushPromises()
@@ -231,13 +229,13 @@ describe('FlakyTestsWidget', () => {
 
   it('uses default limit of 5 when not specified', async () => {
     mockGetFlakyTests.mockResolvedValue({
-      flaky_tests: mockFlakyTests
+      flaky_tests: mockFlakyTests,
     })
 
     mount(FlakyTestsWidget, {
       global: {
-        plugins: [router]
-      }
+        plugins: [router],
+      },
     })
 
     await flushPromises()
@@ -247,16 +245,16 @@ describe('FlakyTestsWidget', () => {
 
   it('navigates to test cases on "View All" click', async () => {
     mockGetFlakyTests.mockResolvedValue({
-      flaky_tests: mockFlakyTests
+      flaky_tests: mockFlakyTests,
     })
 
     const wrapper = mount(FlakyTestsWidget, {
       global: {
-        plugins: [router]
+        plugins: [router],
       },
       props: {
-        limit: 5
-      }
+        limit: 5,
+      },
     })
 
     await flushPromises()
@@ -271,16 +269,16 @@ describe('FlakyTestsWidget', () => {
 
   it('test items are clickable', async () => {
     mockGetFlakyTests.mockResolvedValue({
-      flaky_tests: mockFlakyTests
+      flaky_tests: mockFlakyTests,
     })
 
     const wrapper = mount(FlakyTestsWidget, {
       global: {
-        plugins: [router]
+        plugins: [router],
       },
       props: {
-        limit: 5
-      }
+        limit: 5,
+      },
     })
 
     await flushPromises()
@@ -297,20 +295,20 @@ describe('FlakyTestsWidget', () => {
       pass_rate: 60,
       flakiness_score: 40,
       recent_runs: 10,
-      recent_failures: 4
+      recent_failures: 4,
     }
 
     mockGetFlakyTests.mockResolvedValue({
-      flaky_tests: [longNameTest]
+      flaky_tests: [longNameTest],
     })
 
     const wrapper = mount(FlakyTestsWidget, {
       global: {
-        plugins: [router]
+        plugins: [router],
       },
       props: {
-        limit: 5
-      }
+        limit: 5,
+      },
     })
 
     await flushPromises()

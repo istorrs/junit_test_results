@@ -3,26 +3,14 @@
     <div class="page-header">
       <h1>Test Runs</h1>
       <div class="header-actions">
-        <Button
-          v-if="selectedRuns.size > 0"
-          @click="deleteSelectedRuns"
-          variant="danger"
-        >
+        <Button v-if="selectedRuns.size > 0" variant="danger" @click="deleteSelectedRuns">
           Delete {{ selectedRuns.size }} Run{{ selectedRuns.size > 1 ? 's' : '' }}
         </Button>
-        <Button
-          v-if="selectedRuns.size > 0"
-          @click="openReleaseTagModal"
-          variant="primary"
-        >
+        <Button v-if="selectedRuns.size > 0" variant="primary" @click="openReleaseTagModal">
           Tag {{ selectedRuns.size }} Run{{ selectedRuns.size > 1 ? 's' : '' }} as Release
         </Button>
-        <Button @click="loadData" :loading="store.loading" variant="secondary">
-          Refresh
-        </Button>
-        <Button @click="$router.push('/upload')">
-          Upload New Results
-        </Button>
+        <Button :loading="store.loading" variant="secondary" @click="loadData"> Refresh </Button>
+        <Button @click="$router.push('/upload')"> Upload New Results </Button>
       </div>
     </div>
 
@@ -53,31 +41,16 @@
 
           <div class="filter-group">
             <label>Date Range</label>
-            <input
-              v-model="dateFrom"
-              type="date"
-              class="filter-input"
-              placeholder="From"
-            />
+            <input v-model="dateFrom" type="date" class="filter-input" placeholder="From" />
           </div>
 
           <div class="filter-group">
             <label>To</label>
-            <input
-              v-model="dateTo"
-              type="date"
-              class="filter-input"
-              placeholder="To"
-            />
+            <input v-model="dateTo" type="date" class="filter-input" placeholder="To" />
           </div>
 
           <div class="filter-group align-end">
-            <Button
-              @click="clearFilters"
-              variant="secondary"
-              size="sm"
-              v-if="hasActiveFilters"
-            >
+            <Button v-if="hasActiveFilters" variant="secondary" size="sm" @click="clearFilters">
               Clear Filters
             </Button>
           </div>
@@ -89,9 +62,9 @@
           ref="selectAllCheckbox"
           type="checkbox"
           :checked="allRunsSelected"
-          @change="toggleAllRuns"
           class="run-checkbox"
           title="Select/Deselect All"
+          @change="toggleAllRuns"
         />
       </template>
 
@@ -99,16 +72,16 @@
         <input
           type="checkbox"
           :checked="selectedRuns.has((row as any).id)"
+          class="run-checkbox"
           @change="toggleRunSelection((row as any).id)"
           @click.stop
-          class="run-checkbox"
         />
       </template>
 
       <template #cell-name="{ row }">
         <div class="run-name">
           <strong>{{ (row as any).name || `Run ${(row as any).id?.slice(0, 8)}` }}</strong>
-          <div class="run-meta" v-if="(row as any).ci_metadata">
+          <div v-if="(row as any).ci_metadata" class="run-meta">
             <span v-if="(row as any).ci_metadata.job_name" class="meta-tag">
               {{ (row as any).ci_metadata.job_name }}
             </span>
@@ -131,7 +104,9 @@
           <span class="badge passed">✓ {{ (row as any).passed }}</span>
           <span class="badge failed">✗ {{ (row as any).failed }}</span>
           <span v-if="(row as any).errors" class="badge error">⚠ {{ (row as any).errors }}</span>
-          <span v-if="(row as any).skipped" class="badge skipped">⊘ {{ (row as any).skipped }}</span>
+          <span v-if="(row as any).skipped" class="badge skipped"
+            >⊘ {{ (row as any).skipped }}</span
+          >
         </div>
       </template>
 
@@ -196,7 +171,7 @@ const filteredRuns = computed(() => {
   // Search filter
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase()
-    filtered = filtered.filter(run => {
+    filtered = filtered.filter((run) => {
       return (
         run.name?.toLowerCase().includes(query) ||
         run.ci_metadata?.job_name?.toLowerCase().includes(query) ||
@@ -208,7 +183,7 @@ const filteredRuns = computed(() => {
 
   // Status filter
   if (selectedStatus.value) {
-    filtered = filtered.filter(run => {
+    filtered = filtered.filter((run) => {
       const hasFailures = run.failed > 0 || run.errors > 0
       const rate = calculateSuccessRate(run)
       if (selectedStatus.value === 'passed') return rate === 100
@@ -221,25 +196,20 @@ const filteredRuns = computed(() => {
   // Date filters
   if (dateFrom.value) {
     const from = new Date(dateFrom.value)
-    filtered = filtered.filter(run => new Date(run.timestamp) >= from)
+    filtered = filtered.filter((run) => new Date(run.timestamp) >= from)
   }
 
   if (dateTo.value) {
     const to = new Date(dateTo.value)
     to.setHours(23, 59, 59, 999)
-    filtered = filtered.filter(run => new Date(run.timestamp) <= to)
+    filtered = filtered.filter((run) => new Date(run.timestamp) <= to)
   }
 
   return filtered
 })
 
 const hasActiveFilters = computed(() => {
-  return !!(
-    searchQuery.value ||
-    selectedStatus.value ||
-    dateFrom.value ||
-    dateTo.value
-  )
+  return !!(searchQuery.value || selectedStatus.value || dateFrom.value || dateTo.value)
 })
 
 const calculateSuccessRate = (run: TestRun): number => {
@@ -273,21 +243,21 @@ const viewRunDetails = (run: TestRun) => {
 // Select All functionality
 const allRunsSelected = computed(() => {
   if (filteredRuns.value.length === 0) return false
-  return filteredRuns.value.every(run => selectedRuns.value.has(run.id))
+  return filteredRuns.value.every((run) => selectedRuns.value.has(run.id))
 })
 
 const someRunsSelected = computed(() => {
   if (selectedRuns.value.size === 0) return false
-  return !allRunsSelected.value && filteredRuns.value.some(run => selectedRuns.value.has(run.id))
+  return !allRunsSelected.value && filteredRuns.value.some((run) => selectedRuns.value.has(run.id))
 })
 
 const toggleAllRuns = () => {
   if (allRunsSelected.value) {
     // Deselect all visible runs
-    filteredRuns.value.forEach(run => selectedRuns.value.delete(run.id))
+    filteredRuns.value.forEach((run) => selectedRuns.value.delete(run.id))
   } else {
     // Select all visible runs
-    filteredRuns.value.forEach(run => selectedRuns.value.add(run.id))
+    filteredRuns.value.forEach((run) => selectedRuns.value.add(run.id))
   }
   // Force reactivity
   selectedRuns.value = new Set(selectedRuns.value)
@@ -327,12 +297,12 @@ const deleteSelectedRuns = async () => {
 
   const confirmed = confirm(
     `Are you sure you want to delete ${count} test ${runText}?\n\n` +
-    'This will permanently delete:\n' +
-    '- Test run records\n' +
-    '- All test cases and results\n' +
-    '- All test suites\n' +
-    '- Associated file uploads\n\n' +
-    'This action cannot be undone.'
+      'This will permanently delete:\n' +
+      '- Test run records\n' +
+      '- All test cases and results\n' +
+      '- All test suites\n' +
+      '- Associated file uploads\n\n' +
+      'This action cannot be undone.'
   )
 
   if (!confirmed) {
@@ -341,7 +311,7 @@ const deleteSelectedRuns = async () => {
 
   try {
     const runIds = Array.from(selectedRuns.value)
-    const deletePromises = runIds.map(runId => apiClient.deleteRun(runId))
+    const deletePromises = runIds.map((runId) => apiClient.deleteRun(runId))
 
     await Promise.all(deletePromises)
 
@@ -375,9 +345,12 @@ watch(someRunsSelected, (value) => {
 })
 
 // Watch for global project filter changes and reload data
-watch(() => store.globalProjectFilter, () => {
-  loadData()
-})
+watch(
+  () => store.globalProjectFilter,
+  () => {
+    loadData()
+  }
+)
 
 onMounted(() => {
   loadData()

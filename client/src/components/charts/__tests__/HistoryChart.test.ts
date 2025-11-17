@@ -7,13 +7,13 @@ vi.mock('echarts', () => ({
   init: vi.fn(() => ({
     setOption: vi.fn(),
     resize: vi.fn(),
-    dispose: vi.fn()
+    dispose: vi.fn(),
   })),
   graphic: {
     LinearGradient: class {
       constructor() {}
-    }
-  }
+    },
+  },
 }))
 
 describe('HistoryChart', () => {
@@ -22,32 +22,32 @@ describe('HistoryChart', () => {
       run_id: '1',
       status: 'passed' as const,
       duration: 1.5,
-      timestamp: '2024-01-01T10:00:00Z'
+      timestamp: '2024-01-01T10:00:00Z',
     },
     {
       run_id: '2',
       status: 'failed' as const,
       duration: 2.0,
-      timestamp: '2024-01-02T10:00:00Z'
+      timestamp: '2024-01-02T10:00:00Z',
     },
     {
       run_id: '3',
       status: 'passed' as const,
       duration: 1.8,
-      timestamp: '2024-01-03T10:00:00Z'
+      timestamp: '2024-01-03T10:00:00Z',
     },
     {
       run_id: '4',
       status: 'error' as const,
       duration: 0.5,
-      timestamp: '2024-01-04T10:00:00Z'
+      timestamp: '2024-01-04T10:00:00Z',
     },
     {
       run_id: '5',
       status: 'skipped' as const,
       duration: 0,
-      timestamp: '2024-01-05T10:00:00Z'
-    }
+      timestamp: '2024-01-05T10:00:00Z',
+    },
   ]
 
   beforeEach(() => {
@@ -57,8 +57,8 @@ describe('HistoryChart', () => {
   it('displays empty state when no data', () => {
     const wrapper = mount(HistoryChart, {
       props: {
-        data: []
-      }
+        data: [],
+      },
     })
     expect(wrapper.find('.empty-state').exists()).toBe(true)
     expect(wrapper.text()).toContain('No history data available')
@@ -67,8 +67,8 @@ describe('HistoryChart', () => {
   it('mounts without errors with data', () => {
     const wrapper = mount(HistoryChart, {
       props: {
-        data: mockData
-      }
+        data: mockData,
+      },
     })
     // Component should mount successfully
     expect(wrapper.exists()).toBe(true)
@@ -78,8 +78,8 @@ describe('HistoryChart', () => {
     const wrapper = mount(HistoryChart, {
       props: {
         data: mockData,
-        height: '500px'
-      }
+        height: '500px',
+      },
     })
     // Component should mount successfully with custom height
     expect(wrapper.exists()).toBe(true)
@@ -91,14 +91,14 @@ describe('HistoryChart', () => {
         run_id: '1',
         status: 'passed' as const,
         duration: 1.5,
-        timestamp: '2024-01-01T10:00:00Z'
-      }
+        timestamp: '2024-01-01T10:00:00Z',
+      },
     ]
 
     const wrapper = mount(HistoryChart, {
       props: {
-        data: singlePoint
-      }
+        data: singlePoint,
+      },
     })
 
     expect(wrapper.exists()).toBe(true)

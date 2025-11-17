@@ -42,7 +42,8 @@
             class="test-link"
             @click="viewTest(test.test_id, test.test_name)"
           >
-            {{ test.test_name }}{{ index < Math.min(2, pattern.affected_tests.length - 1) ? ',' : '' }}
+            {{ test.test_name
+            }}{{ index < Math.min(2, pattern.affected_tests.length - 1) ? ',' : '' }}
           </span>
           <span v-if="pattern.affected_tests.length > 3" class="more-tests">
             +{{ pattern.affected_tests.length - 3 }} more
@@ -74,7 +75,7 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
   days: 7,
   limit: 5,
-  showTimeRange: true
+  showTimeRange: true,
 })
 
 const router = useRouter()
@@ -91,7 +92,7 @@ const loadFailurePatterns = async () => {
   try {
     const params: any = {
       days: props.days,
-      limit: props.limit
+      limit: props.limit,
     }
     if (store.globalProjectFilter) {
       params.job_name = store.globalProjectFilter
@@ -107,9 +108,12 @@ const loadFailurePatterns = async () => {
 }
 
 // Watch for global project filter changes and reload
-watch(() => store.globalProjectFilter, () => {
-  loadFailurePatterns()
-})
+watch(
+  () => store.globalProjectFilter,
+  () => {
+    loadFailurePatterns()
+  }
+)
 
 const truncateMessage = (message: string | undefined): string => {
   if (!message) return 'No error message'
@@ -122,8 +126,8 @@ const viewTest = (_testId: string, testName: string) => {
   router.push({
     path: '/cases',
     query: {
-      search: testName
-    }
+      search: testName,
+    },
   })
 }
 

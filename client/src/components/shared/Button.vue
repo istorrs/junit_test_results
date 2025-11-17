@@ -1,9 +1,5 @@
 <template>
-  <button
-    :class="buttonClasses"
-    :disabled="disabled || loading"
-    @click="handleClick"
-  >
+  <button :class="buttonClasses" :disabled="disabled || loading" @click="handleClick">
     <span v-if="loading" class="spinner"></span>
     <slot />
   </button>
