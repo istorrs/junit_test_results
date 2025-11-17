@@ -11,15 +11,11 @@
           <select
             id="global-project-filter"
             v-model="store.globalProjectFilter"
-            @change="handleProjectChange"
             class="project-select"
+            @change="handleProjectChange"
           >
             <option value="">All Projects</option>
-            <option
-              v-for="project in store.availableProjects"
-              :key="project"
-              :value="project"
-            >
+            <option v-for="project in store.availableProjects" :key="project" :value="project">
               {{ project }}
             </option>
           </select>
@@ -34,7 +30,11 @@
           <router-link to="/releases" class="nav-link">Releases</router-link>
           <router-link to="/compare" class="nav-link">Compare</router-link>
           <router-link to="/performance" class="nav-link">Performance</router-link>
-          <button @click="toggleTheme" class="theme-toggle" :title="`Switch to ${currentTheme === 'light' ? 'dark' : 'light'} mode`">
+          <button
+            class="theme-toggle"
+            :title="`Switch to ${currentTheme === 'light' ? 'dark' : 'light'} mode`"
+            @click="toggleTheme"
+          >
             <span v-if="currentTheme === 'light'">🌙</span>
             <span v-else>☀️</span>
           </button>

@@ -18,8 +18,8 @@ AssertionError`
     const wrapper = mount(ErrorStackTrace, {
       props: {
         stackTrace: javaStackTrace,
-        language: 'java'
-      }
+        language: 'java',
+      },
     })
     expect(wrapper.find('.stack-trace').exists()).toBe(true)
     expect(wrapper.text()).toContain('AssertionError')
@@ -29,8 +29,8 @@ AssertionError`
     const wrapper = mount(ErrorStackTrace, {
       props: {
         stackTrace: pythonStackTrace,
-        language: 'python'
-      }
+        language: 'python',
+      },
     })
     expect(wrapper.text()).toContain('Traceback')
     expect(wrapper.text()).toContain('test_calculator.py')
@@ -40,8 +40,8 @@ AssertionError`
     const wrapper = mount(ErrorStackTrace, {
       props: {
         stackTrace: '',
-        language: 'java'
-      }
+        language: 'java',
+      },
     })
     // Component should render without error
     expect(wrapper.exists()).toBe(true)
@@ -51,8 +51,8 @@ AssertionError`
     const wrapper = mount(ErrorStackTrace, {
       props: {
         stackTrace: javaStackTrace,
-        language: 'java'
-      }
+        language: 'java',
+      },
     })
     // Should contain key parts of the stack trace
     expect(wrapper.text()).toContain('org.junit.Assert')

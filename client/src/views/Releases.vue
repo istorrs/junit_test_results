@@ -11,8 +11,13 @@
           <label>Release 1 (Baseline)</label>
           <select v-model="selectedRelease1" class="release-select">
             <option value="">Select a release...</option>
-            <option v-for="release in releases" :key="release.release_tag" :value="release.release_tag">
-              {{ release.release_tag }} {{ release.release_version ? `(${release.release_version})` : '' }}
+            <option
+              v-for="release in releases"
+              :key="release.release_tag"
+              :value="release.release_tag"
+            >
+              {{ release.release_tag }}
+              {{ release.release_version ? `(${release.release_version})` : '' }}
             </option>
           </select>
         </div>
@@ -21,16 +26,21 @@
           <label>Release 2 (Compare to)</label>
           <select v-model="selectedRelease2" class="release-select">
             <option value="">Select a release...</option>
-            <option v-for="release in releases" :key="release.release_tag" :value="release.release_tag">
-              {{ release.release_tag }} {{ release.release_version ? `(${release.release_version})` : '' }}
+            <option
+              v-for="release in releases"
+              :key="release.release_tag"
+              :value="release.release_tag"
+            >
+              {{ release.release_tag }}
+              {{ release.release_version ? `(${release.release_version})` : '' }}
             </option>
           </select>
         </div>
 
         <button
-          @click="compareReleases"
           :disabled="!selectedRelease1 || !selectedRelease2 || loading"
           class="compare-button"
+          @click="compareReleases"
         >
           {{ loading ? 'Comparing...' : 'Compare' }}
         </button>
@@ -47,7 +57,9 @@
             </div>
             <div class="metric">
               <span class="metric-label">Pass Rate</span>
-              <span class="metric-value success">{{ comparison.release1.pass_rate.toFixed(1) }}%</span>
+              <span class="metric-value success"
+                >{{ comparison.release1.pass_rate.toFixed(1) }}%</span
+              >
             </div>
             <div class="metric">
               <span class="metric-label">Failures</span>
@@ -55,7 +67,9 @@
             </div>
             <div class="metric">
               <span class="metric-label">Avg Time</span>
-              <span class="metric-value">{{ formatTime(comparison.release1.avg_time_per_run) }}</span>
+              <span class="metric-value">{{
+                formatTime(comparison.release1.avg_time_per_run)
+              }}</span>
             </div>
           </div>
         </Card>
@@ -68,7 +82,9 @@
             </div>
             <div class="metric">
               <span class="metric-label">Pass Rate</span>
-              <span class="metric-value success">{{ comparison.release2.pass_rate.toFixed(1) }}%</span>
+              <span class="metric-value success"
+                >{{ comparison.release2.pass_rate.toFixed(1) }}%</span
+              >
             </div>
             <div class="metric">
               <span class="metric-label">Failures</span>
@@ -76,7 +92,9 @@
             </div>
             <div class="metric">
               <span class="metric-label">Avg Time</span>
-              <span class="metric-value">{{ formatTime(comparison.release2.avg_time_per_run) }}</span>
+              <span class="metric-value">{{
+                formatTime(comparison.release2.avg_time_per_run)
+              }}</span>
             </div>
           </div>
         </Card>
@@ -87,25 +105,29 @@
           <div class="diff-item">
             <span class="diff-label">Pass Rate Change</span>
             <span class="diff-value" :class="getDiffClass(comparison.diff.pass_rate_change)">
-              {{ comparison.diff.pass_rate_change > 0 ? '+' : '' }}{{ comparison.diff.pass_rate_change.toFixed(2) }}%
+              {{ comparison.diff.pass_rate_change > 0 ? '+' : ''
+              }}{{ comparison.diff.pass_rate_change.toFixed(2) }}%
             </span>
           </div>
           <div class="diff-item">
             <span class="diff-label">Test Count Change</span>
             <span class="diff-value">
-              {{ comparison.diff.test_count_change > 0 ? '+' : '' }}{{ comparison.diff.test_count_change }}
+              {{ comparison.diff.test_count_change > 0 ? '+' : ''
+              }}{{ comparison.diff.test_count_change }}
             </span>
           </div>
           <div class="diff-item">
             <span class="diff-label">Failure Change</span>
             <span class="diff-value" :class="getDiffClass(-comparison.diff.failure_change)">
-              {{ comparison.diff.failure_change > 0 ? '+' : '' }}{{ comparison.diff.failure_change }}
+              {{ comparison.diff.failure_change > 0 ? '+' : ''
+              }}{{ comparison.diff.failure_change }}
             </span>
           </div>
           <div class="diff-item">
             <span class="diff-label">Performance Change</span>
             <span class="diff-value" :class="getDiffClass(-comparison.diff.time_change_percent)">
-              {{ comparison.diff.time_change_percent > 0 ? '+' : '' }}{{ comparison.diff.time_change_percent.toFixed(1) }}%
+              {{ comparison.diff.time_change_percent > 0 ? '+' : ''
+              }}{{ comparison.diff.time_change_percent.toFixed(1) }}%
             </span>
           </div>
         </div>
@@ -148,13 +170,16 @@ const loadReleases = async () => {
 }
 
 // Watch for global project filter changes and reload releases
-watch(() => store.globalProjectFilter, () => {
-  loadReleases()
-  // Clear selections when filter changes
-  selectedRelease1.value = ''
-  selectedRelease2.value = ''
-  comparison.value = null
-})
+watch(
+  () => store.globalProjectFilter,
+  () => {
+    loadReleases()
+    // Clear selections when filter changes
+    selectedRelease1.value = ''
+    selectedRelease2.value = ''
+    comparison.value = null
+  }
+)
 
 onMounted(() => {
   loadReleases()
@@ -168,7 +193,10 @@ const compareReleases = async () => {
   comparison.value = null
 
   try {
-    comparison.value = await apiClient.compareReleases(selectedRelease1.value, selectedRelease2.value)
+    comparison.value = await apiClient.compareReleases(
+      selectedRelease1.value,
+      selectedRelease2.value
+    )
   } catch (err) {
     error.value = 'Failed to compare releases'
     console.error(err)

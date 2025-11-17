@@ -1,5 +1,5 @@
 <template>
-  <Modal :open="open" @close="handleClose" size="xl">
+  <Modal :open="open" size="xl" @close="handleClose">
     <template #header>
       <div class="flex items-center justify-between w-full">
         <div class="flex-1 min-w-0">
@@ -158,7 +158,10 @@
             <div class="output-section">
               <div class="output-header">
                 <h3>System Output (stdout)</h3>
-                <button @click="copyToClipboard(testCaseDetails?.system_out || '', 'System output')" class="copy-button">
+                <button
+                  class="copy-button"
+                  @click="copyToClipboard(testCaseDetails?.system_out || '', 'System output')"
+                >
                   <span class="copy-icon">📋</span>
                   Copy to Clipboard
                 </button>
@@ -172,7 +175,10 @@
             <div class="output-section error-output">
               <div class="output-header">
                 <h3>System Error (stderr)</h3>
-                <button @click="copyToClipboard(testCaseDetails?.system_err || '', 'System error')" class="copy-button">
+                <button
+                  class="copy-button"
+                  @click="copyToClipboard(testCaseDetails?.system_err || '', 'System error')"
+                >
                   <span class="copy-icon">📋</span>
                   Copy to Clipboard
                 </button>
@@ -205,13 +211,28 @@
               </div>
 
               <!-- Test Suite Properties (from JUnit XML) -->
-              <div v-if="testCaseDetails?.suite_properties && Object.keys(testCaseDetails.suite_properties).length > 0" class="properties-section">
+              <div
+                v-if="
+                  testCaseDetails?.suite_properties &&
+                  Object.keys(testCaseDetails.suite_properties).length > 0
+                "
+                class="properties-section"
+              >
                 <h3>Test Suite Properties</h3>
                 <div class="properties-list">
-                  <div v-for="(value, key) in testCaseDetails.suite_properties" :key="key" class="property-item">
+                  <div
+                    v-for="(value, key) in testCaseDetails.suite_properties"
+                    :key="key"
+                    class="property-item"
+                  >
                     <label class="property-label">{{ key }}</label>
                     <span v-if="isUrl(value)" class="property-value">
-                      <a :href="convertToHttpsUrl(value)" target="_blank" rel="noopener noreferrer" class="property-link">
+                      <a
+                        :href="convertToHttpsUrl(value)"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="property-link"
+                      >
                         {{ value }}
                       </a>
                     </span>
@@ -228,9 +249,7 @@
     <template #footer>
       <div class="modal-footer">
         <Button variant="secondary" @click="handleClose">Close</Button>
-        <Button v-if="errorMessage" @click="copyErrorToClipboard">
-          Copy Error
-        </Button>
+        <Button v-if="errorMessage" @click="copyErrorToClipboard"> Copy Error </Button>
       </div>
     </template>
   </Modal>
@@ -252,15 +271,15 @@ const ansiConverter = new AnsiToHtml({
   fg: '#d4d4d4',
   bg: '#1e1e1e',
   colors: {
-    0: '#2e3436',   // black
-    1: '#cc0000',   // red
-    2: '#4e9a06',   // green
-    3: '#c4a000',   // yellow
-    4: '#3465a4',   // blue
-    5: '#75507b',   // magenta
-    6: '#06989a',   // cyan
-    7: '#d3d7cf',   // white
-  }
+    0: '#2e3436', // black
+    1: '#cc0000', // red
+    2: '#4e9a06', // green
+    3: '#c4a000', // yellow
+    4: '#3465a4', // blue
+    5: '#75507b', // magenta
+    6: '#06989a', // cyan
+    7: '#d3d7cf', // white
+  },
 })
 
 interface Props {
@@ -302,7 +321,7 @@ const tabs = computed(() => {
   const baseTabs = [
     { id: 'overview', label: 'Overview' },
     { id: 'failure', label: 'Failure Details' },
-    { id: 'history', label: 'History' }
+    { id: 'history', label: 'History' },
   ]
 
   // Add System Output tab if data exists
@@ -320,7 +339,10 @@ const tabs = computed(() => {
   // Always show metadata last
   baseTabs.push({ id: 'metadata', label: 'Metadata' })
 
-  console.log('Final tabs:', baseTabs.map(t => t.label))
+  console.log(
+    'Final tabs:',
+    baseTabs.map((t) => t.label)
+  )
   return baseTabs
 })
 
@@ -361,37 +383,62 @@ const testSteps = computed(() => {
   const steps: string[] = []
   const lines = systemErr.split('\n')
 
+  console.log('[TestDetailsModal] Sample of first 10 lines:')
+  lines.slice(0, 10).forEach((line: string, i: number) => {
+    console.log(`  Line ${i + 1}:`, line.substring(0, 100))
+  })
+
   for (const line of lines) {
-    if (line.includes('TPAPI - TEST_POINT_START')) {
+    // Case-insensitive check for TPAPI and TEST_POINT_START
+    const upperLine = line.toUpperCase()
+    if (upperLine.includes('TPAPI') && upperLine.includes('TEST_POINT_START')) {
       console.log('[TestDetailsModal] Found TEST_POINT_START line:', line.substring(0, 200))
 
-      // Try multiple patterns to match test step names
-      // Pattern 1: TPAPI - TEST_POINT_START: Step Name
-      let match = line.match(/TPAPI\s*-\s*TEST_POINT_START\s*[:\s]+(.+?)$/i)
-
-      // Pattern 2: TPAPI - TEST_POINT_START "Step Name"
-      if (!match) {
-        match = line.match(/TPAPI\s*-\s*TEST_POINT_START\s*["']([^"']+)["']/i)
-      }
-
-      // Pattern 3: TPAPI - TEST_POINT_START Step Name (no colon)
-      if (!match) {
-        match = line.match(/TPAPI\s*-\s*TEST_POINT_START\s+(.+?)$/i)
-      }
+      // Pattern to match log format: timestamp - module - line - TPAPI - TEST_POINT_START: message
+      // Example: 2025-11-16 19:17:16 - testpoints_cloud - 197 - TPAPI - TEST_POINT_START: ▶️ Update the config.json
+      let match = line.match(/TPAPI\s*-\s*TEST_POINT_START\s*:\s*(.+)$/i)
 
       if (match && match[1]) {
         let stepName = match[1].trim()
+
         // Remove ANSI color codes if present
+        // eslint-disable-next-line no-control-regex
         stepName = stepName.replace(/\x1B\[[0-9;]*m/g, '')
-        // Remove #x1B color codes if present
         stepName = stepName.replace(/#x1B\[[0-9;]*m/g, '')
+
+        // Remove emoji prefix if present (▶️, ✅, etc.) but keep the actual message
+        // The emoji might be followed by a space
+        stepName = stepName.replace(
+          /^[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]\s*/u,
+          ''
+        )
 
         if (stepName) {
           console.log('[TestDetailsModal] Extracted step name:', stepName)
           steps.push(stepName)
+        } else {
+          console.log('[TestDetailsModal] Step name was empty after cleaning')
         }
       } else {
-        console.log('[TestDetailsModal] No match found for line')
+        console.log('[TestDetailsModal] No match found for line, trying alternate patterns')
+
+        // Try without colon
+        match = line.match(/TPAPI\s*-\s*TEST_POINT_START\s+(.+)$/i)
+        if (match && match[1]) {
+          let stepName = match[1].trim()
+          // eslint-disable-next-line no-control-regex
+          stepName = stepName.replace(/\x1B\[[0-9;]*m/g, '')
+          stepName = stepName.replace(/#x1B\[[0-9;]*m/g, '')
+          stepName = stepName.replace(
+            /^[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]\s*/u,
+            ''
+          )
+
+          if (stepName) {
+            console.log('[TestDetailsModal] Extracted step name (no colon):', stepName)
+            steps.push(stepName)
+          }
+        }
       }
     }
   }
@@ -401,11 +448,14 @@ const testSteps = computed(() => {
 })
 
 // Fetch additional data when modal opens
-watch(() => props.open, async (isOpen) => {
-  if (isOpen && props.testId) {
-    await loadTestDetails()
+watch(
+  () => props.open,
+  async (isOpen) => {
+    if (isOpen && props.testId) {
+      await loadTestDetails()
+    }
   }
-})
+)
 
 // Resize chart when History tab becomes active
 watch(activeTab, async (newTab) => {
@@ -427,7 +477,7 @@ const loadTestDetails = async () => {
     const [details, flakiness, history] = await Promise.all([
       apiClient.getTestCase(props.testId).catch(() => null),
       apiClient.getTestFlakiness(props.testId).catch(() => null),
-      apiClient.getTestHistory(props.testId).catch(() => ({ runs: [] }))
+      apiClient.getTestHistory(props.testId).catch(() => ({ runs: [] })),
     ])
 
     console.log('[TestDetailsModal] Loaded details:', {
@@ -439,7 +489,9 @@ const loadTestDetails = async () => {
       run_id: details?.run_id,
       run_name: details?.run_name,
       suite_properties: details?.suite_properties ? details.suite_properties : null,
-      suite_properties_keys: details?.suite_properties ? Object.keys(details.suite_properties) : null
+      suite_properties_keys: details?.suite_properties
+        ? Object.keys(details.suite_properties)
+        : null,
     })
 
     testCaseDetails.value = details
@@ -498,7 +550,10 @@ const convertToHttpsUrl = (str: string): string => {
 }
 
 const copyToClipboard = (text: string, label: string) => {
-  console.log('[TestDetailsModal] copyToClipboard called with:', { label, textLength: text?.length })
+  console.log('[TestDetailsModal] copyToClipboard called with:', {
+    label,
+    textLength: text?.length,
+  })
   if (!text) {
     console.warn('[TestDetailsModal] No text to copy')
     return
@@ -506,13 +561,16 @@ const copyToClipboard = (text: string, label: string) => {
 
   // Check if Clipboard API is available
   if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(text).then(() => {
-      console.log(`[TestDetailsModal] ${label} copied to clipboard successfully`)
-      alert(`${label} copied to clipboard!`)
-    }).catch(err => {
-      console.error('[TestDetailsModal] Failed to copy to clipboard:', err)
-      alert(`Failed to copy ${label}: ${err.message}`)
-    })
+    navigator.clipboard
+      .writeText(text)
+      .then(() => {
+        console.log(`[TestDetailsModal] ${label} copied to clipboard successfully`)
+        alert(`${label} copied to clipboard!`)
+      })
+      .catch((err) => {
+        console.error('[TestDetailsModal] Failed to copy to clipboard:', err)
+        alert(`Failed to copy ${label}: ${err.message}`)
+      })
   } else {
     // Fallback for browsers/contexts where Clipboard API is not available
     console.warn('[TestDetailsModal] Clipboard API not available, using fallback')
@@ -556,8 +614,10 @@ const copyErrorToClipboard = () => {
     props.errorMessage && `\nError Message:\n${props.errorMessage}`,
     props.stackTrace && `\nStack Trace:\n${props.stackTrace}`,
     testCaseDetails.value?.system_out && `\nSystem Output:\n${testCaseDetails.value.system_out}`,
-    testCaseDetails.value?.system_err && `\nSystem Error:\n${testCaseDetails.value.system_err}`
-  ].filter(Boolean).join('\n')
+    testCaseDetails.value?.system_err && `\nSystem Error:\n${testCaseDetails.value.system_err}`,
+  ]
+    .filter(Boolean)
+    .join('\n')
 
   console.log('[TestDetailsModal] Error text length:', text.length)
 

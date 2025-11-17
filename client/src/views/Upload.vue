@@ -8,8 +8,8 @@
           ref="fileInput"
           type="file"
           accept=".xml"
-          @change="handleFileSelect"
           class="file-input"
+          @change="handleFileSelect"
         />
 
         <div class="upload-content">
@@ -20,39 +20,40 @@
         </div>
 
         <div v-if="selectedFile" class="selected-file">
-          <strong>Selected:</strong> {{ selectedFile.name }}
-          ({{ formatFileSize(selectedFile.size) }})
+          <strong>Selected:</strong> {{ selectedFile.name }} ({{
+            formatFileSize(selectedFile.size)
+          }})
         </div>
       </div>
 
       <template #footer>
-        <Button @click="clearSelection" variant="secondary" :disabled="!selectedFile">
+        <Button variant="secondary" :disabled="!selectedFile" @click="clearSelection">
           Clear
         </Button>
         <Button
-          @click="uploadFile"
           :loading="store.loading"
           :disabled="!selectedFile || store.loading"
+          @click="uploadFile"
         >
           Upload
         </Button>
       </template>
     </Card>
 
-    <Modal :open="showSuccessModal" @close="closeSuccessModal" title="Upload Successful">
+    <Modal :open="showSuccessModal" title="Upload Successful" @close="closeSuccessModal">
       <p>Your test results have been uploaded successfully!</p>
       <template #footer>
-        <Button @click="viewResults" variant="success">View Results</Button>
-        <Button @click="closeSuccessModal" variant="secondary">Close</Button>
+        <Button variant="success" @click="viewResults">View Results</Button>
+        <Button variant="secondary" @click="closeSuccessModal">Close</Button>
       </template>
     </Modal>
 
-    <Modal :open="!!uploadError" @close="clearError" title="Upload Failed">
+    <Modal :open="!!uploadError" title="Upload Failed" @close="clearError">
       <div class="error-content">
         <p>{{ uploadError }}</p>
       </div>
       <template #footer>
-        <Button @click="clearError" variant="danger">Close</Button>
+        <Button variant="danger" @click="clearError">Close</Button>
       </template>
     </Modal>
   </div>

@@ -8,8 +8,8 @@ describe('FlakinessIndicator', () => {
       props: {
         passRate: 100,
         recentRuns: 10,
-        failureCount: 0
-      }
+        failureCount: 0,
+      },
     })
     expect(wrapper.find('.flakiness-indicator').exists()).toBe(false)
   })
@@ -19,8 +19,8 @@ describe('FlakinessIndicator', () => {
       props: {
         passRate: 0,
         recentRuns: 20,
-        failureCount: 20
-      }
+        failureCount: 20,
+      },
     })
     expect(wrapper.find('.flakiness-indicator').exists()).toBe(false)
   })
@@ -30,8 +30,8 @@ describe('FlakinessIndicator', () => {
       props: {
         passRate: 95, // 5% flakiness
         recentRuns: 20,
-        failureCount: 1
-      }
+        failureCount: 1,
+      },
     })
     expect(wrapper.find('.flakiness-indicator').exists()).toBe(true)
     expect(wrapper.find('.severity-low').exists()).toBe(true)
@@ -43,8 +43,8 @@ describe('FlakinessIndicator', () => {
       props: {
         passRate: 80, // 20% flakiness
         recentRuns: 20,
-        failureCount: 4
-      }
+        failureCount: 4,
+      },
     })
     expect(wrapper.find('.flakiness-indicator').exists()).toBe(true)
     expect(wrapper.find('.severity-medium').exists()).toBe(true)
@@ -56,8 +56,8 @@ describe('FlakinessIndicator', () => {
       props: {
         passRate: 50, // 50% flakiness
         recentRuns: 20,
-        failureCount: 10
-      }
+        failureCount: 10,
+      },
     })
     expect(wrapper.find('.flakiness-indicator').exists()).toBe(true)
     expect(wrapper.find('.severity-high').exists()).toBe(true)
@@ -69,8 +69,8 @@ describe('FlakinessIndicator', () => {
       props: {
         passRate: 60,
         recentRuns: 50,
-        failureCount: 20
-      }
+        failureCount: 20,
+      },
     })
     const indicator = wrapper.find('.flakiness-indicator')
     expect(indicator.attributes('title')).toContain('20/50')
@@ -83,8 +83,8 @@ describe('FlakinessIndicator', () => {
         passRate: 80,
         recentRuns: 10,
         failureCount: 2,
-        size: 'sm'
-      }
+        size: 'sm',
+      },
     })
     expect(wrapperSm.find('.size-sm').exists()).toBe(true)
 
@@ -93,8 +93,8 @@ describe('FlakinessIndicator', () => {
         passRate: 80,
         recentRuns: 10,
         failureCount: 2,
-        size: 'md'
-      }
+        size: 'md',
+      },
     })
     expect(wrapperMd.find('.size-md').exists()).toBe(true)
   })
@@ -105,8 +105,8 @@ describe('FlakinessIndicator', () => {
         passRate: 70,
         recentRuns: 20,
         failureCount: 6,
-        showLabel: false
-      }
+        showLabel: false,
+      },
     })
     expect(wrapper.find('.label').text()).toBe('')
   })
@@ -116,8 +116,8 @@ describe('FlakinessIndicator', () => {
       props: {
         passRate: 66.7,
         recentRuns: 30,
-        failureCount: 10
-      }
+        failureCount: 10,
+      },
     })
     expect(wrapper.find('.label').text()).toContain('67%')
   })

@@ -1,22 +1,24 @@
 <template>
   <div class="stack-trace-container">
     <div v-if="collapsible" class="stack-trace-header">
-      <button @click="isExpanded = !isExpanded" class="expand-button">
+      <button class="expand-button" @click="isExpanded = !isExpanded">
         <span class="icon">{{ isExpanded ? '▼' : '▶' }}</span>
         <span>{{ isExpanded ? 'Collapse' : 'Expand' }} Stack Trace</span>
       </button>
-      <button @click="copyToClipboard" class="copy-button" title="Copy to clipboard">
+      <button class="copy-button" title="Copy to clipboard" @click="copyToClipboard">
         📋 Copy
       </button>
     </div>
 
     <div v-if="!collapsible || isExpanded" class="stack-trace">
-      <pre v-for="(line, index) in displayedLines" :key="index" :class="getLineClass(line)">{{ line }}</pre>
+      <pre v-for="(line, index) in displayedLines" :key="index" :class="getLineClass(line)">{{
+        line
+      }}</pre>
 
       <button
         v-if="collapsible && hasMoreLines"
-        @click="showAllLines = !showAllLines"
         class="show-more-button"
+        @click="showAllLines = !showAllLines"
       >
         {{ showAllLines ? 'Show Less' : `Show ${remainingLines} More Lines` }}
       </button>
@@ -37,14 +39,14 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
   language: 'java',
   collapsible: false,
-  initialLines: 10
+  initialLines: 10,
 })
 
 const isExpanded = ref(!props.collapsible)
 const showAllLines = ref(false)
 
 const lines = computed(() => {
-  return props.stackTrace.split('\n').filter(line => line.trim())
+  return props.stackTrace.split('\n').filter((line) => line.trim())
 })
 
 const displayedLines = computed(() => {
@@ -104,17 +106,23 @@ const getLineClass = (line: string): string => {
 }
 
 const copyToClipboard = () => {
-  console.log('[ErrorStackTrace] copyToClipboard called, stackTrace length:', props.stackTrace?.length)
+  console.log(
+    '[ErrorStackTrace] copyToClipboard called, stackTrace length:',
+    props.stackTrace?.length
+  )
 
   // Check if Clipboard API is available
   if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(props.stackTrace).then(() => {
-      console.log('[ErrorStackTrace] Stack trace copied to clipboard successfully')
-      alert('Stack trace copied to clipboard!')
-    }).catch(err => {
-      console.error('[ErrorStackTrace] Failed to copy stack trace to clipboard:', err)
-      alert(`Failed to copy stack trace: ${err.message}`)
-    })
+    navigator.clipboard
+      .writeText(props.stackTrace)
+      .then(() => {
+        console.log('[ErrorStackTrace] Stack trace copied to clipboard successfully')
+        alert('Stack trace copied to clipboard!')
+      })
+      .catch((err) => {
+        console.error('[ErrorStackTrace] Failed to copy stack trace to clipboard:', err)
+        alert(`Failed to copy stack trace: ${err.message}`)
+      })
   } else {
     // Fallback for browsers/contexts where Clipboard API is not available
     console.warn('[ErrorStackTrace] Clipboard API not available, using fallback')

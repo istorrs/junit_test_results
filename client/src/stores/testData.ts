@@ -19,7 +19,7 @@ export const useTestDataStore = defineStore('testData', () => {
   const latestRun = computed(() => (runs.value.length > 0 ? runs.value[0] : null))
   const availableProjects = computed(() => {
     const uniqueProjects = new Set<string>()
-    runs.value.forEach(run => {
+    runs.value.forEach((run) => {
       if (run.ci_metadata?.job_name) {
         uniqueProjects.add(run.ci_metadata.job_name)
       }

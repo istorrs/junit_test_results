@@ -41,15 +41,15 @@ const chartData = computed(() => {
   })
 
   return {
-    dates: sortedData.map(d => new Date(d.timestamp).toLocaleDateString()),
-    statuses: sortedData.map(d => {
+    dates: sortedData.map((d) => new Date(d.timestamp).toLocaleDateString()),
+    statuses: sortedData.map((d) => {
       if (d.status === 'passed') return 1
       if (d.status === 'failed') return -1
       if (d.status === 'error') return -2
       return 0 // skipped
     }),
-    times: sortedData.map(d => d.time),
-    runs: sortedData
+    times: sortedData.map((d) => d.time),
+    runs: sortedData,
   }
 })
 
@@ -64,7 +64,9 @@ const initChart = () => {
     retryCount++
     // Only log every 20 attempts (every 2 seconds) to avoid console spam
     if (retryCount === 1 || retryCount - lastLoggedRetry >= 20) {
-      console.warn(`[HistoryChart] Container has no dimensions, delaying init (attempt ${retryCount})`)
+      console.warn(
+        `[HistoryChart] Container has no dimensions, delaying init (attempt ${retryCount})`
+      )
       lastLoggedRetry = retryCount
     }
     // Stop retrying after 100 attempts (10 seconds)
@@ -78,7 +80,12 @@ const initChart = () => {
   retryCount = 0
   lastLoggedRetry = 0
 
-  console.log('[HistoryChart] Initializing chart with container size:', containerWidth, 'x', containerHeight)
+  console.log(
+    '[HistoryChart] Initializing chart with container size:',
+    containerWidth,
+    'x',
+    containerHeight
+  )
 
   const isDark = document.documentElement.getAttribute('data-theme') === 'dark'
 
@@ -92,7 +99,7 @@ const initChart = () => {
       warning: style.getPropertyValue('--warning-color').trim() || '#f59e0b',
       text: style.getPropertyValue('--text-primary').trim() || '#111827',
       textSecondary: style.getPropertyValue('--text-secondary').trim() || '#6b7280',
-      border: style.getPropertyValue('--border-color').trim() || '#e5e7eb'
+      border: style.getPropertyValue('--border-color').trim() || '#e5e7eb',
     }
   }
 
@@ -117,7 +124,7 @@ const initChart = () => {
       backgroundColor: isDark ? '#1f2937' : '#ffffff',
       borderColor: colors.border,
       textStyle: {
-        color: colors.text
+        color: colors.text,
       },
       formatter: (params: any) => {
         const index = params[0].dataIndex
@@ -136,14 +143,14 @@ const initChart = () => {
         </div>`
 
         return html
-      }
+      },
     },
     grid: {
       left: '3%',
       right: '4%',
       bottom: '15%',
       top: '10%',
-      containLabel: true
+      containLabel: true,
     },
     xAxis: {
       type: 'category',
@@ -151,14 +158,14 @@ const initChart = () => {
       boundaryGap: true,
       axisLine: {
         lineStyle: {
-          color: colors.border
-        }
+          color: colors.border,
+        },
       },
       axisLabel: {
         color: colors.textSecondary,
         fontSize: 11,
-        rotate: 45
-      }
+        rotate: 45,
+      },
     },
     yAxis: [
       {
@@ -170,8 +177,8 @@ const initChart = () => {
         interval: 1,
         axisLine: {
           lineStyle: {
-            color: colors.border
-          }
+            color: colors.border,
+          },
         },
         axisLabel: {
           color: colors.textSecondary,
@@ -182,14 +189,14 @@ const initChart = () => {
             if (value === -1) return 'Fail'
             if (value === -2) return 'Error'
             return ''
-          }
+          },
         },
         splitLine: {
           lineStyle: {
             color: colors.border,
-            opacity: 0.3
-          }
-        }
+            opacity: 0.3,
+          },
+        },
       },
       {
         type: 'value',
@@ -197,18 +204,18 @@ const initChart = () => {
         position: 'right',
         axisLine: {
           lineStyle: {
-            color: colors.border
-          }
+            color: colors.border,
+          },
         },
         axisLabel: {
           color: colors.textSecondary,
           fontSize: 11,
-          formatter: '{value}s'
+          formatter: '{value}s',
         },
         splitLine: {
-          show: false
-        }
-      }
+          show: false,
+        },
+      },
     ],
     series: [
       {
@@ -225,20 +232,20 @@ const initChart = () => {
             if (value === -1) return colors.error
             if (value === -2) return colors.warning
             return colors.textSecondary
-          }
+          },
         },
         lineStyle: {
           width: 2,
           color: colors.text,
-          opacity: 0.3
+          opacity: 0.3,
         },
         areaStyle: {
           color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
             { offset: 0, color: 'rgba(16, 185, 129, 0.2)' },
             { offset: 0.5, color: 'rgba(156, 163, 175, 0.1)' },
-            { offset: 1, color: 'rgba(239, 68, 68, 0.2)' }
-          ])
-        }
+            { offset: 1, color: 'rgba(239, 68, 68, 0.2)' },
+          ]),
+        },
       },
       {
         name: 'Duration',
@@ -248,14 +255,14 @@ const initChart = () => {
         itemStyle: {
           color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
             { offset: 0, color: 'rgba(59, 130, 246, 0.8)' },
-            { offset: 1, color: 'rgba(59, 130, 246, 0.3)' }
+            { offset: 1, color: 'rgba(59, 130, 246, 0.3)' },
           ]),
-          borderRadius: [4, 4, 0, 0]
+          borderRadius: [4, 4, 0, 0],
         },
         barWidth: barWidth,
-        barCategoryGap: '20%'
-      }
-    ]
+        barCategoryGap: '20%',
+      },
+    ],
   }
 
   chartInstance.setOption(option)
@@ -266,33 +273,34 @@ const initChart = () => {
       const newColors = getColors()
       chartInstance.setOption({
         tooltip: {
-          backgroundColor: document.documentElement.getAttribute('data-theme') === 'dark' ? '#1f2937' : '#ffffff',
+          backgroundColor:
+            document.documentElement.getAttribute('data-theme') === 'dark' ? '#1f2937' : '#ffffff',
           textStyle: {
-            color: newColors.text
-          }
+            color: newColors.text,
+          },
         },
         xAxis: {
           axisLine: { lineStyle: { color: newColors.border } },
-          axisLabel: { color: newColors.textSecondary }
+          axisLabel: { color: newColors.textSecondary },
         },
         yAxis: [
           {
             axisLine: { lineStyle: { color: newColors.border } },
             axisLabel: { color: newColors.textSecondary },
-            splitLine: { lineStyle: { color: newColors.border } }
+            splitLine: { lineStyle: { color: newColors.border } },
           },
           {
             axisLine: { lineStyle: { color: newColors.border } },
-            axisLabel: { color: newColors.textSecondary }
-          }
-        ]
+            axisLabel: { color: newColors.textSecondary },
+          },
+        ],
       })
     }
   })
 
   observer.observe(document.documentElement, {
     attributes: true,
-    attributeFilter: ['data-theme']
+    attributeFilter: ['data-theme'],
   })
 }
 
@@ -307,16 +315,20 @@ const resize = () => {
 
 defineExpose({ resize })
 
-watch(() => props.data, async () => {
-  if (chartInstance && hasData.value) {
-    chartInstance.dispose()
-    await nextTick()
-    initChart()
-  } else if (!chartInstance && hasData.value) {
-    await nextTick()
-    initChart()
-  }
-}, { deep: true })
+watch(
+  () => props.data,
+  async () => {
+    if (chartInstance && hasData.value) {
+      chartInstance.dispose()
+      await nextTick()
+      initChart()
+    } else if (!chartInstance && hasData.value) {
+      await nextTick()
+      initChart()
+    }
+  },
+  { deep: true }
+)
 
 onMounted(async () => {
   if (hasData.value) {

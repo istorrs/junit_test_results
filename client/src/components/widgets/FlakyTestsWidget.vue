@@ -30,7 +30,7 @@
         </div>
       </div>
 
-      <button v-if="showViewAll" @click="viewAllFlaky" class="view-all-button">
+      <button v-if="showViewAll" class="view-all-button" @click="viewAllFlaky">
         View All Flaky Tests →
       </button>
     </div>
@@ -52,7 +52,7 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
   limit: 5,
-  showViewAll: true
+  showViewAll: true,
 })
 
 const router = useRouter()
@@ -82,9 +82,12 @@ const loadFlakyTests = async () => {
 }
 
 // Watch for global project filter changes and reload
-watch(() => store.globalProjectFilter, () => {
-  loadFlakyTests()
-})
+watch(
+  () => store.globalProjectFilter,
+  () => {
+    loadFlakyTests()
+  }
+)
 
 const getScoreClass = (score: number): string => {
   if (score >= 50) return 'score-high'
@@ -97,8 +100,8 @@ const viewTestDetails = (test: FlakyTest) => {
   router.push({
     path: '/cases',
     query: {
-      search: test.test_name
-    }
+      search: test.test_name,
+    },
   })
 }
 

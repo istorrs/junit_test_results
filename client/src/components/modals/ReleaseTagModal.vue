@@ -1,10 +1,5 @@
 <template>
-  <Modal
-    :open="open"
-    title="Tag Test Runs as Release"
-    size="md"
-    @close="handleClose"
-  >
+  <Modal :open="open" title="Tag Test Runs as Release" size="md" @close="handleClose">
     <div class="release-tag-form">
       <div class="form-group">
         <label for="release-tag">Release Tag <span class="required">*</span></label>
@@ -16,7 +11,9 @@
           class="form-input"
           :disabled="loading"
         />
-        <p class="help-text">A unique identifier for this release (e.g., version tag, release name)</p>
+        <p class="help-text">
+          A unique identifier for this release (e.g., version tag, release name)
+        </p>
       </div>
 
       <div class="form-group">
@@ -37,24 +34,14 @@
       </div>
 
       <div class="selected-runs-info">
-        <strong>{{ runIds.length }}</strong> test run{{ runIds.length > 1 ? 's' : '' }} will be tagged
+        <strong>{{ runIds.length }}</strong> test run{{ runIds.length > 1 ? 's' : '' }} will be
+        tagged
       </div>
     </div>
 
     <template #footer>
-      <Button
-        @click="handleClose"
-        variant="secondary"
-        :disabled="loading"
-      >
-        Cancel
-      </Button>
-      <Button
-        @click="handleSubmit"
-        variant="primary"
-        :loading="loading"
-        :disabled="!releaseTag"
-      >
+      <Button variant="secondary" :disabled="loading" @click="handleClose"> Cancel </Button>
+      <Button variant="primary" :loading="loading" :disabled="!releaseTag" @click="handleSubmit">
         Tag Release
       </Button>
     </template>
@@ -85,13 +72,16 @@ const loading = ref(false)
 const error = ref('')
 
 // Reset form when modal opens
-watch(() => props.open, (isOpen) => {
-  if (isOpen) {
-    releaseTag.value = ''
-    releaseVersion.value = ''
-    error.value = ''
+watch(
+  () => props.open,
+  (isOpen) => {
+    if (isOpen) {
+      releaseTag.value = ''
+      releaseVersion.value = ''
+      error.value = ''
+    }
   }
-})
+)
 
 const handleClose = () => {
   if (!loading.value) {
@@ -111,7 +101,7 @@ const handleSubmit = async () => {
   try {
     await apiClient.batchUpdateRuns(props.runIds, {
       release_tag: releaseTag.value,
-      release_version: releaseVersion.value || null
+      release_version: releaseVersion.value || null,
     })
 
     emit('success')

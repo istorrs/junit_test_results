@@ -19,14 +19,16 @@ describe('API Client', () => {
       const mockData = {
         success: true,
         data: {
-          runs: [{
-            id: '1',
-            name: 'Test Run 1',
-            total_tests: 100,
-            total_failures: 5,
-            total_errors: 2,
-            total_skipped: 3
-          }],
+          runs: [
+            {
+              id: '1',
+              name: 'Test Run 1',
+              total_tests: 100,
+              total_failures: 5,
+              total_errors: 2,
+              total_skipped: 3,
+            },
+          ],
           pagination: { page: 1, limit: 50, total: 1 },
         },
       }
@@ -40,21 +42,23 @@ describe('API Client', () => {
 
       expect(mockFetch).toHaveBeenCalledWith('/api/v1/runs?page=1&limit=50', undefined)
       expect(result).toEqual({
-        runs: [{
-          id: '1',
-          name: 'Test Run 1',
-          total_tests: 100,
-          total_failures: 5,
-          total_errors: 2,
-          total_skipped: 3,
-          summary: {
-            total: 100,
-            passed: 90,
-            failed: 5,
-            errors: 2,
-            skipped: 3,
-          }
-        }],
+        runs: [
+          {
+            id: '1',
+            name: 'Test Run 1',
+            total_tests: 100,
+            total_failures: 5,
+            total_errors: 2,
+            total_skipped: 3,
+            summary: {
+              total: 100,
+              passed: 90,
+              failed: 5,
+              errors: 2,
+              skipped: 3,
+            },
+          },
+        ],
         pagination: { page: 1, limit: 50, total: 1 },
       })
     })
@@ -300,9 +304,7 @@ describe('API Client', () => {
         job_name: undefined,
       }
 
-      const filtered = Object.fromEntries(
-        Object.entries(params).filter(([, v]) => v !== undefined)
-      )
+      const filtered = Object.fromEntries(Object.entries(params).filter(([, v]) => v !== undefined))
       const queryString = new URLSearchParams(filtered as Record<string, string>).toString()
 
       expect(queryString).toBe('page=1&limit=50')

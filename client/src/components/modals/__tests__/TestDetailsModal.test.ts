@@ -7,8 +7,8 @@ import { apiClient } from '../../../api/client'
 vi.mock('../../../api/client', () => ({
   apiClient: {
     getTestHistory: vi.fn(),
-    getTestFlakiness: vi.fn()
-  }
+    getTestFlakiness: vi.fn(),
+  },
 }))
 
 // Mock Modal component
@@ -17,8 +17,8 @@ vi.mock('../../shared/Modal.vue', () => ({
     name: 'Modal',
     template: '<div v-if="open" class="mock-modal"><slot name="header"></slot><slot></slot></div>',
     props: ['open', 'size'],
-    emits: ['close']
-  }
+    emits: ['close'],
+  },
 }))
 
 // Mock sub-components
@@ -26,24 +26,24 @@ vi.mock('../../shared/FlakinessIndicator.vue', () => ({
   default: {
     name: 'FlakinessIndicator',
     template: '<div class="mock-flakiness-indicator"></div>',
-    props: ['passRate', 'totalRuns']
-  }
+    props: ['passRate', 'totalRuns'],
+  },
 }))
 
 vi.mock('../../shared/ErrorStackTrace.vue', () => ({
   default: {
     name: 'ErrorStackTrace',
     template: '<div class="mock-stack-trace"></div>',
-    props: ['stackTrace', 'language']
-  }
+    props: ['stackTrace', 'language'],
+  },
 }))
 
 vi.mock('../../charts/HistoryChart.vue', () => ({
   default: {
     name: 'HistoryChart',
     template: '<div class="mock-history-chart"></div>',
-    props: ['data', 'height']
-  }
+    props: ['data', 'height'],
+  },
 }))
 
 describe('TestDetailsModal', () => {
@@ -60,12 +60,12 @@ describe('TestDetailsModal', () => {
     duration: 1.5,
     errorMessage: undefined,
     errorType: undefined,
-    stackTrace: undefined
+    stackTrace: undefined,
   }
 
   it('renders modal when open', () => {
     const wrapper = mount(TestDetailsModal, {
-      props: defaultProps
+      props: defaultProps,
     })
     expect(wrapper.find('.mock-modal').exists()).toBe(true)
   })
@@ -74,8 +74,8 @@ describe('TestDetailsModal', () => {
     const wrapper = mount(TestDetailsModal, {
       props: {
         ...defaultProps,
-        open: false
-      }
+        open: false,
+      },
     })
     // Component uses v-if, so nothing is rendered
     expect(wrapper.text()).toBe('')
@@ -83,7 +83,7 @@ describe('TestDetailsModal', () => {
 
   it('displays test name and class name in header', () => {
     const wrapper = mount(TestDetailsModal, {
-      props: defaultProps
+      props: defaultProps,
     })
     expect(wrapper.text()).toContain('testAddition')
     expect(wrapper.text()).toContain('com.example.CalculatorTest')
@@ -91,7 +91,7 @@ describe('TestDetailsModal', () => {
 
   it('displays status badge with correct class', () => {
     const wrapper = mount(TestDetailsModal, {
-      props: defaultProps
+      props: defaultProps,
     })
     const badge = wrapper.find('.badge')
     expect(badge.exists()).toBe(true)
@@ -101,7 +101,7 @@ describe('TestDetailsModal', () => {
 
   it('renders all four tabs', () => {
     const wrapper = mount(TestDetailsModal, {
-      props: defaultProps
+      props: defaultProps,
     })
     const tabs = wrapper.findAll('.tab-button')
     expect(tabs).toHaveLength(4)
@@ -113,7 +113,7 @@ describe('TestDetailsModal', () => {
 
   it('renders tab navigation', () => {
     const wrapper = mount(TestDetailsModal, {
-      props: defaultProps
+      props: defaultProps,
     })
 
     const tabs = wrapper.findAll('.tab-button')
@@ -127,8 +127,8 @@ describe('TestDetailsModal', () => {
         status: 'failed',
         errorMessage: 'Expected 5 but was 3',
         errorType: 'AssertionError',
-        stackTrace: 'at com.example.Test.method(Test.java:42)'
-      }
+        stackTrace: 'at com.example.Test.method(Test.java:42)',
+      },
     })
 
     expect(wrapper.text()).toContain('AssertionError')
@@ -137,7 +137,7 @@ describe('TestDetailsModal', () => {
 
   it('displays "No failure details" for passed tests', async () => {
     const wrapper = mount(TestDetailsModal, {
-      props: defaultProps
+      props: defaultProps,
     })
 
     const tabs = wrapper.findAll('.tab-button')
@@ -151,8 +151,8 @@ describe('TestDetailsModal', () => {
     const wrapper = mount(TestDetailsModal, {
       props: {
         ...defaultProps,
-        duration: 2.5
-      }
+        duration: 2.5,
+      },
     })
 
     // Duration should be displayed
@@ -163,8 +163,8 @@ describe('TestDetailsModal', () => {
     const wrapper = mount(TestDetailsModal, {
       props: {
         ...defaultProps,
-        duration: undefined
-      }
+        duration: undefined,
+      },
     })
 
     expect(wrapper.text()).toContain('N/A')
@@ -172,7 +172,7 @@ describe('TestDetailsModal', () => {
 
   it('emits close event when close is triggered', () => {
     const wrapper = mount(TestDetailsModal, {
-      props: defaultProps
+      props: defaultProps,
     })
 
     wrapper.vm.handleClose()
@@ -186,7 +186,7 @@ describe('TestDetailsModal', () => {
     vi.mocked(apiClient.getTestFlakiness).mockRejectedValue(new Error('API Error'))
 
     const wrapper = mount(TestDetailsModal, {
-      props: defaultProps
+      props: defaultProps,
     })
 
     await flushPromises()
@@ -199,8 +199,8 @@ describe('TestDetailsModal', () => {
     const wrapper = mount(TestDetailsModal, {
       props: {
         ...defaultProps,
-        duration: 1.5
-      }
+        duration: 1.5,
+      },
     })
 
     expect(wrapper.text()).toContain('testAddition')
@@ -209,7 +209,7 @@ describe('TestDetailsModal', () => {
 
   it('uses xl modal size', () => {
     const wrapper = mount(TestDetailsModal, {
-      props: defaultProps
+      props: defaultProps,
     })
 
     // Check that Modal component receives size="xl"
@@ -221,8 +221,8 @@ describe('TestDetailsModal', () => {
     const wrapper = mount(TestDetailsModal, {
       props: {
         ...defaultProps,
-        className: undefined
-      }
+        className: undefined,
+      },
     })
 
     expect(wrapper.text()).toContain('Unknown suite')

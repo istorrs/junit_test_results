@@ -145,7 +145,9 @@
                     <td class="time-value recent">{{ formatDuration(test.recent_avg) }}</td>
                     <td class="time-value increase">+{{ formatDuration(test.time_increase) }}</td>
                     <td class="percent-change">
-                      <span class="badge badge-warning">+{{ test.percent_increase.toFixed(1) }}%</span>
+                      <span class="badge badge-warning"
+                        >+{{ test.percent_increase.toFixed(1) }}%</span
+                      >
                     </td>
                     <td class="runs-count">{{ test.recent_count }}</td>
                   </tr>
@@ -267,7 +269,7 @@ const formatDate = (dateString: string | null | undefined): string => {
   return date.toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'short',
-    day: 'numeric'
+    day: 'numeric',
   })
 }
 
@@ -382,7 +384,9 @@ onMounted(() => {
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .error-state {

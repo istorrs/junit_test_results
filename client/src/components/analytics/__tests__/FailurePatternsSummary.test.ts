@@ -7,8 +7,8 @@ import FailurePatternsSummary from '../FailurePatternsSummary.vue'
 // Mock the API client module
 vi.mock('../../../api/client', () => ({
   apiClient: {
-    getFailurePatterns: vi.fn()
-  }
+    getFailurePatterns: vi.fn(),
+  },
 }))
 
 import { apiClient } from '../../../api/client'
@@ -19,8 +19,8 @@ vi.mock('../../shared/Card.vue', () => ({
   default: {
     name: 'Card',
     template: '<div class="mock-card"><slot name="title"></slot><slot></slot></div>',
-    props: ['title']
-  }
+    props: ['title'],
+  },
 }))
 
 describe('FailurePatternsSummary', () => {
@@ -31,9 +31,7 @@ describe('FailurePatternsSummary', () => {
 
     router = createRouter({
       history: createMemoryHistory(),
-      routes: [
-        { path: '/cases', name: 'cases', component: { template: '<div>Cases</div>' } }
-      ]
+      routes: [{ path: '/cases', name: 'cases', component: { template: '<div>Cases</div>' } }],
     })
   })
 
@@ -44,32 +42,30 @@ describe('FailurePatternsSummary', () => {
       count: 15,
       affected_tests: [
         { test_id: 'test-1', test_name: 'testAddition' },
-        { test_id: 'test-2', test_name: 'testSubtraction' }
+        { test_id: 'test-2', test_name: 'testSubtraction' },
       ],
       trend: 'increasing' as const,
-      first_seen: '2024-01-01T10:00:00Z'
+      first_seen: '2024-01-01T10:00:00Z',
     },
     {
       error_type: 'NullPointerException',
       error_message: 'Cannot invoke method on null object',
       count: 8,
-      affected_tests: [
-        { test_id: 'test-3', test_name: 'testNullHandling' }
-      ],
+      affected_tests: [{ test_id: 'test-3', test_name: 'testNullHandling' }],
       trend: 'stable' as const,
-      first_seen: '2024-01-02T10:00:00Z'
-    }
+      first_seen: '2024-01-02T10:00:00Z',
+    },
   ]
 
   it('renders card component', () => {
     const wrapper = mount(FailurePatternsSummary, {
       global: {
-        plugins: [router]
+        plugins: [router],
       },
       props: {
         days: 7,
-        limit: 5
-      }
+        limit: 5,
+      },
     })
     expect(wrapper.find('.mock-card').exists()).toBe(true)
   })
@@ -79,12 +75,12 @@ describe('FailurePatternsSummary', () => {
 
     const wrapper = mount(FailurePatternsSummary, {
       global: {
-        plugins: [router]
+        plugins: [router],
       },
       props: {
         days: 7,
-        limit: 5
-      }
+        limit: 5,
+      },
     })
 
     // Wait for onMounted to run
@@ -95,17 +91,17 @@ describe('FailurePatternsSummary', () => {
 
   it('loads failure patterns on mount', async () => {
     mockGetFailurePatterns.mockResolvedValue({
-      patterns: mockPatterns
+      patterns: mockPatterns,
     })
 
     mount(FailurePatternsSummary, {
       global: {
-        plugins: [router]
+        plugins: [router],
       },
       props: {
         days: 7,
-        limit: 5
-      }
+        limit: 5,
+      },
     })
 
     await flushPromises()
@@ -115,17 +111,17 @@ describe('FailurePatternsSummary', () => {
 
   it('displays patterns after loading', async () => {
     mockGetFailurePatterns.mockResolvedValue({
-      patterns: mockPatterns
+      patterns: mockPatterns,
     })
 
     const wrapper = mount(FailurePatternsSummary, {
       global: {
-        plugins: [router]
+        plugins: [router],
       },
       props: {
         days: 7,
-        limit: 5
-      }
+        limit: 5,
+      },
     })
 
     await flushPromises()
@@ -137,17 +133,17 @@ describe('FailurePatternsSummary', () => {
 
   it('displays pattern counts', async () => {
     mockGetFailurePatterns.mockResolvedValue({
-      patterns: mockPatterns
+      patterns: mockPatterns,
     })
 
     const wrapper = mount(FailurePatternsSummary, {
       global: {
-        plugins: [router]
+        plugins: [router],
       },
       props: {
         days: 7,
-        limit: 5
-      }
+        limit: 5,
+      },
     })
 
     await flushPromises()
@@ -158,17 +154,17 @@ describe('FailurePatternsSummary', () => {
 
   it('shows trend indicators', async () => {
     mockGetFailurePatterns.mockResolvedValue({
-      patterns: mockPatterns
+      patterns: mockPatterns,
     })
 
     const wrapper = mount(FailurePatternsSummary, {
       global: {
-        plugins: [router]
+        plugins: [router],
       },
       props: {
         days: 7,
-        limit: 5
-      }
+        limit: 5,
+      },
     })
 
     await flushPromises()
@@ -180,17 +176,17 @@ describe('FailurePatternsSummary', () => {
 
   it('displays affected tests', async () => {
     mockGetFailurePatterns.mockResolvedValue({
-      patterns: mockPatterns
+      patterns: mockPatterns,
     })
 
     const wrapper = mount(FailurePatternsSummary, {
       global: {
-        plugins: [router]
+        plugins: [router],
       },
       props: {
         days: 7,
-        limit: 5
-      }
+        limit: 5,
+      },
     })
 
     await flushPromises()
@@ -207,21 +203,21 @@ describe('FailurePatternsSummary', () => {
       count: 5,
       affected_tests: [],
       trend: 'stable' as const,
-      first_seen: '2024-01-01T10:00:00Z'
+      first_seen: '2024-01-01T10:00:00Z',
     }
 
     mockGetFailurePatterns.mockResolvedValue({
-      patterns: [longMessagePattern]
+      patterns: [longMessagePattern],
     })
 
     const wrapper = mount(FailurePatternsSummary, {
       global: {
-        plugins: [router]
+        plugins: [router],
       },
       props: {
         days: 7,
-        limit: 5
-      }
+        limit: 5,
+      },
     })
 
     await flushPromises()
@@ -233,17 +229,17 @@ describe('FailurePatternsSummary', () => {
 
   it('displays empty state when no patterns', async () => {
     mockGetFailurePatterns.mockResolvedValue({
-      patterns: []
+      patterns: [],
     })
 
     const wrapper = mount(FailurePatternsSummary, {
       global: {
-        plugins: [router]
+        plugins: [router],
       },
       props: {
         days: 7,
-        limit: 5
-      }
+        limit: 5,
+      },
     })
 
     await flushPromises()
@@ -257,12 +253,12 @@ describe('FailurePatternsSummary', () => {
 
     const wrapper = mount(FailurePatternsSummary, {
       global: {
-        plugins: [router]
+        plugins: [router],
       },
       props: {
         days: 7,
-        limit: 5
-      }
+        limit: 5,
+      },
     })
 
     await flushPromises()
@@ -273,13 +269,13 @@ describe('FailurePatternsSummary', () => {
 
   it('uses default values for days and limit', async () => {
     mockGetFailurePatterns.mockResolvedValue({
-      patterns: mockPatterns
+      patterns: mockPatterns,
     })
 
     mount(FailurePatternsSummary, {
       global: {
-        plugins: [router]
-      }
+        plugins: [router],
+      },
     })
 
     await flushPromises()
@@ -289,18 +285,18 @@ describe('FailurePatternsSummary', () => {
 
   it('shows time range when showTimeRange is true', async () => {
     mockGetFailurePatterns.mockResolvedValue({
-      patterns: mockPatterns
+      patterns: mockPatterns,
     })
 
     const wrapper = mount(FailurePatternsSummary, {
       global: {
-        plugins: [router]
+        plugins: [router],
       },
       props: {
         days: 7,
         limit: 5,
-        showTimeRange: true
-      }
+        showTimeRange: true,
+      },
     })
 
     await flushPromises()
@@ -310,18 +306,18 @@ describe('FailurePatternsSummary', () => {
 
   it('does not show time range when showTimeRange is false', async () => {
     mockGetFailurePatterns.mockResolvedValue({
-      patterns: mockPatterns
+      patterns: mockPatterns,
     })
 
     const wrapper = mount(FailurePatternsSummary, {
       global: {
-        plugins: [router]
+        plugins: [router],
       },
       props: {
         days: 7,
         limit: 5,
-        showTimeRange: false
-      }
+        showTimeRange: false,
+      },
     })
 
     await flushPromises()
@@ -331,17 +327,17 @@ describe('FailurePatternsSummary', () => {
 
   it('navigates to test cases when clicking on a test', async () => {
     mockGetFailurePatterns.mockResolvedValue({
-      patterns: mockPatterns
+      patterns: mockPatterns,
     })
 
     const wrapper = mount(FailurePatternsSummary, {
       global: {
-        plugins: [router]
+        plugins: [router],
       },
       props: {
         days: 7,
-        limit: 5
-      }
+        limit: 5,
+      },
     })
 
     await flushPromises()
@@ -362,21 +358,21 @@ describe('FailurePatternsSummary', () => {
       count: 3,
       affected_tests: [],
       trend: 'stable' as const,
-      first_seen: '2024-01-01T10:00:00Z'
+      first_seen: '2024-01-01T10:00:00Z',
     }
 
     mockGetFailurePatterns.mockResolvedValue({
-      patterns: [unknownPattern]
+      patterns: [unknownPattern],
     })
 
     const wrapper = mount(FailurePatternsSummary, {
       global: {
-        plugins: [router]
+        plugins: [router],
       },
       props: {
         days: 7,
-        limit: 5
-      }
+        limit: 5,
+      },
     })
 
     await flushPromises()
@@ -386,17 +382,17 @@ describe('FailurePatternsSummary', () => {
 
   it('displays affected tests section', async () => {
     mockGetFailurePatterns.mockResolvedValue({
-      patterns: mockPatterns
+      patterns: mockPatterns,
     })
 
     const wrapper = mount(FailurePatternsSummary, {
       global: {
-        plugins: [router]
+        plugins: [router],
       },
       props: {
         days: 7,
-        limit: 5
-      }
+        limit: 5,
+      },
     })
 
     await flushPromises()

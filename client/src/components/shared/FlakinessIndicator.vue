@@ -22,7 +22,7 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
   size: 'md',
-  showLabel: true
+  showLabel: true,
 })
 
 const isFlaky = computed(() => props.passRate < 100 && props.passRate > 0)

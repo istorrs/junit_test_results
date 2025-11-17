@@ -3,12 +3,8 @@
     <div class="page-header">
       <h1>Test Cases</h1>
       <div class="header-actions">
-        <Button @click="loadData" :loading="store.loading" variant="secondary">
-          Refresh
-        </Button>
-        <Button @click="$router.push('/runs')">
-          View Test Runs
-        </Button>
+        <Button :loading="store.loading" variant="secondary" @click="loadData"> Refresh </Button>
+        <Button @click="$router.push('/runs')"> View Test Runs </Button>
       </div>
     </div>
 
@@ -49,12 +45,7 @@
           </div>
 
           <div class="filter-group align-end">
-            <Button
-              @click="clearFilters"
-              variant="secondary"
-              size="sm"
-              v-if="hasActiveFilters"
-            >
+            <Button v-if="hasActiveFilters" variant="secondary" size="sm" @click="clearFilters">
               Clear Filters
             </Button>
           </div>
@@ -70,7 +61,7 @@
       <template #cell-name="{ row }">
         <div class="test-name">
           <strong>{{ (row as any).name }}</strong>
-          <div class="test-meta" v-if="(row as any).class_name">
+          <div v-if="(row as any).class_name" class="test-meta">
             <span class="meta-info">{{ (row as any).class_name }}</span>
           </div>
           <div v-if="(row as any).error_message" class="error-preview">
@@ -131,7 +122,7 @@ const columns = [
 
 const suites = computed(() => {
   const uniqueSuites = new Set<string>()
-  store.cases.forEach(testCase => {
+  store.cases.forEach((testCase) => {
     if (testCase.class_name) uniqueSuites.add(testCase.class_name)
   })
   return Array.from(uniqueSuites).sort()
@@ -143,20 +134,26 @@ const filteredCases = computed(() => {
 
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase()
-    filtered = filtered.filter(testCase =>
-      testCase.name?.toLowerCase().includes(query) ||
-      testCase.class_name?.toLowerCase().includes(query)
+    filtered = filtered.filter(
+      (testCase) =>
+        testCase.name?.toLowerCase().includes(query) ||
+        testCase.class_name?.toLowerCase().includes(query)
     )
     console.log('[TestCases] After search filter:', filtered.length)
   }
 
   if (selectedStatus.value) {
-    filtered = filtered.filter(testCase => testCase.status === selectedStatus.value)
-    console.log('[TestCases] After status filter:', filtered.length, 'status:', selectedStatus.value)
+    filtered = filtered.filter((testCase) => testCase.status === selectedStatus.value)
+    console.log(
+      '[TestCases] After status filter:',
+      filtered.length,
+      'status:',
+      selectedStatus.value
+    )
   }
 
   if (selectedSuite.value) {
-    filtered = filtered.filter(testCase => testCase.class_name === selectedSuite.value)
+    filtered = filtered.filter((testCase) => testCase.class_name === selectedSuite.value)
     console.log('[TestCases] After suite filter:', filtered.length, 'suite:', selectedSuite.value)
   }
 
@@ -193,9 +190,12 @@ const loadData = async () => {
 }
 
 // Watch for global project filter changes and reload data
-watch(() => store.globalProjectFilter, () => {
-  loadData()
-})
+watch(
+  () => store.globalProjectFilter,
+  () => {
+    loadData()
+  }
+)
 
 const handleRowClick = (row: any) => {
   console.log('[TestCases] Row clicked:', {
@@ -206,7 +206,7 @@ const handleRowClick = (row: any) => {
     run_id: row.run_id,
     run_name: row.run_name,
     has_suite_properties: !!row.suite_properties,
-    suite_properties_keys: row.suite_properties ? Object.keys(row.suite_properties) : null
+    suite_properties_keys: row.suite_properties ? Object.keys(row.suite_properties) : null,
   })
   selectedTest.value = row
   modalOpen.value = true
