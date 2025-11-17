@@ -144,7 +144,10 @@ router.delete('/:id', async (req, res, next) => {
 
         res.json({
             success: true,
-            message: 'Test run deleted successfully'
+            data: {
+                success: true,
+                message: 'Test run deleted successfully'
+            }
         });
     } catch (error) {
         next(error);
