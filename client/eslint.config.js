@@ -76,6 +76,7 @@ export default [
       'coverage/',
       '**/*.d.ts',
       'eslint.config.js',   // ← prevents ESLint from fixing itself
+      'scripts/**',         // ← Node.js CommonJS scripts
     ],
   },
 ];
