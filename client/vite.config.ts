@@ -22,11 +22,18 @@ export default defineConfig({
     vue(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['vite.svg', 'apple-touch-icon.png', 'apple-touch-icon-152x152.png', 'apple-touch-icon-180x180.png', 'apple-touch-icon-167x167.png'],
+      includeAssets: [
+        'vite.svg',
+        'apple-touch-icon.png',
+        'apple-touch-icon-152x152.png',
+        'apple-touch-icon-180x180.png',
+        'apple-touch-icon-167x167.png',
+      ],
       manifest: {
         name: 'JUnit Test Results Dashboard',
         short_name: 'JUnit Tests',
-        description: 'View and analyze JUnit test results with detailed insights, trends, and failure analysis',
+        description:
+          'View and analyze JUnit test results with detailed insights, trends, and failure analysis',
         theme_color: '#3b82f6',
         background_color: '#1e1e1e',
         display: 'standalone',
