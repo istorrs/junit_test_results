@@ -256,4 +256,105 @@ onMounted(() => {
 .git-info {
   font-size: 0.75rem;
 }
+
+/* Mobile Responsive Styles */
+@media (max-width: 1024px) {
+  .navbar-content {
+    padding: 1rem;
+  }
+
+  .main-content {
+    padding: 0 0.5rem;
+  }
+
+  .app-footer {
+    padding: 0.75rem 1rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .navbar-content {
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .logo h2 {
+    font-size: 1.25rem;
+  }
+
+  .project-filter {
+    order: 3;
+    width: 100%;
+  }
+
+  .filter-label {
+    flex-shrink: 0;
+  }
+
+  .project-select {
+    flex: 1;
+    min-width: unset;
+  }
+
+  .nav-links {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE and Edge */
+    gap: 0.5rem;
+  }
+
+  .nav-links::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
+  }
+
+  .nav-link {
+    white-space: nowrap;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+  }
+
+  .nav-separator {
+    display: none;
+  }
+
+  .theme-toggle {
+    width: 2.25rem;
+    height: 2.25rem;
+    font-size: 1.1rem;
+  }
+
+  .version-info {
+    font-size: 0.625rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .git-info {
+    font-size: 0.625rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .logo h2 {
+    font-size: 1.1rem;
+  }
+
+  .navbar-content {
+    padding: 0.75rem;
+  }
+
+  .nav-link {
+    padding: 0.5rem;
+    font-size: 0.813rem;
+  }
+
+  .main-content {
+    padding: 0;
+  }
+
+  .app-footer {
+    padding: 0.5rem;
+  }
+}
 </style>

@@ -1,5 +1,6 @@
 import { defineConfig } from 'vitest/config'
 import vue from '@vitejs/plugin-vue'
+import { VitePWA } from 'vite-plugin-pwa'
 import { execSync } from 'child_process'
 
 // Get git information
@@ -17,7 +18,59 @@ const gitInfo = getGitInfo()
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [vue()],
+  plugins: [
+    vue(),
+    VitePWA({
+      registerType: 'autoUpdate',
+      includeAssets: ['vite.svg', 'apple-touch-icon.png', 'apple-touch-icon-152x152.png', 'apple-touch-icon-180x180.png', 'apple-touch-icon-167x167.png'],
+      manifest: {
+        name: 'JUnit Test Results Dashboard',
+        short_name: 'JUnit Tests',
+        description: 'View and analyze JUnit test results with detailed insights, trends, and failure analysis',
+        theme_color: '#3b82f6',
+        background_color: '#1e1e1e',
+        display: 'standalone',
+        orientation: 'portrait-primary',
+        icons: [
+          {
+            src: 'pwa-192x192.png',
+            sizes: '192x192',
+            type: 'image/png',
+          },
+          {
+            src: 'pwa-512x512.png',
+            sizes: '512x512',
+            type: 'image/png',
+          },
+          {
+            src: 'pwa-512x512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'any maskable',
+          },
+        ],
+      },
+      workbox: {
+        // Cache API responses for offline access
+        runtimeCaching: [
+          {
+            urlPattern: /^https:\/\/.*\/api\/.*/i,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'api-cache',
+              expiration: {
+                maxEntries: 100,
+                maxAgeSeconds: 60 * 60, // 1 hour
+              },
+              cacheableResponse: {
+                statuses: [0, 200],
+              },
+            },
+          },
+        ],
+      },
+    }),
+  ],
   define: {
     __APP_VERSION__: JSON.stringify(process.env.npm_package_version || '1.0.0'),
     __GIT_BRANCH__: JSON.stringify(gitInfo.branch),
