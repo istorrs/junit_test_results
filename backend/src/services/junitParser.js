@@ -176,11 +176,11 @@ const parseJUnitXML = async (
 
         // Find or create test run based on CI metadata
         if (ciMetadata && ciMetadata.job_name && ciMetadata.build_number) {
-            // Look for existing test run with same job_name, build_number, and build_time
+            // Look for existing test run with same job_name and build_number
+            // Multiple XML uploads from the same build will merge into one test run
             testRun = await TestRun.findOne({
                 'ci_metadata.job_name': ciMetadata.job_name,
-                'ci_metadata.build_number': ciMetadata.build_number,
-                'ci_metadata.build_time': ciMetadata.build_time
+                'ci_metadata.build_number': ciMetadata.build_number
             });
 
             if (testRun) {
