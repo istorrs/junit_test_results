@@ -20,16 +20,19 @@ cp .env.example .env
 ### 3. Start Server
 
 Development mode:
+
 ```bash
 npm run dev
 ```
 
 Production mode:
+
 ```bash
 npm start
 ```
 
 Production with PM2:
+
 ```bash
 pm2 start ecosystem.config.js
 ```
@@ -37,25 +40,30 @@ pm2 start ecosystem.config.js
 ## API Endpoints
 
 ### Upload
+
 - `POST /api/v1/upload` - Upload single JUnit XML file
 - `POST /api/v1/upload/batch` - Upload multiple files
 
 ### Test Runs
+
 - `GET /api/v1/runs` - Get all test runs (paginated)
 - `GET /api/v1/runs/:id` - Get specific test run
 - `DELETE /api/v1/runs/:id` - Delete test run
 
 ### Test Cases
+
 - `GET /api/v1/cases` - Get test cases (with filters)
 - `GET /api/v1/cases/:id` - Get specific test case
 - `GET /api/v1/cases/:id/history` - Get test execution history
 
 ### Statistics
+
 - `GET /api/v1/stats/overview` - Get overall statistics
 - `GET /api/v1/stats/trends` - Get test trends
 - `GET /api/v1/stats/flaky-tests` - Get flaky tests
 
 ### Health Check
+
 - `GET /health` - API health check
 
 ## Testing API
@@ -122,6 +130,7 @@ backend/
 See `.env.example` for all available configuration options.
 
 Required variables:
+
 - `MONGODB_URI` - MongoDB connection string
 - `ALLOWED_ORIGINS` - CORS allowed origins
 - `PORT` - Server port (default: 5000)
@@ -204,9 +213,10 @@ npm run dev
 
 ## Production Deployment
 
-See `../INSTALLATION.md` for complete production setup instructions.
+See `../docs/INSTALLATION.md` for complete production setup instructions.
 
 Quick production checklist:
+
 - [ ] Set `NODE_ENV=production` in `.env`
 - [ ] Configure MongoDB authentication
 - [ ] Set strong passwords

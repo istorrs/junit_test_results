@@ -564,7 +564,8 @@ pm2 restart junit-dashboard-api
 
 ## Documentation
 
-- **[VUE3_MIGRATION_GUIDE.md](VUE3_MIGRATION_GUIDE.md)** - Complete Vue 3 migration journey
+- **[docs/API_INTEGRATION.md](docs/API_INTEGRATION.md)** - How to upload results from Jenkins, GitHub Actions, GitLab CI, or a plain curl script
+- **[docs/VUE3_MIGRATION_GUIDE.md](docs/VUE3_MIGRATION_GUIDE.md)** - Complete Vue 3 migration journey
 - **[client/TIER1_ARCHITECTURE.md](client/TIER1_ARCHITECTURE.md)** - Tier 1 features architecture
 - **[backend/README.md](backend/README.md)** - Backend API documentation
 - **Component Tests** - See `__tests__` directories in `client/src/components/`
