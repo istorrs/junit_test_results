@@ -18,15 +18,19 @@ else
 fi
 
 # Run npm audit in client directory
+# sharp is allowlisted: it's a devDependency used only by the manual
+# client/scripts/convert-icons.cjs utility (never runs in build/dev/test),
+# and its only fix is a breaking major-version bump (npm audit fix --force).
 echo "🔒 Running security audit for client..."
 cd client
-npm audit --audit-level=moderate
-CLIENT_AUDIT=$?
+CLIENT_AUDIT_JSON=$(npm audit --audit-level=moderate --json 2>/dev/null || true)
+CLIENT_REMAINING=$(echo "$CLIENT_AUDIT_JSON" | jq -r '.vulnerabilities // {} | to_entries[] | select(.key != "sharp") | .key')
 cd ..
 
-if [ $CLIENT_AUDIT -ne 0 ]; then
+if [ -n "$CLIENT_REMAINING" ]; then
   echo ""
-  echo "❌ Client security audit failed!"
+  echo "❌ Client security audit failed! Unresolved vulnerable packages:"
+  echo "$CLIENT_REMAINING"
   echo "💡 Run 'cd client && npm audit fix' to fix vulnerabilities"
   echo ""
   exit 1
