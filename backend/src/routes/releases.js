@@ -34,6 +34,7 @@ router.get('/', async (req, res) => {
                     last_run: { $max: '$timestamp' },
                     total_runs: { $sum: 1 },
                     total_tests_sum: { $sum: '$total_tests' },
+                    passed_sum: { $sum: '$passed' },
                     failed_sum: { $sum: '$failed' },
                     errors_sum: { $sum: '$errors' },
                     skipped_sum: { $sum: '$skipped' }
@@ -48,23 +49,15 @@ router.get('/', async (req, res) => {
                     last_run: 1,
                     total_runs: 1,
                     total_tests: '$total_tests_sum',
+                    passed: '$passed_sum',
                     failed: '$failed_sum',
                     errors: '$errors_sum',
                     skipped: '$skipped_sum',
                     pass_rate: {
-                        $multiply: [
-                            {
-                                $divide: [
-                                    {
-                                        $subtract: [
-                                            '$total_tests_sum',
-                                            { $add: ['$failed_sum', '$errors_sum'] }
-                                        ]
-                                    },
-                                    '$total_tests_sum'
-                                ]
-                            },
-                            100
+                        $cond: [
+                            { $gt: ['$total_tests_sum', 0] },
+                            { $multiply: [{ $divide: ['$passed_sum', '$total_tests_sum'] }, 100] },
+                            0
                         ]
                     }
                 }
@@ -136,10 +129,10 @@ router.get('/compare', async (req, res) => {
             return {
                 total_runs: runs.length,
                 total_tests: totalTests,
-                total_passed: totalPassed,
-                total_failed: totalFailed,
-                total_errors: totalErrors,
-                total_skipped: totalSkipped,
+                passed: totalPassed,
+                failed: totalFailed,
+                errors: totalErrors,
+                skipped: totalSkipped,
                 pass_rate: totalTests > 0 ? (totalPassed / totalTests) * 100 : 0,
                 total_time: totalTime,
                 avg_time_per_run: runs.length > 0 ? totalTime / runs.length : 0,
@@ -166,7 +159,7 @@ router.get('/compare', async (req, res) => {
             diff: {
                 test_count_change: metrics2.total_tests - metrics1.total_tests,
                 pass_rate_change: metrics2.pass_rate - metrics1.pass_rate,
-                failed_change: metrics2.total_failed - metrics1.total_failed,
+                failure_change: metrics2.failed - metrics1.failed,
                 time_change: metrics2.avg_time_per_run - metrics1.avg_time_per_run,
                 time_change_percent:
                     metrics1.avg_time_per_run > 0

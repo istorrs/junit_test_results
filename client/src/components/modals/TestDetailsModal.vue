@@ -270,6 +270,7 @@ import { apiClient } from '../../api/client'
 const ansiConverter = new AnsiToHtml({
   fg: '#d4d4d4',
   bg: '#1e1e1e',
+  escapeXML: true,
   colors: {
     0: '#2e3436', // black
     1: '#cc0000', // red
@@ -448,16 +449,6 @@ const testSteps = computed(() => {
   return steps
 })
 
-// Fetch additional data when modal opens
-watch(
-  () => props.open,
-  async (isOpen) => {
-    if (isOpen && props.testId) {
-      await loadTestDetails()
-    }
-  }
-)
-
 // Resize chart when History tab becomes active
 watch(activeTab, async (newTab) => {
   if (newTab === 'history') {
@@ -505,6 +496,17 @@ const loadTestDetails = async () => {
     loading.value = false
   }
 }
+
+// Fetch additional data when modal opens, including when mounted in an open state.
+watch(
+  () => props.open,
+  async (isOpen) => {
+    if (isOpen && props.testId) {
+      await loadTestDetails()
+    }
+  },
+  { immediate: true }
+)
 
 const handleClose = () => {
   emit('close')

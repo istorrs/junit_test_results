@@ -404,16 +404,17 @@ class ApiClient {
     const response = await fetch(url, options)
 
     if (!response.ok) {
-      // Try to extract error message from response body
+      let errorMessage = `Failed to ${options?.method || 'GET'} ${endpoint}: ${response.status}`
+
       try {
         const errorData = await response.json()
-        const errorMessage =
+        errorMessage =
           errorData.error || errorData.message || `Request failed with status ${response.status}`
-        throw new Error(errorMessage)
       } catch {
-        // If JSON parsing fails, throw generic error
-        throw new Error(`Failed to ${options?.method || 'GET'} ${endpoint}: ${response.status}`)
+        // Keep the fallback message when the response body is not JSON.
       }
+
+      throw new Error(errorMessage)
     }
 
     const data = await response.json()
@@ -566,9 +567,8 @@ class ApiClient {
   }
 
   async compareReleases(release1: string, release2: string): Promise<ReleaseComparisonResponse> {
-    return this.request<ReleaseComparisonResponse>(
-      `/releases/compare?release1=${release1}&release2=${release2}`
-    )
+    const queryString = this.buildQueryString({ release1, release2 })
+    return this.request<ReleaseComparisonResponse>(`/releases/compare${queryString}`)
   }
 
   async getReleaseRuns(
@@ -576,7 +576,7 @@ class ApiClient {
     params?: { limit?: number; skip?: number }
   ): Promise<RunsResponse> {
     const queryString = this.buildQueryString(params || {})
-    return this.request<RunsResponse>(`/releases/${tag}/runs${queryString}`)
+    return this.request<RunsResponse>(`/releases/${encodeURIComponent(tag)}/runs${queryString}`)
   }
 
   // Tier 2: Test Run Comparison

@@ -24,6 +24,11 @@ const fileUploadSchema = new mongoose.Schema({
         unique: true,
         sparse: true
     },
+    raw_content_hash: String,
+    deduplication_scope: {
+        type: mongoose.Schema.Types.Mixed,
+        default: {}
+    },
     uploader: {
         ip: String,
         user_agent: String,

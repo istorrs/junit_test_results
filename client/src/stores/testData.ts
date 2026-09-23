@@ -17,15 +17,7 @@ export const useTestDataStore = defineStore('testData', () => {
   // Computed
   const hasData = computed(() => runs.value.length > 0 || cases.value.length > 0)
   const latestRun = computed(() => (runs.value.length > 0 ? runs.value[0] : null))
-  const availableProjects = computed(() => {
-    const uniqueProjects = new Set<string>()
-    runs.value.forEach((run) => {
-      if (run.ci_metadata?.job_name) {
-        uniqueProjects.add(run.ci_metadata.job_name)
-      }
-    })
-    return Array.from(uniqueProjects).sort()
-  })
+  const availableProjects = computed(() => [...projects.value].sort())
 
   // Actions
   async function fetchProjects() {
@@ -91,7 +83,7 @@ export const useTestDataStore = defineStore('testData', () => {
     try {
       const result = await apiClient.uploadTestResults(file)
       // Refresh data after upload
-      await Promise.all([fetchRuns(), fetchStats()])
+      await Promise.all([fetchRuns(), fetchStats(), fetchProjects()])
       return result
     } catch (e) {
       error.value = e instanceof Error ? e.message : 'Failed to upload file'

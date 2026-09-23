@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import { createRouter, createMemoryHistory } from 'vue-router'
 import { nextTick } from 'vue'
+import { createPinia, setActivePinia } from 'pinia'
 import FlakyTestsWidget from '../FlakyTestsWidget.vue'
 
 // Mock the API client module
@@ -28,6 +29,7 @@ describe('FlakyTestsWidget', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    setActivePinia(createPinia())
 
     // Create a mock router
     router = createRouter({
@@ -104,7 +106,7 @@ describe('FlakyTestsWidget', () => {
 
     await flushPromises()
 
-    expect(mockGetFlakyTests).toHaveBeenCalledWith(5)
+    expect(mockGetFlakyTests).toHaveBeenCalledWith({ limit: 5 })
   })
 
   it('displays flaky tests after loading', async () => {
@@ -224,7 +226,7 @@ describe('FlakyTestsWidget', () => {
 
     await flushPromises()
 
-    expect(mockGetFlakyTests).toHaveBeenCalledWith(10)
+    expect(mockGetFlakyTests).toHaveBeenCalledWith({ limit: 10 })
   })
 
   it('uses default limit of 5 when not specified', async () => {
@@ -240,7 +242,7 @@ describe('FlakyTestsWidget', () => {
 
     await flushPromises()
 
-    expect(mockGetFlakyTests).toHaveBeenCalledWith(5)
+    expect(mockGetFlakyTests).toHaveBeenCalledWith({ limit: 5 })
   })
 
   it('navigates to test cases on "View All" click', async () => {

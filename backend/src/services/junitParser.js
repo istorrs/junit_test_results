@@ -4,7 +4,11 @@ const TestSuite = require('../models/TestSuite');
 const TestCase = require('../models/TestCase');
 const TestResult = require('../models/TestResult');
 const FileUpload = require('../models/FileUpload');
-const { generateHash } = require('./hashGenerator');
+const {
+    buildCiRunQuery,
+    generateUploadIdentity,
+    hasCiBuildIdentity
+} = require('./uploadIdentity');
 const logger = require('../utils/logger');
 
 /**
@@ -81,8 +85,14 @@ const parseJUnitXML = async (
 
         const result = await parser.parseStringPromise(xmlContent);
 
-        // Generate content hash for duplicate detection
-        const contentHash = generateHash(xmlContent);
+        // Scope idempotency to the originating build/release so identical test output from
+        // different executions is retained as distinct history.
+        const { contentHash, rawContentHash, scope } = generateUploadIdentity(
+            xmlContent,
+            filename,
+            ciMetadata,
+            releaseMetadata
+        );
 
         // Check for duplicate file - if this exact XML was already uploaded, skip it
         const existingUpload = await FileUpload.findOne({
@@ -94,13 +104,36 @@ const parseJUnitXML = async (
                 filename,
                 contentHash,
                 existing_file_id: existingUpload._id,
-                existing_run_id: existingUpload.run_id
+                existing_run_id: existingUpload.run_id,
+                scope
             });
+
+            const existingRun = await TestRun.findById(existingUpload.run_id);
+            if (existingRun && (releaseMetadata.release_tag || releaseMetadata.release_version)) {
+                if (releaseMetadata.release_tag) {
+                    existingRun.release_tag = releaseMetadata.release_tag;
+                }
+                if (releaseMetadata.release_version) {
+                    existingRun.release_version = releaseMetadata.release_version;
+                }
+                await existingRun.save();
+            }
+
             return {
                 success: true,
                 duplicate: true,
                 run_id: existingUpload.run_id,
                 file_upload_id: existingUpload._id,
+                stats: existingRun
+                    ? {
+                        total_tests: existingRun.total_tests,
+                        passed: existingRun.passed,
+                        failed: existingRun.failed,
+                        errors: existingRun.errors,
+                        skipped: existingRun.skipped,
+                        time: existingRun.time
+                    }
+                    : undefined,
                 message: 'Duplicate file skipped'
             };
         }
@@ -110,6 +143,8 @@ const parseJUnitXML = async (
             filename,
             file_size: xmlContent.length,
             content_hash: contentHash,
+            raw_content_hash: rawContentHash,
+            deduplication_scope: scope,
             status: 'processing',
             uploader: uploaderInfo
         });
@@ -175,13 +210,10 @@ const parseJUnitXML = async (
         }
 
         // Find or create test run based on CI metadata
-        if (ciMetadata && ciMetadata.job_name && ciMetadata.build_number) {
+        if (hasCiBuildIdentity(ciMetadata)) {
             // Look for existing test run with same job_name and build_number
             // Multiple XML uploads from the same build will merge into one test run
-            testRun = await TestRun.findOne({
-                'ci_metadata.job_name': ciMetadata.job_name,
-                'ci_metadata.build_number': ciMetadata.build_number
-            });
+            testRun = await TestRun.findOne(buildCiRunQuery(ciMetadata));
 
             if (testRun) {
                 logger.info('Found existing test run - adding XML to it', {

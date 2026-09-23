@@ -79,6 +79,9 @@ const handleProjectChange = () => {
 
 onMounted(() => {
   initTheme()
+  store.fetchProjects().catch((error) => {
+    console.error('Failed to load projects:', error)
+  })
 })
 </script>
 
