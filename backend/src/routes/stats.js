@@ -3,62 +3,44 @@ const router = express.Router();
 const mongoose = require('mongoose');
 const TestRun = require('../models/TestRun');
 const TestCase = require('../models/TestCase');
-const logger = require('../utils/logger');
 const { MAX_QUERY_LIMIT, DEFAULT_QUERY_LIMIT } = require('../config/constants');
+const { buildCaseSummaryPipeline, formatOverviewStats } = require('../services/overviewStats');
 
 // GET /api/v1/stats/overview - Get overall statistics
 router.get('/overview', async (req, res, next) => {
     try {
-        const query = {};
         const runQuery = {};
 
         if (req.query.run_id) {
-            query.run_id = new mongoose.Types.ObjectId(req.query.run_id);
-            logger.info(`Filtering by run_id: ${req.query.run_id}, ObjectId: ${query.run_id}`);
+            if (!mongoose.isValidObjectId(req.query.run_id)) {
+                return res.status(400).json({ success: false, error: 'Invalid run_id' });
+            }
+            runQuery._id = new mongoose.Types.ObjectId(req.query.run_id);
         }
         if (req.query.from_date) {
-            query.created_at = { $gte: new Date(req.query.from_date) };
             runQuery.created_at = { $gte: new Date(req.query.from_date) };
         }
         if (req.query.to_date) {
-            query.created_at = { ...query.created_at, $lte: new Date(req.query.to_date) };
             runQuery.created_at = { ...runQuery.created_at, $lte: new Date(req.query.to_date) };
         }
 
         // Filter by job_name (project)
         if (req.query.job_name) {
             runQuery['ci_metadata.job_name'] = req.query.job_name;
-
-            // Get all runs with this job_name
-            const runs = await TestRun.find(runQuery).select('_id');
-            const runIds = runs.map(r => r._id);
-
-            // Filter test cases to only these runs
-            query.run_id = { $in: runIds };
-
-            logger.info(
-                `Filtering by job_name: ${req.query.job_name}, found ${runIds.length} runs`
-            );
         }
 
-        logger.info(`Query for test cases: ${JSON.stringify(query)}`);
-        const totalRuns = await TestRun.countDocuments(runQuery);
-        const cases = await TestCase.find(query);
-        logger.info(`Found cases: ${cases.length}`);
+        const caseQuery = {};
 
-        const stats = {
-            total_runs: totalRuns,
-            total_tests: cases.length,
-            total_passed: cases.filter(c => c.status === 'passed').length,
-            total_failed: cases.filter(c => c.status === 'failed').length,
-            total_errors: cases.filter(c => c.status === 'error').length,
-            total_skipped: cases.filter(c => c.status === 'skipped').length,
-            flaky_tests_count: cases.filter(c => c.is_flaky).length,
-            average_duration: cases.reduce((sum, c) => sum + c.time, 0) / cases.length || 0
-        };
+        if (Object.keys(runQuery).length > 0) {
+            const runIds = await TestRun.distinct('_id', runQuery);
+            caseQuery.run_id = { $in: runIds };
+        }
 
-        stats.success_rate =
-            stats.total_tests > 0 ? ((stats.total_passed / stats.total_tests) * 100).toFixed(2) : 0;
+        const [totalRuns, caseSummaries] = await Promise.all([
+            TestRun.countDocuments(runQuery),
+            TestCase.aggregate(buildCaseSummaryPipeline(caseQuery))
+        ]);
+        const stats = formatOverviewStats(caseSummaries[0], totalRuns);
 
         res.json({
             success: true,

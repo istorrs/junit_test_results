@@ -9,6 +9,8 @@ const {
     generateUploadIdentity,
     hasCiBuildIdentity
 } = require('./uploadIdentity');
+const { calculateRunStats } = require('./runStats');
+const { rollbackUpload } = require('./uploadRollback');
 const logger = require('../utils/logger');
 
 /**
@@ -76,6 +78,10 @@ const parseJUnitXML = async (
     uploaderInfo = {},
     releaseMetadata = {}
 ) => {
+    let fileUpload;
+    let testRun;
+    let createdRun = false;
+
     try {
         const parser = new xml2js.Parser({
             explicitArray: false,
@@ -139,7 +145,7 @@ const parseJUnitXML = async (
         }
 
         // Create file upload record
-        const fileUpload = await FileUpload.create({
+        fileUpload = await FileUpload.create({
             filename,
             file_size: xmlContent.length,
             content_hash: contentHash,
@@ -163,8 +169,6 @@ const parseJUnitXML = async (
         // Extract properties from first testsuite element (typically contains test run level properties)
         const suiteElement = testsuites[0];
         const runProperties = extractProperties(suiteElement.testsuite || suiteElement);
-
-        let testRun;
 
         // Determine the correct timestamp
         // Priority: CI metadata build_time > XML timestamp > current time
@@ -242,6 +246,7 @@ const parseJUnitXML = async (
                     release_version: releaseMetadata.release_version || null,
                     properties: runProperties
                 });
+                createdRun = true;
 
                 logger.info('Created new test run from CI metadata', {
                     run_id: testRun._id,
@@ -270,6 +275,7 @@ const parseJUnitXML = async (
                 release_version: releaseMetadata.release_version || null,
                 properties: runProperties
             });
+            createdRun = true;
 
             logger.info('Created test run without CI metadata', {
                 run_id: testRun._id,
@@ -277,6 +283,11 @@ const parseJUnitXML = async (
                 filename
             });
         }
+
+        await FileUpload.findByIdAndUpdate(fileUpload._id, {
+            run_id: testRun._id,
+            created_run: createdRun
+        });
 
         // Process all test suites from this XML
         for (const suiteElement of testsuites) {
@@ -298,7 +309,7 @@ const parseJUnitXML = async (
         });
 
         // Calculate statistics from actual test cases and update the test run
-        const stats = await calculateStats(testRun._id);
+        const stats = await calculateRunStats(testRun._id);
         await TestRun.findByIdAndUpdate(testRun._id, stats);
 
         logger.info('JUnit XML parsed successfully', { run_id: testRun._id, stats });
@@ -311,6 +322,24 @@ const parseJUnitXML = async (
         };
     } catch (error) {
         logger.error('Error parsing JUnit XML', { error: error.message });
+
+        if (fileUpload) {
+            try {
+                await rollbackUpload({
+                    fileUploadId: fileUpload._id,
+                    runId: testRun?._id,
+                    createdRun,
+                    errorMessage: error.message
+                });
+            } catch (rollbackError) {
+                logger.error('Failed to roll back partial JUnit upload', {
+                    file_upload_id: fileUpload._id,
+                    original_error: error.message,
+                    rollback_error: rollbackError.message
+                });
+            }
+        }
+
         throw error;
     }
 };
@@ -527,6 +556,7 @@ const processTestCase = async (caseData, suiteId, runId, fileUploadId, testStart
         case_id: testCase._id,
         suite_id: suiteId,
         run_id: runId,
+        file_upload_id: fileUploadId,
         status,
         time: testCase.time,
         error_message: errorMessage,
@@ -537,21 +567,6 @@ const processTestCase = async (caseData, suiteId, runId, fileUploadId, testStart
         stack_trace: stackTrace,
         timestamp: testStartTime
     });
-};
-
-const calculateStats = async runId => {
-    const cases = await TestCase.find({ run_id: runId });
-    const passed = cases.filter(c => c.status === 'passed').length;
-    const failed = cases.filter(c => c.status === 'failed').length;
-
-    return {
-        total_tests: cases.length,
-        passed,
-        failed,
-        errors: cases.filter(c => c.status === 'error').length,
-        skipped: cases.filter(c => c.status === 'skipped').length,
-        time: cases.reduce((sum, c) => sum + c.time, 0)
-    };
 };
 
 module.exports = { parseJUnitXML };

@@ -19,6 +19,10 @@ const fileUploadSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'TestRun'
     },
+    created_run: {
+        type: Boolean,
+        default: false
+    },
     content_hash: {
         type: String,
         unique: true,
