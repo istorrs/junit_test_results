@@ -2,7 +2,42 @@ const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
 const TestCase = require('../models/TestCase');
+const TestRun = require('../models/TestRun');
 const { MAX_QUERY_LIMIT, DEFAULT_QUERY_LIMIT } = require('../config/constants');
+
+// GET /api/v1/cases/suites - Get suite names independently of result pagination
+router.get('/suites', async (req, res, next) => {
+    try {
+        const matchQuery = {
+            class_name: { $nin: [null, ''] }
+        };
+
+        if (req.query.run_id && req.query.run_id !== 'undefined') {
+            if (!mongoose.isValidObjectId(req.query.run_id)) {
+                return res.status(400).json({ success: false, error: 'Invalid run ID' });
+            }
+            matchQuery.run_id = new mongoose.Types.ObjectId(req.query.run_id);
+        }
+
+        if (req.query.job_name) {
+            const runQuery = { 'ci_metadata.job_name': req.query.job_name };
+            if (matchQuery.run_id) runQuery._id = matchQuery.run_id;
+
+            const runIds = await TestRun.distinct('_id', runQuery);
+            matchQuery.run_id = { $in: runIds };
+        }
+
+        const suites = await TestCase.distinct('class_name', matchQuery);
+        suites.sort((a, b) => a.localeCompare(b));
+
+        res.json({
+            success: true,
+            data: { suites }
+        });
+    } catch (error) {
+        next(error);
+    }
+});
 
 // GET /api/v1/cases - Get test cases with filtering
 router.get('/', async (req, res, next) => {

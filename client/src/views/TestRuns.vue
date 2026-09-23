@@ -33,7 +33,7 @@
           <div class="filter-group">
             <label>Status</label>
             <select v-model="selectedStatus" class="filter-select">
-              <option value="">All</option>
+              <option value="">Any status</option>
               <option value="passed">Passed</option>
               <option value="failed">Failed</option>
               <option value="mixed">Mixed</option>

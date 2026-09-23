@@ -27,7 +27,7 @@
           <div class="filter-group">
             <label>Status</label>
             <select v-model="selectedStatus" class="filter-select">
-              <option value="">All Statuses</option>
+              <option value="">Any status</option>
               <option value="passed">✓ Passed</option>
               <option value="failed">✗ Failed</option>
               <option value="error">⚠ Error</option>
@@ -37,8 +37,8 @@
 
           <div class="filter-group">
             <label>Suite</label>
-            <select v-model="selectedSuite" class="filter-select">
-              <option value="">All Suites</option>
+            <select v-model="selectedSuite" class="filter-select" :disabled="suitesLoading">
+              <option value="">{{ suitesLoading ? 'Loading suites…' : 'Any suite' }}</option>
               <option v-for="suite in suites" :key="suite" :value="suite">
                 {{ suite }}
               </option>
@@ -107,7 +107,7 @@
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useTestDataStore } from '../stores/testData'
-import type { Pagination, TestCaseFilters } from '../api/client'
+import { apiClient, type Pagination, type TestCaseFilters } from '../api/client'
 import { formatDuration, getStatusIcon, truncateText } from '../utils/formatters'
 import Button from '../components/shared/Button.vue'
 import DataTable from '../components/shared/DataTable.vue'
@@ -121,8 +121,11 @@ const store = useTestDataStore()
 const searchQuery = ref(typeof route.query.search === 'string' ? route.query.search : '')
 const selectedStatus = ref('')
 const selectedSuite = ref('')
+const suites = ref<string[]>([])
+const suitesLoading = ref(false)
 const pagination = ref<Pagination>({ page: 1, limit: 50, total: 0, pages: 1 })
 let filterTimer: ReturnType<typeof setTimeout> | undefined
+let suitesRequestId = 0
 
 // Modal state
 const modalOpen = ref(false)
@@ -137,14 +140,6 @@ const columns = [
 const getTestCaseRowLabel = (row: Record<string, unknown>) =>
   `Open test case ${String(row.name || 'Unnamed Test')}`
 
-const suites = computed(() => {
-  const uniqueSuites = new Set<string>()
-  store.cases.forEach((testCase) => {
-    if (testCase.class_name) uniqueSuites.add(testCase.class_name)
-  })
-  return Array.from(uniqueSuites).sort()
-})
-
 const hasActiveFilters = computed(() => {
   return !!(searchQuery.value || selectedStatus.value || selectedSuite.value)
 })
@@ -153,6 +148,23 @@ const clearFilters = () => {
   searchQuery.value = ''
   selectedStatus.value = ''
   selectedSuite.value = ''
+}
+
+const loadSuites = async () => {
+  const requestId = ++suitesRequestId
+  suitesLoading.value = true
+  suites.value = []
+  try {
+    const filters: Pick<TestCaseFilters, 'run_id' | 'job_name'> = {}
+    if (typeof route.query.run_id === 'string') filters.run_id = route.query.run_id
+    if (store.globalProjectFilter) filters.job_name = store.globalProjectFilter
+    const availableSuites = await apiClient.getTestCaseSuites(filters)
+    if (requestId === suitesRequestId) suites.value = availableSuites
+  } catch (error) {
+    console.error('Failed to load test suites:', error)
+  } finally {
+    if (requestId === suitesRequestId) suitesLoading.value = false
+  }
 }
 
 const loadData = async (page = pagination.value.page) => {
@@ -194,6 +206,8 @@ watch([searchQuery, selectedStatus, selectedSuite], () => {
 watch(
   () => store.globalProjectFilter,
   () => {
+    selectedSuite.value = ''
+    loadSuites()
     loadData(1)
   }
 )
@@ -218,6 +232,7 @@ const closeModal = () => {
 }
 
 onMounted(() => {
+  loadSuites()
   loadData(1)
 })
 

@@ -228,6 +228,28 @@ describe('API Client', () => {
     })
   })
 
+  describe('getTestCaseSuites', () => {
+    it('fetches all suite names for the selected project', async () => {
+      const mockData = {
+        success: true,
+        data: { suites: ['suite.alpha', 'suite.beta'] },
+      }
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockData,
+      })
+
+      const result = await apiClient.getTestCaseSuites({ job_name: 'Gateway Tests' })
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        '/api/v1/cases/suites?job_name=Gateway+Tests',
+        undefined
+      )
+      expect(result).toEqual(mockData.data.suites)
+    })
+  })
+
   describe('uploadTestResults', () => {
     it('should upload XML file successfully', async () => {
       const mockData = {

@@ -515,6 +515,14 @@ class ApiClient {
     }
   }
 
+  async getTestCaseSuites(
+    filters: Pick<TestCaseFilters, 'run_id' | 'job_name'> = {}
+  ): Promise<string[]> {
+    const queryString = this.buildQueryString(filters)
+    const response = await this.request<{ suites: string[] }>(`/cases/suites${queryString}`)
+    return response.suites
+  }
+
   async getTestCase(testId: string): Promise<TestCase> {
     return this.request<TestCase>(`/cases/${testId}`)
   }
