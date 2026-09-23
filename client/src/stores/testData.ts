@@ -10,7 +10,8 @@ export const useTestDataStore = defineStore('testData', () => {
   const cases = ref<TestCase[]>([])
   const stats = ref<Stats | null>(null)
   const projects = ref<string[]>([])
-  const loading = ref(false)
+  const activeRequests = ref(0)
+  const loading = computed(() => activeRequests.value > 0)
   const error = ref<string | null>(null)
   const globalProjectFilter = ref<string>('')
 
@@ -18,10 +19,16 @@ export const useTestDataStore = defineStore('testData', () => {
   const hasData = computed(() => runs.value.length > 0 || cases.value.length > 0)
   const latestRun = computed(() => (runs.value.length > 0 ? runs.value[0] : null))
   const availableProjects = computed(() => [...projects.value].sort())
+  const startRequest = () => {
+    activeRequests.value += 1
+  }
+  const finishRequest = () => {
+    activeRequests.value = Math.max(0, activeRequests.value - 1)
+  }
 
   // Actions
   async function fetchProjects() {
-    loading.value = true
+    startRequest()
     error.value = null
     try {
       projects.value = await apiClient.getProjects()
@@ -29,12 +36,12 @@ export const useTestDataStore = defineStore('testData', () => {
       error.value = e instanceof Error ? e.message : 'Failed to fetch projects'
       throw e
     } finally {
-      loading.value = false
+      finishRequest()
     }
   }
 
   async function fetchRuns(filters = {}) {
-    loading.value = true
+    startRequest()
     error.value = null
     try {
       const response = await apiClient.getRuns(filters)
@@ -44,12 +51,12 @@ export const useTestDataStore = defineStore('testData', () => {
       error.value = e instanceof Error ? e.message : 'Failed to fetch test runs'
       throw e
     } finally {
-      loading.value = false
+      finishRequest()
     }
   }
 
   async function fetchCases(filters = {}) {
-    loading.value = true
+    startRequest()
     error.value = null
     try {
       const response = await apiClient.getTestCases(filters)
@@ -59,12 +66,12 @@ export const useTestDataStore = defineStore('testData', () => {
       error.value = e instanceof Error ? e.message : 'Failed to fetch test cases'
       throw e
     } finally {
-      loading.value = false
+      finishRequest()
     }
   }
 
   async function fetchStats(filters = {}) {
-    loading.value = true
+    startRequest()
     error.value = null
     try {
       stats.value = await apiClient.getStats(filters)
@@ -73,12 +80,12 @@ export const useTestDataStore = defineStore('testData', () => {
       error.value = e instanceof Error ? e.message : 'Failed to fetch statistics'
       throw e
     } finally {
-      loading.value = false
+      finishRequest()
     }
   }
 
   async function uploadFile(file: File) {
-    loading.value = true
+    startRequest()
     error.value = null
     try {
       const result = await apiClient.uploadTestResults(file)
@@ -89,7 +96,7 @@ export const useTestDataStore = defineStore('testData', () => {
       error.value = e instanceof Error ? e.message : 'Failed to upload file'
       throw e
     } finally {
-      loading.value = false
+      finishRequest()
     }
   }
 
@@ -111,7 +118,7 @@ export const useTestDataStore = defineStore('testData', () => {
     cases.value = []
     stats.value = null
     projects.value = []
-    loading.value = false
+    activeRequests.value = 0
     error.value = null
     globalProjectFilter.value = ''
   }

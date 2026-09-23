@@ -19,7 +19,11 @@
         v-for="test in flakyTests"
         :key="test.test_id"
         class="flaky-test-item"
+        role="button"
+        tabindex="0"
         @click="viewTestDetails(test)"
+        @keydown.enter="viewTestDetails(test)"
+        @keydown.space.prevent="viewTestDetails(test)"
       >
         <div class="test-info">
           <div class="test-name">{{ test.test_name }}</div>
@@ -106,9 +110,7 @@ const viewTestDetails = (test: FlakyTest) => {
 }
 
 const viewAllFlaky = () => {
-  // Navigate to test cases page with flaky filter
-  // Note: This would require adding a flaky filter to the test cases page
-  router.push('/cases')
+  router.push({ path: '/cases', query: { flaky: 'true' } })
 }
 
 onMounted(() => {

@@ -21,11 +21,13 @@
     </template>
 
     <div class="tabs-container">
-      <div class="tabs-nav">
+      <div class="tabs-nav" role="tablist" aria-label="Test details sections">
         <button
           v-for="tab in tabs"
           :key="tab.id"
           :class="['tab-button', { active: activeTab === tab.id }]"
+          role="tab"
+          :aria-selected="activeTab === tab.id"
           @click="activeTab = tab.id"
         >
           {{ tab.label }}

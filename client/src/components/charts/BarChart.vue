@@ -1,5 +1,10 @@
 <template>
-  <div ref="chartRef" :style="{ width: width, height: height }"></div>
+  <div
+    ref="chartRef"
+    role="img"
+    :aria-label="title || 'Test results bar chart'"
+    :style="{ width: width, height: height }"
+  ></div>
 </template>
 
 <script setup lang="ts">
@@ -24,6 +29,7 @@ const props = withDefaults(defineProps<Props>(), {
 
 const chartRef = ref<HTMLElement | null>(null)
 let chartInstance: echarts.ECharts | null = null
+const handleResize = () => chartInstance?.resize()
 
 const initChart = () => {
   if (!chartRef.value) return
@@ -31,6 +37,7 @@ const initChart = () => {
   chartInstance = echarts.init(chartRef.value)
 
   const option: echarts.EChartsOption = {
+    aria: { enabled: true },
     title: {
       text: props.title,
       left: 'center',
@@ -94,13 +101,13 @@ const updateChart = () => {
 
 onMounted(() => {
   initChart()
-  window.addEventListener('resize', () => chartInstance?.resize())
+  window.addEventListener('resize', handleResize)
 })
 
 watch([() => props.xAxisData, () => props.seriesData], updateChart, { deep: true })
 
 onUnmounted(() => {
   chartInstance?.dispose()
-  window.removeEventListener('resize', () => chartInstance?.resize())
+  window.removeEventListener('resize', handleResize)
 })
 </script>

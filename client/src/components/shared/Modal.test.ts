@@ -71,6 +71,24 @@ describe('Modal Component', () => {
     wrapper.unmount()
   })
 
+  it('should render and label a custom header', async () => {
+    const wrapper = mount(Modal, {
+      props: { open: true },
+      slots: {
+        header: '<h2>Custom test details</h2>',
+        default: '<p>Modal content</p>',
+      },
+      attachTo: document.body,
+    })
+
+    await wrapper.vm.$nextTick()
+    const header = document.querySelector('.modal-title-slot')
+    const dialog = document.querySelector('[role="dialog"]')
+    expect(header?.textContent).toContain('Custom test details')
+    expect(dialog?.getAttribute('aria-labelledby')).toBe(header?.id)
+    wrapper.unmount()
+  })
+
   it('should close when Escape is pressed', async () => {
     const wrapper = mount(Modal, {
       props: { open: true },

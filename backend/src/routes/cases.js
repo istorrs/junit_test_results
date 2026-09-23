@@ -70,6 +70,15 @@ router.get('/', async (req, res, next) => {
             matchQuery.is_flaky = req.query.is_flaky === 'true';
         }
 
+        // Resolve the global project filter to run IDs before aggregation. This
+        // keeps both the list query and its count on indexed testcase fields.
+        if (req.query.job_name) {
+            const runQuery = { 'ci_metadata.job_name': req.query.job_name };
+            if (matchQuery.run_id) runQuery._id = matchQuery.run_id;
+            const runIds = await TestRun.distinct('_id', runQuery);
+            matchQuery.run_id = { $in: runIds };
+        }
+
         // Text search
         if (req.query.search) {
             matchQuery.$text = { $search: req.query.search };
@@ -78,20 +87,6 @@ router.get('/', async (req, res, next) => {
         // Build aggregation pipeline
         const pipeline = [
             { $match: matchQuery },
-            {
-                $lookup: {
-                    from: 'testresults',
-                    localField: '_id',
-                    foreignField: 'case_id',
-                    as: 'result'
-                }
-            },
-            {
-                $unwind: {
-                    path: '$result',
-                    preserveNullAndEmptyArrays: true
-                }
-            },
             {
                 $lookup: {
                     from: 'testruns',
@@ -118,15 +113,6 @@ router.get('/', async (req, res, next) => {
             }
         ];
 
-        // Add job_name filter after joining with runs
-        if (req.query.job_name) {
-            pipeline.push({
-                $match: {
-                    'run_ci_metadata.job_name': req.query.job_name
-                }
-            });
-        }
-
         pipeline.push(
             {
                 $project: {
@@ -144,19 +130,10 @@ router.get('/', async (req, res, next) => {
             { $limit: limit }
         );
 
-        // Get total count with same filters
-        const countPipeline = [...pipeline];
-        // Remove skip, limit, and project stages for count
-        const skipIndex = countPipeline.findIndex(stage => stage.$skip !== undefined);
-        if (skipIndex !== -1) {
-            countPipeline.splice(skipIndex);
-        }
-        countPipeline.push({ $count: 'total' });
-
-        const countResult = await TestCase.aggregate(countPipeline);
-        const total = countResult.length > 0 ? countResult[0].total : 0;
-
-        const cases = await TestCase.aggregate(pipeline);
+        const [total, cases] = await Promise.all([
+            TestCase.countDocuments(matchQuery),
+            TestCase.aggregate(pipeline)
+        ]);
 
         console.log('[Cases API] Found cases:', cases.length);
 

@@ -9,6 +9,8 @@
           type="file"
           accept=".xml"
           class="file-input"
+          aria-label="JUnit XML file"
+          tabindex="-1"
           @change="handleFileSelect"
         />
 

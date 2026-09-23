@@ -14,6 +14,11 @@
       </div>
     </div>
 
+    <div v-if="loadError" class="load-error" role="alert">
+      <span>{{ loadError }}</span>
+      <Button size="sm" variant="secondary" @click="loadData(1)">Try again</Button>
+    </div>
+
     <DataTable
       :columns="columns"
       :data="store.runs"
@@ -26,13 +31,18 @@
       <template #filters>
         <div class="filters-grid">
           <div class="filter-group">
-            <label>Search</label>
-            <SearchInput v-model="searchQuery" placeholder="Search by name, job, branch..." />
+            <label for="runs-search">Search</label>
+            <SearchInput
+              id="runs-search"
+              v-model="searchQuery"
+              aria-label="Search test runs"
+              placeholder="Search by name, job, branch..."
+            />
           </div>
 
           <div class="filter-group">
-            <label>Status</label>
-            <select v-model="selectedStatus" class="filter-select">
+            <label for="runs-status">Status</label>
+            <select id="runs-status" v-model="selectedStatus" class="filter-select">
               <option value="">Any status</option>
               <option value="passed">Passed</option>
               <option value="failed">Failed</option>
@@ -41,13 +51,13 @@
           </div>
 
           <div class="filter-group">
-            <label>Date Range</label>
-            <input v-model="dateFrom" type="date" class="filter-input" placeholder="From" />
+            <label for="runs-date-from">From date</label>
+            <input id="runs-date-from" v-model="dateFrom" type="date" class="filter-input" />
           </div>
 
           <div class="filter-group">
-            <label>To</label>
-            <input v-model="dateTo" type="date" class="filter-input" placeholder="To" />
+            <label for="runs-date-to">To date</label>
+            <input id="runs-date-to" v-model="dateTo" type="date" class="filter-input" />
           </div>
 
           <div class="filter-group align-end">
@@ -65,6 +75,7 @@
           :checked="allRunsSelected"
           class="run-checkbox"
           title="Select/Deselect All"
+          aria-label="Select all runs on this page"
           @change="toggleAllRuns"
         />
       </template>
@@ -74,6 +85,7 @@
           type="checkbox"
           :checked="selectedRuns.has((row as any).id)"
           class="run-checkbox"
+          :aria-label="`Select run ${(row as any).name || (row as any).id}`"
           @change="toggleRunSelection((row as any).id)"
           @click.stop
         />
@@ -167,15 +179,16 @@ const selectedRuns = ref<Set<string>>(new Set())
 const showReleaseModal = ref(false)
 const selectAllCheckbox = ref<HTMLInputElement | null>(null)
 const pagination = ref<Pagination>({ page: 1, limit: 50, total: 0, pages: 1 })
+const loadError = ref('')
 let filterTimer: ReturnType<typeof setTimeout> | undefined
 
 const columns = [
   { key: 'select', label: '', sortable: false },
-  { key: 'name', label: 'Run Name', sortable: true },
-  { key: 'timestamp', label: 'Date', sortable: true },
-  { key: 'total', label: 'Total Tests', sortable: true },
+  { key: 'name', label: 'Run Name', sortable: false },
+  { key: 'timestamp', label: 'Date', sortable: false },
+  { key: 'total', label: 'Total Tests', sortable: false },
   { key: 'summary', label: 'Results', sortable: false },
-  { key: 'rate', label: 'Success Rate', sortable: true },
+  { key: 'rate', label: 'Success Rate', sortable: false },
 ]
 
 const getRunRowLabel = (row: Record<string, unknown>) =>
@@ -299,6 +312,7 @@ const deleteSelectedRuns = async () => {
 }
 
 const loadData = async (page = pagination.value.page) => {
+  loadError.value = ''
   try {
     const filters: RunFilters = {
       page,
@@ -317,18 +331,24 @@ const loadData = async (page = pagination.value.page) => {
     const response = await store.fetchRuns(filters)
     pagination.value = response.pagination
   } catch (error) {
+    loadError.value = error instanceof Error ? error.message : 'Failed to load test runs'
     console.error('Failed to load test runs:', error)
   }
 }
 
-const handlePageChange = (page: number) => loadData(page)
+const handlePageChange = (page: number) => {
+  clearSelection()
+  loadData(page)
+}
 
 const handleLimitChange = (limit: number) => {
+  clearSelection()
   pagination.value.limit = limit
   loadData(1)
 }
 
 watch([searchQuery, selectedStatus, dateFrom, dateTo], () => {
+  clearSelection()
   clearTimeout(filterTimer)
   filterTimer = setTimeout(() => loadData(1), 300)
 })
@@ -344,6 +364,7 @@ watch(someRunsSelected, (value) => {
 watch(
   () => store.globalProjectFilter,
   () => {
+    clearSelection()
     loadData(1)
   }
 )
@@ -379,6 +400,18 @@ h1 {
 .header-actions {
   display: flex;
   gap: 1rem;
+}
+
+.load-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding: 0.75rem 1rem;
+  color: var(--error-color);
+  background: var(--error-bg);
+  border-radius: 0.5rem;
 }
 
 .filters-grid {
@@ -529,5 +562,22 @@ h1 {
 .run-checkbox:indeterminate {
   accent-color: var(--primary-color);
   opacity: 0.7;
+}
+
+@media (max-width: 600px) {
+  .test-runs {
+    padding: 1.25rem;
+  }
+
+  .page-header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .header-actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
 }
 </style>

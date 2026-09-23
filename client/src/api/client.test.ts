@@ -250,6 +250,34 @@ describe('API Client', () => {
     })
   })
 
+  describe('performance project filters', () => {
+    it('includes the selected project in performance requests', async () => {
+      mockFetch
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({ success: true, data: { slowest_tests: [] } }),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({ success: true, data: { trends: [] } }),
+        })
+
+      await apiClient.getSlowestTests({ days: 30, job_name: 'Gateway Tests' })
+      await apiClient.getPerformanceTrends({ days: 30, job_name: 'Gateway Tests' })
+
+      expect(mockFetch).toHaveBeenNthCalledWith(
+        1,
+        '/api/v1/performance/slowest?days=30&job_name=Gateway+Tests',
+        undefined
+      )
+      expect(mockFetch).toHaveBeenNthCalledWith(
+        2,
+        '/api/v1/performance/trends?days=30&job_name=Gateway+Tests',
+        undefined
+      )
+    })
+  })
+
   describe('uploadTestResults', () => {
     it('should upload XML file successfully', async () => {
       const mockData = {

@@ -2,8 +2,15 @@ const express = require('express');
 const { MAX_QUERY_LIMIT, DEFAULT_QUERY_LIMIT } = require('../config/constants');
 const router = express.Router();
 const TestCase = require('../models/TestCase');
-const _TestRun = require('../models/TestRun');
+const TestRun = require('../models/TestRun');
 const _ = require('lodash');
+
+const applyProjectFilter = async (matchCondition, jobName) => {
+    if (!jobName) return matchCondition;
+
+    const runIds = await TestRun.distinct('_id', { 'ci_metadata.job_name': jobName });
+    return { ...matchCondition, run_id: { $in: runIds } };
+};
 
 /**
  * GET /api/v1/performance/trends
@@ -12,12 +19,12 @@ const _ = require('lodash');
  */
 router.get('/trends', async (req, res) => {
     try {
-        const { testId, className, days = 30, granularity = 'daily' } = req.query;
+        const { testId, className, days = 30, granularity = 'daily', job_name } = req.query;
 
         const cutoffDate = new Date();
         cutoffDate.setDate(cutoffDate.getDate() - parseInt(days));
 
-        const matchCondition = {
+        let matchCondition = {
             created_at: { $gte: cutoffDate },
             time: { $exists: true, $ne: null }
         };
@@ -29,6 +36,8 @@ router.get('/trends', async (req, res) => {
         if (className) {
             matchCondition.class_name = new RegExp(_.escapeRegExp(className), 'i');
         }
+
+        matchCondition = await applyProjectFilter(matchCondition, job_name);
 
         // Group by time period based on granularity
         let dateFormat;
@@ -101,17 +110,22 @@ router.get('/trends', async (req, res) => {
  */
 router.get('/slowest', async (req, res) => {
     try {
-        const { limit = DEFAULT_QUERY_LIMIT, days = 7, threshold = 0 } = req.query;
+        const { limit = DEFAULT_QUERY_LIMIT, days = 7, threshold = 0, job_name } = req.query;
 
         const cutoffDate = new Date();
         cutoffDate.setDate(cutoffDate.getDate() - parseInt(days));
 
+        const matchCondition = await applyProjectFilter(
+            {
+                created_at: { $gte: cutoffDate },
+                time: { $gt: parseFloat(threshold) }
+            },
+            job_name
+        );
+
         const slowestTests = await TestCase.aggregate([
             {
-                $match: {
-                    created_at: { $gte: cutoffDate },
-                    time: { $gt: parseFloat(threshold) }
-                }
+                $match: matchCondition
             },
             {
                 $group: {
@@ -159,7 +173,8 @@ router.get('/regressions', async (req, res) => {
         const {
             days = 7,
             threshold_percent = 50, // 50% slower
-            min_baseline_runs = 5
+            min_baseline_runs = 5,
+            job_name
         } = req.query;
 
         const cutoffDate = new Date();
@@ -169,12 +184,17 @@ router.get('/regressions', async (req, res) => {
         baselineDate.setDate(baselineDate.getDate() - parseInt(days) * 2);
 
         // Get all test cases in the period
+        const matchCondition = await applyProjectFilter(
+            {
+                created_at: { $gte: baselineDate },
+                time: { $exists: true, $ne: null, $gt: 0.1 }
+            },
+            job_name
+        );
+
         const allTests = await TestCase.aggregate([
             {
-                $match: {
-                    created_at: { $gte: baselineDate },
-                    time: { $exists: true, $ne: null, $gt: 0.1 } // Only tests > 0.1s
-                }
+                $match: matchCondition
             },
             {
                 $group: {

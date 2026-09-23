@@ -140,12 +140,14 @@
 
       <!-- Detailed Tabs -->
       <Card>
-        <div class="tabs">
+        <div class="tabs" role="tablist" aria-label="Comparison result categories">
           <button
             v-for="tab in tabs"
             :key="tab.id"
             class="tab"
             :class="{ active: activeTab === tab.id }"
+            role="tab"
+            :aria-selected="activeTab === tab.id"
             @click="activeTab = tab.id"
           >
             {{ tab.label }} ({{ getTabCount(tab.id) }})
@@ -163,7 +165,11 @@
               v-else
               :key="test.test_id"
               class="test-item clickable"
+              role="button"
+              tabindex="0"
               @click="openTestModal(test)"
+              @keydown.enter="openTestModal(test)"
+              @keydown.space.prevent="openTestModal(test)"
             >
               <div class="test-header">
                 <span class="test-name">{{ test.test_name }}</span>
@@ -188,7 +194,11 @@
               v-else
               :key="test.test_id"
               class="test-item clickable"
+              role="button"
+              tabindex="0"
               @click="openTestModal(test)"
+              @keydown.enter="openTestModal(test)"
+              @keydown.space.prevent="openTestModal(test)"
             >
               <div class="test-header">
                 <span class="test-name">{{ test.test_name }}</span>
@@ -213,7 +223,11 @@
               v-else
               :key="test.test_id"
               class="test-item clickable"
+              role="button"
+              tabindex="0"
               @click="openTestModal(test)"
+              @keydown.enter="openTestModal(test)"
+              @keydown.space.prevent="openTestModal(test)"
             >
               <div class="test-header">
                 <span class="test-name">{{ test.test_name }}</span>
@@ -235,7 +249,11 @@
               v-else
               :key="test.test_id"
               class="test-item clickable"
+              role="button"
+              tabindex="0"
               @click="openTestModal(test)"
+              @keydown.enter="openTestModal(test)"
+              @keydown.space.prevent="openTestModal(test)"
             >
               <div class="test-header">
                 <span class="test-name">{{ test.test_name }}</span>
@@ -274,7 +292,11 @@
               v-else
               :key="test.test_id"
               class="test-item clickable"
+              role="button"
+              tabindex="0"
               @click="openTestModal(test)"
+              @keydown.enter="openTestModal(test)"
+              @keydown.space.prevent="openTestModal(test)"
             >
               <div class="test-header">
                 <span class="test-name">{{ test.test_name }}</span>
@@ -296,7 +318,11 @@
               v-else
               :key="test.test_id"
               class="test-item clickable"
+              role="button"
+              tabindex="0"
               @click="openTestModal(test)"
+              @keydown.enter="openTestModal(test)"
+              @keydown.space.prevent="openTestModal(test)"
             >
               <div class="test-header">
                 <span class="test-name">{{ test.test_name }}</span>
@@ -773,5 +799,36 @@ onMounted(() => {
   text-align: center;
   padding: 2rem;
   color: var(--text-secondary);
+}
+
+@media (max-width: 1100px) {
+  .run-selector {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .selector-group,
+  .run-select {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .tabs {
+    overflow-x: auto;
+  }
+
+  .tab {
+    flex: 0 0 auto;
+  }
+}
+
+@media (max-width: 768px) {
+  .runs-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .compare-view {
+    padding: 1.25rem;
+  }
 }
 </style>

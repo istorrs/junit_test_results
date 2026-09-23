@@ -35,24 +35,24 @@
   --border-light: #f3f4f6;
 
   /* Primary Colors */
-  --primary-color: #3b82f6;
+  --primary-color: #1d4ed8;
   --primary-bg: #eff6ff;
   --primary-hover: #2563eb;
 
   /* Status Colors */
-  --success-color: #10b981;
+  --success-color: #047857;
   --success-bg: #d1fae5;
   --success-light: #f0fdf4;
 
-  --error-color: #ef4444;
+  --error-color: #b91c1c;
   --error-bg: #fee2e2;
   --error-light: #fef2f2;
 
-  --warning-color: #f59e0b;
+  --warning-color: #92400e;
   --warning-bg: #fef3c7;
   --warning-light: #fffbeb;
 
-  --info-color: #3b82f6;
+  --info-color: #1d4ed8;
   --info-bg: #dbeafe;
   --info-light: #eff6ff;
 

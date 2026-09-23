@@ -7,13 +7,16 @@
           :class="modalClasses"
           role="dialog"
           aria-modal="true"
-          :aria-labelledby="title ? titleId : undefined"
-          :aria-label="title ? undefined : 'Dialog'"
+          :aria-labelledby="title || $slots.header ? titleId : undefined"
+          :aria-label="title || $slots.header ? undefined : 'Dialog'"
           tabindex="-1"
           @click.stop
         >
           <div class="modal-header">
-            <h3 v-if="title" :id="titleId" class="modal-title">{{ title }}</h3>
+            <div v-if="$slots.header" :id="titleId" class="modal-title-slot">
+              <slot name="header" />
+            </div>
+            <h3 v-else-if="title" :id="titleId" class="modal-title">{{ title }}</h3>
             <button
               v-if="!hideClose"
               type="button"
@@ -201,6 +204,11 @@ onUnmounted(() => {
   font-size: 1.25rem;
   font-weight: 600;
   color: var(--text-primary);
+}
+
+.modal-title-slot {
+  flex: 1;
+  min-width: 0;
 }
 
 .modal-close {

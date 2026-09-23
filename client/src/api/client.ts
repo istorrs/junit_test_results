@@ -25,6 +25,7 @@ export interface TestCaseFilters extends PaginationParams {
   class_name?: string
   job_name?: string
   search?: string
+  is_flaky?: boolean
 }
 
 export interface TestRun {
@@ -320,6 +321,7 @@ export interface PerformanceTrendsParams {
   className?: string
   days?: number
   granularity?: 'hourly' | 'daily' | 'weekly'
+  job_name?: string
 }
 
 export interface PerformanceTrend {
@@ -614,6 +616,7 @@ class ApiClient {
     limit?: number
     days?: number
     threshold?: number
+    job_name?: string
   }): Promise<SlowestTestsResponse> {
     const queryString = this.buildQueryString(params || {})
     return this.request<SlowestTestsResponse>(`/performance/slowest${queryString}`)
@@ -623,6 +626,7 @@ class ApiClient {
     days?: number
     threshold_percent?: number
     min_baseline_runs?: number
+    job_name?: string
   }): Promise<PerformanceRegressionsResponse> {
     const queryString = this.buildQueryString(params || {})
     return this.request<PerformanceRegressionsResponse>(`/performance/regressions${queryString}`)

@@ -1,5 +1,10 @@
 <template>
-  <div ref="chartRef" :style="{ width: width, height: height }"></div>
+  <div
+    ref="chartRef"
+    role="img"
+    :aria-label="title || 'Test result distribution chart'"
+    :style="{ width: width, height: height }"
+  ></div>
 </template>
 
 <script setup lang="ts">
@@ -21,6 +26,8 @@ const props = withDefaults(defineProps<Props>(), {
 
 const chartRef = ref<HTMLElement | null>(null)
 let chartInstance: echarts.ECharts | null = null
+let themeObserver: MutationObserver | null = null
+const handleResize = () => chartInstance?.resize()
 
 // Detect dark mode
 const isDarkMode = computed(() => {
@@ -53,6 +60,7 @@ const updateChartTheme = () => {
   const colors = getThemeColors()
 
   const option: echarts.EChartsOption = {
+    aria: { enabled: true },
     backgroundColor: 'transparent',
     title: {
       text: props.title,
@@ -120,14 +128,14 @@ watch(isDarkMode, () => {
 
 onMounted(() => {
   initChart()
-  window.addEventListener('resize', () => chartInstance?.resize())
+  window.addEventListener('resize', handleResize)
 
   // Watch for theme attribute changes
-  const observer = new MutationObserver(() => {
+  themeObserver = new MutationObserver(() => {
     updateChartTheme()
   })
 
-  observer.observe(document.documentElement, {
+  themeObserver.observe(document.documentElement, {
     attributes: true,
     attributeFilter: ['data-theme'],
   })
@@ -137,6 +145,7 @@ watch(() => props.data, updateChart, { deep: true })
 
 onUnmounted(() => {
   chartInstance?.dispose()
-  window.removeEventListener('resize', () => chartInstance?.resize())
+  window.removeEventListener('resize', handleResize)
+  themeObserver?.disconnect()
 })
 </script>

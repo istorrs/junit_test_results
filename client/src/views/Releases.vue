@@ -8,8 +8,8 @@
     <Card title="Select Releases to Compare">
       <div class="release-selectors">
         <div class="selector-group">
-          <label>Release 1 (Baseline)</label>
-          <select v-model="selectedRelease1" class="release-select">
+          <label for="release-1">Release 1 (Baseline)</label>
+          <select id="release-1" v-model="selectedRelease1" class="release-select">
             <option value="">Select a release...</option>
             <option
               v-for="release in releases"
@@ -23,8 +23,8 @@
         </div>
 
         <div class="selector-group">
-          <label>Release 2 (Compare to)</label>
-          <select v-model="selectedRelease2" class="release-select">
+          <label for="release-2">Release 2 (Compare to)</label>
+          <select id="release-2" v-model="selectedRelease2" class="release-select">
             <option value="">Select a release...</option>
             <option
               v-for="release in releases"
@@ -38,18 +38,30 @@
         </div>
 
         <button
-          :disabled="!selectedRelease1 || !selectedRelease2 || loading"
+          :disabled="
+            !selectedRelease1 ||
+            !selectedRelease2 ||
+            selectedRelease1 === selectedRelease2 ||
+            loading
+          "
           class="compare-button"
           @click="compareReleases"
         >
           {{ loading ? 'Comparing...' : 'Compare' }}
         </button>
       </div>
+      <p
+        v-if="selectedRelease1 && selectedRelease1 === selectedRelease2"
+        class="selection-error"
+        role="alert"
+      >
+        Choose two different releases to compare.
+      </p>
     </Card>
 
     <div v-if="comparison" class="comparison-results">
       <div class="metrics-grid">
-        <Card title="Release 1: {{ comparison.release1.tag }}">
+        <Card :title="`Release 1: ${comparison.release1.tag}`">
           <div class="metrics">
             <div class="metric">
               <span class="metric-label">Total Tests</span>
@@ -74,7 +86,7 @@
           </div>
         </Card>
 
-        <Card title="Release 2: {{ comparison.release2.tag }}">
+        <Card :title="`Release 2: ${comparison.release2.tag}`">
           <div class="metrics">
             <div class="metric">
               <span class="metric-label">Total Tests</span>
@@ -287,6 +299,12 @@ const getDiffClass = (value: number) => {
 
 .compare-button:not(:disabled):hover {
   opacity: 0.9;
+}
+
+.selection-error {
+  margin: 0.75rem 0 0;
+  color: var(--error-color);
+  font-size: 0.875rem;
 }
 
 .comparison-results {

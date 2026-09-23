@@ -8,6 +8,11 @@
       </div>
     </div>
 
+    <div v-if="loadError" class="load-error" role="alert">
+      <span>{{ loadError }}</span>
+      <Button size="sm" variant="secondary" @click="loadData(1)">Try again</Button>
+    </div>
+
     <DataTable
       :columns="columns"
       :data="store.cases"
@@ -20,13 +25,18 @@
       <template #filters>
         <div class="filters-grid">
           <div class="filter-group">
-            <label>Search</label>
-            <SearchInput v-model="searchQuery" placeholder="Search test names..." />
+            <label for="cases-search">Search</label>
+            <SearchInput
+              id="cases-search"
+              v-model="searchQuery"
+              aria-label="Search test cases"
+              placeholder="Search test names..."
+            />
           </div>
 
           <div class="filter-group">
-            <label>Status</label>
-            <select v-model="selectedStatus" class="filter-select">
+            <label for="cases-status">Status</label>
+            <select id="cases-status" v-model="selectedStatus" class="filter-select">
               <option value="">Any status</option>
               <option value="passed">✓ Passed</option>
               <option value="failed">✗ Failed</option>
@@ -36,14 +46,24 @@
           </div>
 
           <div class="filter-group">
-            <label>Suite</label>
-            <select v-model="selectedSuite" class="filter-select" :disabled="suitesLoading">
+            <label for="cases-suite">Suite</label>
+            <select
+              id="cases-suite"
+              v-model="selectedSuite"
+              class="filter-select"
+              :disabled="suitesLoading"
+            >
               <option value="">{{ suitesLoading ? 'Loading suites…' : 'Any suite' }}</option>
               <option v-for="suite in suites" :key="suite" :value="suite">
                 {{ suite }}
               </option>
             </select>
           </div>
+
+          <label class="flaky-filter">
+            <input v-model="flakyOnly" type="checkbox" />
+            Flaky tests only
+          </label>
 
           <div class="filter-group align-end">
             <Button v-if="hasActiveFilters" variant="secondary" size="sm" @click="clearFilters">
@@ -105,7 +125,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useTestDataStore } from '../stores/testData'
 import { apiClient, type Pagination, type TestCaseFilters } from '../api/client'
 import { formatDuration, getStatusIcon, truncateText } from '../utils/formatters'
@@ -116,14 +136,17 @@ import PaginationControls from '../components/shared/PaginationControls.vue'
 import TestDetailsModal from '../components/modals/TestDetailsModal.vue'
 
 const route = useRoute()
+const router = useRouter()
 const store = useTestDataStore()
 
 const searchQuery = ref(typeof route.query.search === 'string' ? route.query.search : '')
 const selectedStatus = ref('')
 const selectedSuite = ref('')
+const flakyOnly = ref(route.query.flaky === 'true')
 const suites = ref<string[]>([])
 const suitesLoading = ref(false)
 const pagination = ref<Pagination>({ page: 1, limit: 50, total: 0, pages: 1 })
+const loadError = ref('')
 let filterTimer: ReturnType<typeof setTimeout> | undefined
 let suitesRequestId = 0
 
@@ -132,22 +155,28 @@ const modalOpen = ref(false)
 const selectedTest = ref<any>(null)
 
 const columns = [
-  { key: 'status', label: 'Status', sortable: true },
-  { key: 'name', label: 'Test Name', sortable: true },
-  { key: 'time', label: 'Duration', sortable: true },
+  { key: 'status', label: 'Status', sortable: false },
+  { key: 'name', label: 'Test Name', sortable: false },
+  { key: 'time', label: 'Duration', sortable: false },
 ]
 
 const getTestCaseRowLabel = (row: Record<string, unknown>) =>
   `Open test case ${String(row.name || 'Unnamed Test')}`
 
 const hasActiveFilters = computed(() => {
-  return !!(searchQuery.value || selectedStatus.value || selectedSuite.value)
+  return !!(searchQuery.value || selectedStatus.value || selectedSuite.value || flakyOnly.value)
 })
 
 const clearFilters = () => {
   searchQuery.value = ''
   selectedStatus.value = ''
   selectedSuite.value = ''
+  flakyOnly.value = false
+  if (route.query.search || route.query.flaky) {
+    router.replace({
+      query: { ...route.query, search: undefined, flaky: undefined },
+    })
+  }
 }
 
 const loadSuites = async () => {
@@ -168,6 +197,7 @@ const loadSuites = async () => {
 }
 
 const loadData = async (page = pagination.value.page) => {
+  loadError.value = ''
   try {
     const filters: TestCaseFilters = {
       page,
@@ -178,6 +208,7 @@ const loadData = async (page = pagination.value.page) => {
     if (searchQuery.value.trim()) filters.search = searchQuery.value.trim()
     if (selectedStatus.value) filters.status = selectedStatus.value
     if (selectedSuite.value) filters.class_name = selectedSuite.value
+    if (flakyOnly.value) filters.is_flaky = true
 
     if (store.globalProjectFilter) {
       filters.job_name = store.globalProjectFilter
@@ -186,6 +217,7 @@ const loadData = async (page = pagination.value.page) => {
     const response = await store.fetchCases(filters)
     pagination.value = response.pagination
   } catch (error) {
+    loadError.value = error instanceof Error ? error.message : 'Failed to load test cases'
     console.error('Failed to load test cases:', error)
   }
 }
@@ -197,7 +229,7 @@ const handleLimitChange = (limit: number) => {
   loadData(1)
 }
 
-watch([searchQuery, selectedStatus, selectedSuite], () => {
+watch([searchQuery, selectedStatus, selectedSuite, flakyOnly], () => {
   clearTimeout(filterTimer)
   filterTimer = setTimeout(() => loadData(1), 300)
 })
@@ -265,6 +297,18 @@ h1 {
   gap: 1rem;
 }
 
+.load-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding: 0.75rem 1rem;
+  color: var(--error-color);
+  background: var(--error-bg);
+  border-radius: 0.5rem;
+}
+
 .filters-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -280,6 +324,16 @@ h1 {
 
 .filter-group.align-end {
   align-items: flex-end;
+}
+
+.flaky-filter {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.25rem;
+  color: var(--text-primary);
+  font-size: 0.875rem;
+  font-weight: 500;
 }
 
 .filter-group label {
@@ -331,6 +385,23 @@ h1 {
 .status-badge.skipped {
   background: var(--bg-hover);
   color: var(--text-secondary);
+}
+
+@media (max-width: 600px) {
+  .test-cases {
+    padding: 1.25rem;
+  }
+
+  .page-header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .header-actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
 }
 
 .test-name strong {

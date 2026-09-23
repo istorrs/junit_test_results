@@ -2,12 +2,22 @@
   <div class="search-input">
     <span class="search-icon">🔍</span>
     <input
+      :id="id"
       :value="modelValue"
       type="text"
       :placeholder="placeholder"
+      :aria-label="ariaLabel"
       @input="$emit('update:modelValue', ($event.target as HTMLInputElement).value)"
     />
-    <button v-if="modelValue" class="clear-btn" @click="$emit('update:modelValue', '')">×</button>
+    <button
+      v-if="modelValue"
+      type="button"
+      class="clear-btn"
+      aria-label="Clear search"
+      @click="$emit('update:modelValue', '')"
+    >
+      ×
+    </button>
   </div>
 </template>
 
@@ -15,10 +25,14 @@
 interface Props {
   modelValue: string
   placeholder?: string
+  id?: string
+  ariaLabel?: string
 }
 
 withDefaults(defineProps<Props>(), {
   placeholder: 'Search...',
+  id: undefined,
+  ariaLabel: 'Search',
 })
 
 defineEmits<{
