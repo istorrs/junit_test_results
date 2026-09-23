@@ -65,6 +65,46 @@ describe('Modal Component', () => {
     await wrapper.vm.$nextTick()
     const titleEl = document.querySelector('.modal-title')
     expect(titleEl?.textContent).toBe('Modal Title')
+    const dialog = document.querySelector('[role="dialog"]')
+    expect(dialog?.getAttribute('aria-modal')).toBe('true')
+    expect(dialog?.getAttribute('aria-labelledby')).toBe(titleEl?.id)
+    wrapper.unmount()
+  })
+
+  it('should close when Escape is pressed', async () => {
+    const wrapper = mount(Modal, {
+      props: { open: true },
+      attachTo: document.body,
+    })
+
+    await wrapper.vm.$nextTick()
+    document
+      .querySelector('.modal-overlay')
+      ?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    await wrapper.vm.$nextTick()
+
+    expect(wrapper.emitted('close')).toHaveLength(1)
+    wrapper.unmount()
+  })
+
+  it('should focus the dialog and restore previous focus when closed', async () => {
+    const trigger = document.createElement('button')
+    document.body.appendChild(trigger)
+    trigger.focus()
+
+    const wrapper = mount(Modal, {
+      props: { open: true },
+      slots: { default: '<button id="modal-action">Continue</button>' },
+      attachTo: document.body,
+    })
+
+    await wrapper.vm.$nextTick()
+    await wrapper.vm.$nextTick()
+    expect(document.activeElement?.classList.contains('modal-close')).toBe(true)
+
+    await wrapper.setProps({ open: false })
+    await wrapper.vm.$nextTick()
+    expect(document.activeElement).toBe(trigger)
     wrapper.unmount()
   })
 

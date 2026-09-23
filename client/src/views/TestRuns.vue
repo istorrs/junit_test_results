@@ -19,6 +19,7 @@
       :data="filteredRuns"
       :loading="store.loading"
       :row-clickable="true"
+      :row-aria-label="getRunRowLabel"
       :page-size="1000"
       @row-click="(row: any) => viewRunDetails(row as TestRun)"
     >
@@ -164,6 +165,9 @@ const columns = [
   { key: 'summary', label: 'Results', sortable: false },
   { key: 'rate', label: 'Success Rate', sortable: true },
 ]
+
+const getRunRowLabel = (row: Record<string, unknown>) =>
+  `Open test run ${String(row.name || 'Unnamed Run')}`
 
 const filteredRuns = computed(() => {
   let filtered = [...store.runs]

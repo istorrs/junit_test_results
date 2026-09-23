@@ -13,6 +13,7 @@
       :data="filteredCases"
       :loading="store.loading"
       :row-clickable="true"
+      :row-aria-label="getTestCaseRowLabel"
       :page-size="1000"
       @row-click="handleRowClick"
     >
@@ -119,6 +120,9 @@ const columns = [
   { key: 'name', label: 'Test Name', sortable: true },
   { key: 'time', label: 'Duration', sortable: true },
 ]
+
+const getTestCaseRowLabel = (row: Record<string, unknown>) =>
+  `Open test case ${String(row.name || 'Unnamed Test')}`
 
 const suites = computed(() => {
   const uniqueSuites = new Set<string>()
