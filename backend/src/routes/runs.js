@@ -46,12 +46,46 @@ router.get('/', async (req, res, next) => {
             query.timestamp = { $gte: new Date(req.query.from_date) };
         }
         if (req.query.to_date) {
-            query.timestamp = { ...query.timestamp, $lte: new Date(req.query.to_date) };
+            const toDate = new Date(req.query.to_date);
+            if (/^\d{4}-\d{2}-\d{2}$/.test(req.query.to_date)) {
+                toDate.setUTCHours(23, 59, 59, 999);
+            }
+            query.timestamp = { ...query.timestamp, $lte: toDate };
+        }
+
+        const additionalFilters = [];
+        if (req.query.search) {
+            const escapedSearch = req.query.search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const searchPattern = new RegExp(escapedSearch, 'i');
+            const searchFilters = [
+                { name: searchPattern },
+                { 'ci_metadata.job_name': searchPattern },
+                { 'ci_metadata.branch': searchPattern }
+            ];
+            if (mongoose.isValidObjectId(req.query.search)) {
+                searchFilters.push({ _id: new mongoose.Types.ObjectId(req.query.search) });
+            }
+            additionalFilters.push({ $or: searchFilters });
+        }
+        if (req.query.status === 'passed') {
+            additionalFilters.push({ $expr: { $eq: ['$passed', '$total_tests'] } });
+        } else if (req.query.status === 'failed') {
+            additionalFilters.push({ $or: [{ failed: { $gt: 0 } }, { errors: { $gt: 0 } }] });
+        } else if (req.query.status === 'mixed') {
+            additionalFilters.push({
+                $expr: {
+                    $and: [{ $gt: ['$passed', 0] }, { $lt: ['$passed', '$total_tests'] }]
+                }
+            });
+        }
+        if (additionalFilters.length > 0) {
+            query.$and = additionalFilters;
         }
 
         const total = await TestRun.countDocuments(query);
         const runs = await TestRun.find(query)
-            .sort({ timestamp: -1 })
+            // Keep pagination stable when multiple runs share a timestamp.
+            .sort({ timestamp: -1, _id: -1 })
             .skip(skip)
             .limit(limit)
             .lean();

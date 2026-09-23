@@ -9,18 +9,18 @@
         <Button v-if="selectedRuns.size > 0" variant="primary" @click="openReleaseTagModal">
           Tag {{ selectedRuns.size }} Run{{ selectedRuns.size > 1 ? 's' : '' }} as Release
         </Button>
-        <Button :loading="store.loading" variant="secondary" @click="loadData"> Refresh </Button>
+        <Button :loading="store.loading" variant="secondary" @click="loadData()"> Refresh </Button>
         <Button @click="$router.push('/upload')"> Upload New Results </Button>
       </div>
     </div>
 
     <DataTable
       :columns="columns"
-      :data="filteredRuns"
+      :data="store.runs"
       :loading="store.loading"
+      :paginate="false"
       :row-clickable="true"
       :row-aria-label="getRunRowLabel"
-      :page-size="1000"
       @row-click="(row: any) => viewRunDetails(row as TestRun)"
     >
       <template #filters>
@@ -125,6 +125,15 @@
       </template>
     </DataTable>
 
+    <PaginationControls
+      :page="pagination.page"
+      :limit="pagination.limit"
+      :total="pagination.total"
+      :pages="Math.max(pagination.pages, 1)"
+      @page-change="handlePageChange"
+      @limit-change="handleLimitChange"
+    />
+
     <ReleaseTagModal
       :open="showReleaseModal"
       :run-ids="Array.from(selectedRuns)"
@@ -135,15 +144,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useTestDataStore } from '../stores/testData'
 import { formatDate } from '../utils/formatters'
-import type { TestRun } from '../api/client'
+import type { Pagination, RunFilters, TestRun } from '../api/client'
 import { apiClient } from '../api/client'
 import Button from '../components/shared/Button.vue'
 import DataTable from '../components/shared/DataTable.vue'
 import SearchInput from '../components/shared/SearchInput.vue'
+import PaginationControls from '../components/shared/PaginationControls.vue'
 import ReleaseTagModal from '../components/modals/ReleaseTagModal.vue'
 
 const router = useRouter()
@@ -156,6 +166,8 @@ const dateTo = ref('')
 const selectedRuns = ref<Set<string>>(new Set())
 const showReleaseModal = ref(false)
 const selectAllCheckbox = ref<HTMLInputElement | null>(null)
+const pagination = ref<Pagination>({ page: 1, limit: 50, total: 0, pages: 1 })
+let filterTimer: ReturnType<typeof setTimeout> | undefined
 
 const columns = [
   { key: 'select', label: '', sortable: false },
@@ -168,49 +180,6 @@ const columns = [
 
 const getRunRowLabel = (row: Record<string, unknown>) =>
   `Open test run ${String(row.name || 'Unnamed Run')}`
-
-const filteredRuns = computed(() => {
-  let filtered = [...store.runs]
-
-  // Search filter
-  if (searchQuery.value) {
-    const query = searchQuery.value.toLowerCase()
-    filtered = filtered.filter((run) => {
-      return (
-        run.name?.toLowerCase().includes(query) ||
-        run.ci_metadata?.job_name?.toLowerCase().includes(query) ||
-        run.ci_metadata?.branch?.toLowerCase().includes(query) ||
-        run.id?.toLowerCase().includes(query)
-      )
-    })
-  }
-
-  // Status filter
-  if (selectedStatus.value) {
-    filtered = filtered.filter((run) => {
-      const hasFailures = run.failed > 0 || run.errors > 0
-      const rate = calculateSuccessRate(run)
-      if (selectedStatus.value === 'passed') return rate === 100
-      if (selectedStatus.value === 'failed') return hasFailures
-      if (selectedStatus.value === 'mixed') return rate > 0 && rate < 100
-      return true
-    })
-  }
-
-  // Date filters
-  if (dateFrom.value) {
-    const from = new Date(dateFrom.value)
-    filtered = filtered.filter((run) => new Date(run.timestamp) >= from)
-  }
-
-  if (dateTo.value) {
-    const to = new Date(dateTo.value)
-    to.setHours(23, 59, 59, 999)
-    filtered = filtered.filter((run) => new Date(run.timestamp) <= to)
-  }
-
-  return filtered
-})
 
 const hasActiveFilters = computed(() => {
   return !!(searchQuery.value || selectedStatus.value || dateFrom.value || dateTo.value)
@@ -246,22 +215,22 @@ const viewRunDetails = (run: TestRun) => {
 
 // Select All functionality
 const allRunsSelected = computed(() => {
-  if (filteredRuns.value.length === 0) return false
-  return filteredRuns.value.every((run) => selectedRuns.value.has(run.id))
+  if (store.runs.length === 0) return false
+  return store.runs.every((run) => selectedRuns.value.has(run.id))
 })
 
 const someRunsSelected = computed(() => {
   if (selectedRuns.value.size === 0) return false
-  return !allRunsSelected.value && filteredRuns.value.some((run) => selectedRuns.value.has(run.id))
+  return !allRunsSelected.value && store.runs.some((run) => selectedRuns.value.has(run.id))
 })
 
 const toggleAllRuns = () => {
   if (allRunsSelected.value) {
     // Deselect all visible runs
-    filteredRuns.value.forEach((run) => selectedRuns.value.delete(run.id))
+    store.runs.forEach((run) => selectedRuns.value.delete(run.id))
   } else {
     // Select all visible runs
-    filteredRuns.value.forEach((run) => selectedRuns.value.add(run.id))
+    store.runs.forEach((run) => selectedRuns.value.add(run.id))
   }
   // Force reactivity
   selectedRuns.value = new Set(selectedRuns.value)
@@ -329,17 +298,40 @@ const deleteSelectedRuns = async () => {
   }
 }
 
-const loadData = async () => {
+const loadData = async (page = pagination.value.page) => {
   try {
-    const filters: any = { limit: 100 }
+    const filters: RunFilters = {
+      page,
+      limit: pagination.value.limit,
+    }
     if (store.globalProjectFilter) {
       filters.job_name = store.globalProjectFilter
     }
-    await store.fetchRuns(filters)
+    if (searchQuery.value.trim()) filters.search = searchQuery.value.trim()
+    if (selectedStatus.value) {
+      filters.status = selectedStatus.value as RunFilters['status']
+    }
+    if (dateFrom.value) filters.from_date = dateFrom.value
+    if (dateTo.value) filters.to_date = dateTo.value
+
+    const response = await store.fetchRuns(filters)
+    pagination.value = response.pagination
   } catch (error) {
     console.error('Failed to load test runs:', error)
   }
 }
+
+const handlePageChange = (page: number) => loadData(page)
+
+const handleLimitChange = (limit: number) => {
+  pagination.value.limit = limit
+  loadData(1)
+}
+
+watch([searchQuery, selectedStatus, dateFrom, dateTo], () => {
+  clearTimeout(filterTimer)
+  filterTimer = setTimeout(() => loadData(1), 300)
+})
 
 // Update indeterminate state of select-all checkbox
 watch(someRunsSelected, (value) => {
@@ -352,13 +344,15 @@ watch(someRunsSelected, (value) => {
 watch(
   () => store.globalProjectFilter,
   () => {
-    loadData()
+    loadData(1)
   }
 )
 
 onMounted(() => {
-  loadData()
+  loadData(1)
 })
+
+onUnmounted(() => clearTimeout(filterTimer))
 </script>
 
 <style scoped>

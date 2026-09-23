@@ -8,6 +8,8 @@ export interface RunFilters extends PaginationParams {
   branch?: string
   from_date?: string
   to_date?: string
+  search?: string
+  status?: 'passed' | 'failed' | 'mixed'
 }
 
 export interface StatsFilters {
@@ -22,6 +24,7 @@ export interface TestCaseFilters extends PaginationParams {
   status?: string
   class_name?: string
   job_name?: string
+  search?: string
 }
 
 export interface TestRun {
@@ -101,6 +104,7 @@ export interface Pagination {
   page: number
   limit: number
   total: number
+  pages: number
 }
 
 export interface RunsResponse {

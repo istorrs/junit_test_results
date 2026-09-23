@@ -102,7 +102,9 @@ router.get('/', async (req, res, next) => {
                     system_err: 0
                 }
             },
-            { $sort: { timestamp: -1 } },
+            // Use _id as a deterministic tie-breaker so cases with the same run
+            // timestamp cannot move between pages.
+            { $sort: { timestamp: -1, _id: -1 } },
             { $skip: skip },
             { $limit: limit }
         );

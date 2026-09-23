@@ -3,18 +3,18 @@
     <div class="page-header">
       <h1>Test Cases</h1>
       <div class="header-actions">
-        <Button :loading="store.loading" variant="secondary" @click="loadData"> Refresh </Button>
+        <Button :loading="store.loading" variant="secondary" @click="loadData()"> Refresh </Button>
         <Button @click="$router.push('/runs')"> View Test Runs </Button>
       </div>
     </div>
 
     <DataTable
       :columns="columns"
-      :data="filteredCases"
+      :data="store.cases"
       :loading="store.loading"
+      :paginate="false"
       :row-clickable="true"
       :row-aria-label="getTestCaseRowLabel"
-      :page-size="1000"
       @row-click="handleRowClick"
     >
       <template #filters>
@@ -76,6 +76,15 @@
       </template>
     </DataTable>
 
+    <PaginationControls
+      :page="pagination.page"
+      :limit="pagination.limit"
+      :total="pagination.total"
+      :pages="Math.max(pagination.pages, 1)"
+      @page-change="handlePageChange"
+      @limit-change="handleLimitChange"
+    />
+
     <!-- Test Details Modal -->
     <TestDetailsModal
       :open="modalOpen"
@@ -95,21 +104,25 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useTestDataStore } from '../stores/testData'
+import type { Pagination, TestCaseFilters } from '../api/client'
 import { formatDuration, getStatusIcon, truncateText } from '../utils/formatters'
 import Button from '../components/shared/Button.vue'
 import DataTable from '../components/shared/DataTable.vue'
 import SearchInput from '../components/shared/SearchInput.vue'
+import PaginationControls from '../components/shared/PaginationControls.vue'
 import TestDetailsModal from '../components/modals/TestDetailsModal.vue'
 
 const route = useRoute()
 const store = useTestDataStore()
 
-const searchQuery = ref('')
+const searchQuery = ref(typeof route.query.search === 'string' ? route.query.search : '')
 const selectedStatus = ref('')
 const selectedSuite = ref('')
+const pagination = ref<Pagination>({ page: 1, limit: 50, total: 0, pages: 1 })
+let filterTimer: ReturnType<typeof setTimeout> | undefined
 
 // Modal state
 const modalOpen = ref(false)
@@ -132,39 +145,6 @@ const suites = computed(() => {
   return Array.from(uniqueSuites).sort()
 })
 
-const filteredCases = computed(() => {
-  let filtered = [...store.cases]
-  console.log('[TestCases] Total cases before filtering:', filtered.length)
-
-  if (searchQuery.value) {
-    const query = searchQuery.value.toLowerCase()
-    filtered = filtered.filter(
-      (testCase) =>
-        testCase.name?.toLowerCase().includes(query) ||
-        testCase.class_name?.toLowerCase().includes(query)
-    )
-    console.log('[TestCases] After search filter:', filtered.length)
-  }
-
-  if (selectedStatus.value) {
-    filtered = filtered.filter((testCase) => testCase.status === selectedStatus.value)
-    console.log(
-      '[TestCases] After status filter:',
-      filtered.length,
-      'status:',
-      selectedStatus.value
-    )
-  }
-
-  if (selectedSuite.value) {
-    filtered = filtered.filter((testCase) => testCase.class_name === selectedSuite.value)
-    console.log('[TestCases] After suite filter:', filtered.length, 'suite:', selectedSuite.value)
-  }
-
-  console.log('[TestCases] Final filtered count:', filtered.length)
-  return filtered
-})
-
 const hasActiveFilters = computed(() => {
   return !!(searchQuery.value || selectedStatus.value || selectedSuite.value)
 })
@@ -175,29 +155,46 @@ const clearFilters = () => {
   selectedSuite.value = ''
 }
 
-const loadData = async () => {
+const loadData = async (page = pagination.value.page) => {
   try {
-    const filters: any = route.query.run_id ? { run_id: route.query.run_id as string } : {}
+    const filters: TestCaseFilters = {
+      page,
+      limit: pagination.value.limit,
+    }
 
-    // Apply global project filter if set
+    if (typeof route.query.run_id === 'string') filters.run_id = route.query.run_id
+    if (searchQuery.value.trim()) filters.search = searchQuery.value.trim()
+    if (selectedStatus.value) filters.status = selectedStatus.value
+    if (selectedSuite.value) filters.class_name = selectedSuite.value
+
     if (store.globalProjectFilter) {
       filters.job_name = store.globalProjectFilter
     }
 
-    console.log('[TestCases] Loading with filters:', filters)
     const response = await store.fetchCases(filters)
-    console.log('[TestCases] Loaded cases:', store.cases.length, 'cases from API')
-    console.log('[TestCases] Pagination:', response?.pagination)
+    pagination.value = response.pagination
   } catch (error) {
     console.error('Failed to load test cases:', error)
   }
 }
 
+const handlePageChange = (page: number) => loadData(page)
+
+const handleLimitChange = (limit: number) => {
+  pagination.value.limit = limit
+  loadData(1)
+}
+
+watch([searchQuery, selectedStatus, selectedSuite], () => {
+  clearTimeout(filterTimer)
+  filterTimer = setTimeout(() => loadData(1), 300)
+})
+
 // Watch for global project filter changes and reload data
 watch(
   () => store.globalProjectFilter,
   () => {
-    loadData()
+    loadData(1)
   }
 )
 
@@ -221,8 +218,10 @@ const closeModal = () => {
 }
 
 onMounted(() => {
-  loadData()
+  loadData(1)
 })
+
+onUnmounted(() => clearTimeout(filterTimer))
 </script>
 
 <style scoped>
