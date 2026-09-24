@@ -1,5 +1,6 @@
 const express = require('express');
-const { DEFAULT_QUERY_LIMIT } = require('../config/constants');
+const { DEFAULT_QUERY_LIMIT, MAX_QUERY_LIMIT } = require('../config/constants');
+const { buildReleaseMatch, getReleasePagination } = require('../services/releaseQuery');
 const router = express.Router();
 const TestRun = require('../models/TestRun');
 
@@ -9,17 +10,12 @@ const TestRun = require('../models/TestRun');
  */
 router.get('/', async (req, res) => {
     try {
-        const { limit = DEFAULT_QUERY_LIMIT, skip = 0, job_name } = req.query;
-
-        // Build match criteria
-        const matchCriteria = {
-            release_tag: { $exists: true, $ne: null }
-        };
-
-        // Add job_name filter if provided
-        if (job_name) {
-            matchCriteria['ci_metadata.job_name'] = job_name;
-        }
+        const { page, limit, skip } = getReleasePagination(
+            req.query,
+            DEFAULT_QUERY_LIMIT,
+            MAX_QUERY_LIMIT
+        );
+        const matchCriteria = buildReleaseMatch(req.query);
 
         // Aggregate to get unique releases with stats
         const releases = await TestRun.aggregate([
@@ -63,8 +59,8 @@ router.get('/', async (req, res) => {
                 }
             },
             { $sort: { last_run: -1 } },
-            { $skip: parseInt(skip) },
-            { $limit: parseInt(limit) }
+            { $skip: skip },
+            { $limit: limit }
         ]);
 
         // Get total count with same filter
@@ -77,10 +73,12 @@ router.get('/', async (req, res) => {
             data: {
                 releases,
                 pagination: {
+                    page,
                     total: totalCount,
-                    limit: parseInt(limit),
-                    skip: parseInt(skip),
-                    has_more: parseInt(skip) + releases.length < totalCount
+                    pages: Math.ceil(totalCount / limit),
+                    limit,
+                    skip,
+                    has_more: skip + releases.length < totalCount
                 }
             }
         });
@@ -97,7 +95,7 @@ router.get('/', async (req, res) => {
  */
 router.get('/compare', async (req, res) => {
     try {
-        const { release1, release2 } = req.query;
+        const { release1, release2, job_name: jobName } = req.query;
 
         if (!release1 || !release2) {
             return res.status(400).json({
@@ -106,9 +104,14 @@ router.get('/compare', async (req, res) => {
         }
 
         // Get all test runs for both releases
+        const projectFilter = jobName ? { 'ci_metadata.job_name': jobName } : {};
         const [runs1, runs2] = await Promise.all([
-            TestRun.find({ release_tag: release1 }).sort({ timestamp: -1 }).lean(),
-            TestRun.find({ release_tag: release2 }).sort({ timestamp: -1 }).lean()
+            TestRun.find({ release_tag: release1, ...projectFilter })
+                .sort({ timestamp: -1 })
+                .lean(),
+            TestRun.find({ release_tag: release2, ...projectFilter })
+                .sort({ timestamp: -1 })
+                .lean()
         ]);
 
         if (runs1.length === 0 || runs2.length === 0) {

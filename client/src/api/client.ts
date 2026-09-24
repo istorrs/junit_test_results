@@ -201,7 +201,7 @@ export interface Release {
 
 export interface ReleasesResponse {
   releases: Release[]
-  pagination: Pagination
+  pagination: Pagination & { skip?: number; has_more?: boolean }
 }
 
 export interface ReleaseMetrics {
@@ -583,16 +583,22 @@ class ApiClient {
 
   // Tier 2: Release Comparison
   async getReleases(params?: {
+    page?: number
     limit?: number
     skip?: number
     job_name?: string
+    search?: string
   }): Promise<ReleasesResponse> {
     const queryString = this.buildQueryString(params || {})
     return this.request<ReleasesResponse>(`/releases${queryString}`)
   }
 
-  async compareReleases(release1: string, release2: string): Promise<ReleaseComparisonResponse> {
-    const queryString = this.buildQueryString({ release1, release2 })
+  async compareReleases(
+    release1: string,
+    release2: string,
+    jobName?: string
+  ): Promise<ReleaseComparisonResponse> {
+    const queryString = this.buildQueryString({ release1, release2, job_name: jobName })
     return this.request<ReleaseComparisonResponse>(`/releases/compare${queryString}`)
   }
 

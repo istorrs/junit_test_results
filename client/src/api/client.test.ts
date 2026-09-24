@@ -148,6 +148,28 @@ describe('API Client', () => {
     })
   })
 
+  describe('getReleases', () => {
+    it('sends search and page parameters', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          success: true,
+          data: {
+            releases: [],
+            pagination: { page: 2, limit: 25, total: 0, pages: 0 },
+          },
+        }),
+      })
+
+      await apiClient.getReleases({ page: 2, limit: 25, search: '1.0', job_name: 'gateway' })
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        '/api/v1/releases?page=2&limit=25&search=1.0&job_name=gateway',
+        undefined
+      )
+    })
+  })
+
   describe('getStats', () => {
     it('should fetch overview statistics', async () => {
       const mockData = {

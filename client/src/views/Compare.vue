@@ -10,22 +10,28 @@
       <div class="run-selector">
         <div class="selector-group">
           <label for="run1">Test Run 1 (Baseline)</label>
-          <select id="run1" v-model="selectedRun1" class="run-select">
-            <option value="">Select a test run...</option>
-            <option v-for="run in runs" :key="run.id" :value="run.id">
-              {{ run.name }} - {{ formatDate(run.timestamp) }}
-            </option>
-          </select>
+          <AsyncEntitySelect
+            v-model="selectedRun1"
+            input-id="run1"
+            placeholder="Select a test run..."
+            search-label="Search baseline test runs"
+            search-placeholder="Search runs by name, project, or branch..."
+            :reload-key="store.globalProjectFilter"
+            :load-options="loadRunOptions"
+          />
         </div>
 
         <div class="selector-group">
           <label for="run2">Test Run 2 (Current)</label>
-          <select id="run2" v-model="selectedRun2" class="run-select">
-            <option value="">Select a test run...</option>
-            <option v-for="run in runs" :key="run.id" :value="run.id">
-              {{ run.name }} - {{ formatDate(run.timestamp) }}
-            </option>
-          </select>
+          <AsyncEntitySelect
+            v-model="selectedRun2"
+            input-id="run2"
+            placeholder="Select a test run..."
+            search-label="Search current test runs"
+            search-placeholder="Search runs by name, project, or branch..."
+            :reload-key="store.globalProjectFilter"
+            :load-options="loadRunOptions"
+          />
         </div>
 
         <button class="compare-button" :disabled="!canCompare || loading" @click="compareRuns">
@@ -357,14 +363,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, watch } from 'vue'
 import Card from '../components/shared/Card.vue'
 import TestDetailsModal from '../components/modals/TestDetailsModal.vue'
-import { apiClient, type TestRun, type RunComparisonResponse } from '../api/client'
+import AsyncEntitySelect, {
+  type EntityOptionsPage,
+} from '../components/shared/AsyncEntitySelect.vue'
+import { apiClient, type RunComparisonResponse, type RunFilters } from '../api/client'
 import { useTestDataStore } from '../stores/testData'
 
 const store = useTestDataStore()
-const runs = ref<TestRun[]>([])
 const selectedRun1 = ref<string>('')
 const selectedRun2 = ref<string>('')
 const comparison = ref<RunComparisonResponse | null>(null)
@@ -456,17 +464,22 @@ const compareRuns = async () => {
   }
 }
 
-const loadRuns = async () => {
-  try {
-    const filters: any = { limit: 100 }
-    if (store.globalProjectFilter) {
-      filters.job_name = store.globalProjectFilter
-    }
-    const response = await apiClient.getRuns(filters)
-    runs.value = response.runs
-  } catch (err) {
-    error.value = 'Failed to load test runs'
-    console.error('Error loading runs:', err)
+const loadRunOptions = async (
+  search: string,
+  page: number,
+  limit: number
+): Promise<EntityOptionsPage> => {
+  const filters: RunFilters = { page, limit, sort_by: 'timestamp', sort_order: 'desc' }
+  if (search) filters.search = search
+  if (store.globalProjectFilter) filters.job_name = store.globalProjectFilter
+  const response = await apiClient.getRuns(filters)
+  return {
+    options: response.runs.map((run) => ({
+      value: run.id,
+      label: `${run.name} - ${formatDate(run.timestamp)}`,
+    })),
+    total: response.pagination.total,
+    pages: response.pagination.pages,
   }
 }
 
@@ -474,17 +487,12 @@ const loadRuns = async () => {
 watch(
   () => store.globalProjectFilter,
   () => {
-    loadRuns()
     // Clear selections when filter changes
     selectedRun1.value = ''
     selectedRun2.value = ''
     comparison.value = null
   }
 )
-
-onMounted(() => {
-  loadRuns()
-})
 </script>
 
 <style scoped>
@@ -527,21 +535,6 @@ onMounted(() => {
   font-size: 0.875rem;
   font-weight: 500;
   color: var(--text-secondary);
-}
-
-.run-select {
-  padding: 0.75rem;
-  border: 1px solid var(--border-color);
-  border-radius: 0.375rem;
-  font-size: 0.9375rem;
-  background: var(--bg-primary);
-  color: var(--text-primary);
-  cursor: pointer;
-}
-
-.run-select:focus {
-  outline: none;
-  border-color: var(--primary-color);
 }
 
 .compare-button {
