@@ -168,6 +168,15 @@ sudo systemctl restart nginx
 1. Open browser and navigate to: `http://YOUR_SERVER_IP`
 2. Upload JUnit XML files via drag-and-drop on the Upload page
 3. View test results, trends, and statistics on the Dashboard
+
+JUnit XML files and zipped Allure results directories are accepted. For a curl-friendly Allure upload:
+
+```bash
+zip -r allure-results.zip allure-results/
+curl -F "file=@allure-results.zip" -F "format=allure" \
+  http://localhost:8080/api/v1/upload
+```
+
 4. Explore test runs and cases with filtering and search
 5. Click any test to see detailed history and analytics
 

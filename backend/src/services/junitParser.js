@@ -220,6 +220,9 @@ const parseJUnitXML = async (
             testRun = await TestRun.findOne(buildCiRunQuery(ciMetadata));
 
             if (testRun) {
+                await TestRun.findByIdAndUpdate(testRun._id, {
+                    $addToSet: { result_formats: 'junit' }
+                });
                 logger.info('Found existing test run - adding XML to it', {
                     run_id: testRun._id,
                     job_name: ciMetadata.job_name,
@@ -241,6 +244,7 @@ const parseJUnitXML = async (
                     skipped: 0,
                     file_upload_id: fileUpload._id,
                     source: 'ci_cd',
+                    result_formats: ['junit'],
                     ci_metadata: ciMetadata,
                     release_tag: releaseMetadata.release_tag || null,
                     release_version: releaseMetadata.release_version || null,
@@ -270,6 +274,7 @@ const parseJUnitXML = async (
                 file_upload_id: fileUpload._id,
                 content_hash: contentHash,
                 source: 'api',
+                result_formats: ['junit'],
                 ci_metadata: null,
                 release_tag: releaseMetadata.release_tag || null,
                 release_version: releaseMetadata.release_version || null,

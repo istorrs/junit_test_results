@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const { parseJUnitXML } = require('../services/junitParser');
+const { importAllureArchive } = require('../services/allureImporter');
 const { detectFlakyTests } = require('../services/flakyDetector');
 const { validateUpload } = require('../middleware/validator');
 const logger = require('../utils/logger');
@@ -14,10 +15,10 @@ const upload = multer({
         fileSize: parseInt(process.env.MAX_FILE_SIZE) || 52428800 // 50MB default
     },
     fileFilter: (req, file, cb) => {
-        if (file.originalname.endsWith('.xml')) {
+        if (/\.(xml|zip)$/i.test(file.originalname)) {
             cb(null, true);
         } else {
-            cb(new Error('Only XML files are allowed'), false);
+            cb(new Error('Only JUnit XML and Allure ZIP files are allowed'), false);
         }
     }
 });
@@ -25,7 +26,6 @@ const upload = multer({
 // POST /api/v1/upload - Upload single JUnit XML file
 router.post('/', upload.single('file'), validateUpload, async (req, res, next) => {
     try {
-        const xmlContent = req.file.buffer.toString('utf-8');
         const filename = req.file.originalname;
 
         // Parse CI metadata from request body
@@ -65,7 +65,27 @@ router.post('/', upload.single('file'), validateUpload, async (req, res, next) =
         };
 
         // Parse and store
-        const result = await parseJUnitXML(xmlContent, filename, ciMetadata, uploaderInfo, releaseMetadata);
+        const requestedFormat = req.body.format?.toLowerCase();
+        const resultFormat = requestedFormat || (filename.toLowerCase().endsWith('.zip') ? 'allure' : 'junit');
+        if (!['junit', 'allure'].includes(resultFormat)) {
+            return res.status(400).json({ success: false, error: 'format must be junit or allure' });
+        }
+        const result =
+            resultFormat === 'allure'
+                ? await importAllureArchive(
+                    req.file.buffer,
+                    filename,
+                    ciMetadata,
+                    uploaderInfo,
+                    releaseMetadata
+                )
+                : await parseJUnitXML(
+                    req.file.buffer.toString('utf-8'),
+                    filename,
+                    ciMetadata,
+                    uploaderInfo,
+                    releaseMetadata
+                );
 
         if (!result.success) {
             return res.status(409).json(result);
@@ -99,7 +119,6 @@ router.post(
 
             for (const file of req.files) {
                 try {
-                    const xmlContent = file.buffer.toString('utf-8');
                     const filename = file.originalname;
 
                     let ciMetadata = null;
@@ -121,13 +140,21 @@ router.post(
                         source: ciMetadata ? ciMetadata.provider : 'api'
                     };
 
-                    const result = await parseJUnitXML(
-                        xmlContent,
-                        filename,
-                        ciMetadata,
-                        uploaderInfo,
-                        releaseMetadata
-                    );
+                    const result = filename.toLowerCase().endsWith('.zip')
+                        ? await importAllureArchive(
+                            file.buffer,
+                            filename,
+                            ciMetadata,
+                            uploaderInfo,
+                            releaseMetadata
+                        )
+                        : await parseJUnitXML(
+                            file.buffer.toString('utf-8'),
+                            filename,
+                            ciMetadata,
+                            uploaderInfo,
+                            releaseMetadata
+                        );
 
                     results.push({
                         filename,

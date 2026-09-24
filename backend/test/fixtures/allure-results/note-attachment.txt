@@ -1,0 +1,1 @@
+Device identity: /dev/video0, driver=imx8-isi-cap

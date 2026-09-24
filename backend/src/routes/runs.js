@@ -6,6 +6,7 @@ const TestSuite = require('../models/TestSuite');
 const TestCase = require('../models/TestCase');
 const TestResult = require('../models/TestResult');
 const FileUpload = require('../models/FileUpload');
+const AllureAttachment = require('../models/AllureAttachment');
 const logger = require('../utils/logger');
 const { MAX_QUERY_LIMIT, DEFAULT_QUERY_LIMIT } = require('../config/constants');
 const { getRunSort, buildPassRateSortPipeline } = require('../services/runSorting');
@@ -177,6 +178,7 @@ router.delete('/:id', async (req, res, next) => {
         // Delete all related data (no transaction needed for standalone MongoDB)
         const runObjectId = new mongoose.Types.ObjectId(req.params.id);
         await TestResult.deleteMany({ run_id: runObjectId });
+        await AllureAttachment.deleteMany({ run_id: runObjectId });
         await TestCase.deleteMany({ run_id: runObjectId });
         await TestSuite.deleteMany({ run_id: runObjectId });
         await FileUpload.deleteMany({ run_id: runObjectId });

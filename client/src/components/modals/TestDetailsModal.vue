@@ -96,6 +96,10 @@
             </div>
           </div>
 
+          <div v-show="activeTab === 'allure'" class="tab-panel">
+            <AllureDetails v-if="testCaseDetails" :test="testCaseDetails" />
+          </div>
+
           <!-- Failure Details Tab -->
           <div v-show="activeTab === 'failure'" class="tab-panel">
             <div v-if="errorMessage || errorType || stackTrace" class="failure-details">
@@ -265,6 +269,7 @@ import Button from '../shared/Button.vue'
 import FlakinessIndicator from '../shared/FlakinessIndicator.vue'
 import ErrorStackTrace from '../shared/ErrorStackTrace.vue'
 import HistoryChart from '../charts/HistoryChart.vue'
+import AllureDetails from '../allure/AllureDetails.vue'
 import { formatDate, formatDuration } from '../../utils/formatters'
 import { apiClient } from '../../api/client'
 
@@ -321,11 +326,13 @@ const tabs = computed(() => {
   const systemErr = testCaseDetails.value?.system_err
 
   console.log('Computing tabs - systemOut:', !!systemOut, 'systemErr:', !!systemErr)
-  const baseTabs = [
-    { id: 'overview', label: 'Overview' },
-    { id: 'failure', label: 'Failure Details' },
-    { id: 'history', label: 'History' },
-  ]
+  const baseTabs = [{ id: 'overview', label: 'Overview' }]
+
+  if (testCaseDetails.value?.result_format === 'allure') {
+    baseTabs.push({ id: 'allure', label: 'Steps & Attachments' })
+  }
+
+  baseTabs.push({ id: 'failure', label: 'Failure Details' }, { id: 'history', label: 'History' })
 
   // Add System Output tab if data exists
   if (systemOut) {

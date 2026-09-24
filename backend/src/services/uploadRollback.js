@@ -3,6 +3,7 @@ const TestSuite = require('../models/TestSuite');
 const TestCase = require('../models/TestCase');
 const TestResult = require('../models/TestResult');
 const FileUpload = require('../models/FileUpload');
+const AllureAttachment = require('../models/AllureAttachment');
 const { calculateRunStats } = require('./runStats');
 
 const rollbackUpload = async (
@@ -13,6 +14,7 @@ const rollbackUpload = async (
         TestCaseModel = TestCase,
         TestResultModel = TestResult,
         FileUploadModel = FileUpload,
+        AllureAttachmentModel = AllureAttachment,
         calculateStats = calculateRunStats
     } = {}
 ) => {
@@ -21,6 +23,7 @@ const rollbackUpload = async (
     await TestResultModel.deleteMany({
         $or: [{ file_upload_id: fileUploadId }, { case_id: { $in: caseIds } }]
     });
+    await AllureAttachmentModel.deleteMany({ file_upload_id: fileUploadId });
     await TestCaseModel.deleteMany({ file_upload_id: fileUploadId });
     await TestSuiteModel.deleteMany({ file_upload_id: fileUploadId });
 

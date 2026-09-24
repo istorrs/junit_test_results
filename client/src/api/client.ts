@@ -84,6 +84,22 @@ export interface TestCase {
   line?: number
   system_out?: string
   system_err?: string
+  result_format?: 'junit' | 'allure'
+  external_id?: string
+  history_id?: string
+  test_case_id?: string
+  full_name?: string
+  description?: string
+  description_html?: string
+  start?: string
+  stop?: string
+  status_details?: Record<string, unknown>
+  labels?: Array<{ name: string; value: string }>
+  parameters?: AllureParameter[]
+  links?: Array<{ name?: string; url: string; type?: string }>
+  steps?: AllureStep[]
+  attachments?: AllureAttachmentReference[]
+  fixtures?: { befores?: AllureStep[]; afters?: AllureStep[] }
   is_flaky?: boolean
   flaky_detected_at?: string
   file_upload_id?: string
@@ -98,6 +114,33 @@ export interface TestCase {
   suite_properties?: Record<string, any>
   created_at?: string
   updated_at?: string
+}
+
+export interface AllureAttachmentReference {
+  attachment_id?: string
+  name: string
+  source: string
+  type?: string
+  size?: number
+}
+
+export interface AllureParameter {
+  name: string
+  value?: unknown
+  excluded?: boolean
+  mode?: string
+}
+
+export interface AllureStep {
+  name: string
+  status: 'passed' | 'failed' | 'error' | 'skipped'
+  start?: string
+  stop?: string
+  time?: number
+  status_details?: Record<string, unknown>
+  parameters?: AllureParameter[]
+  attachments?: AllureAttachmentReference[]
+  steps?: AllureStep[]
 }
 
 export interface Stats {
@@ -550,7 +593,14 @@ class ApiClient {
     })
 
     if (!response.ok) {
-      throw new Error(`Failed to upload test results: ${response.status}`)
+      let message = `Failed to upload test results: ${response.status}`
+      try {
+        const error = await response.json()
+        message = error.error || error.message || message
+      } catch {
+        // Retain the status-based message for non-JSON responses.
+      }
+      throw new Error(message)
     }
 
     const data = await response.json()

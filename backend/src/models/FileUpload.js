@@ -10,6 +10,11 @@ const fileUploadSchema = new mongoose.Schema({
         default: Date.now
     },
     file_size: Number,
+    result_format: {
+        type: String,
+        enum: ['junit', 'allure'],
+        default: 'junit'
+    },
     status: {
         type: String,
         enum: ['processing', 'completed', 'failed'],

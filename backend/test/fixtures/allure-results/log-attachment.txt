@@ -1,0 +1,2 @@
+INFO opened /dev/video0
+INFO VIDIOC_QUERYCAP succeeded

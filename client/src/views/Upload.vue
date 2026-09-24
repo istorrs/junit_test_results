@@ -7,17 +7,17 @@
         <input
           ref="fileInput"
           type="file"
-          accept=".xml"
+          accept=".xml,.zip"
           class="file-input"
-          aria-label="JUnit XML file"
+          aria-label="JUnit XML or Allure ZIP file"
           tabindex="-1"
           @change="handleFileSelect"
         />
 
         <div class="upload-content">
           <div class="upload-icon">📁</div>
-          <h3>Upload JUnit XML File</h3>
-          <p>Click or drag and drop your test results file</p>
+          <h3>Upload JUnit or Allure Results</h3>
+          <p>Select a JUnit XML file or a ZIP of an Allure results directory</p>
           <Button @click="triggerFileInput">Select File</Button>
         </div>
 

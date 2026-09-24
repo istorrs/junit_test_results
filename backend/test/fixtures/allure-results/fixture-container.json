@@ -1,0 +1,20 @@
+{
+  "uuid": "codex-allure-container",
+  "children": ["codex-allure-pass", "codex-allure-fail"],
+  "befores": [
+    {
+      "name": "Open V4L2 device",
+      "status": "passed",
+      "start": 1790189701000,
+      "stop": 1790189701200
+    }
+  ],
+  "afters": [
+    {
+      "name": "Close V4L2 device",
+      "status": "passed",
+      "start": 1790189702300,
+      "stop": 1790189702400
+    }
+  ]
+}
