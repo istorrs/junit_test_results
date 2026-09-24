@@ -287,6 +287,8 @@ try {
   let allureVerified = false
   let caseSearchVerified = false
   let caseSortVerified = false
+  let caseDateSortVerified = false
+  let caseStatusSortVerified = false
   let caseFiltersVerified = false
   let darkModalVerified = false
   let attachmentNavigationVerified = false
@@ -329,6 +331,41 @@ try {
       return shown.join('\\n') === expected.join('\\n')
     })()`)
     if (!caseSortVerified) throw new Error('Case table does not match server-side duration sorting')
+
+    await evaluate(
+      "[...document.querySelectorAll('th button')].find((button) => button.textContent.includes('Run Date')).click()"
+    )
+    await waitFor(
+      "document.querySelector('th[aria-sort=\"ascending\"]')?.textContent.includes('Run Date') && !document.querySelector('.loading-cell')",
+      'case run-date sorting'
+    )
+    caseDateSortVerified = await evaluate(`(async () => {
+      const shown = [...document.querySelectorAll('tbody .run-date')].map((node) => node.getAttribute('datetime'))
+      const response = await fetch('/api/v1/cases?page=1&limit=50&run_id=${allureRunId}&sort_by=timestamp&sort_order=asc')
+      const body = await response.json()
+      return shown.join('\\n') === body.data.cases.map((item) => item.timestamp).join('\\n')
+    })()`)
+    if (!caseDateSortVerified) {
+      throw new Error('Case table does not match server-side run-date sorting')
+    }
+
+    await evaluate(
+      "[...document.querySelectorAll('th button')].find((button) => button.textContent.includes('Status')).click()"
+    )
+    await waitFor(
+      "document.querySelector('th[aria-sort=\"ascending\"]')?.textContent.includes('Status') && !document.querySelector('.loading-cell')",
+      'case status sorting'
+    )
+    caseStatusSortVerified = await evaluate(`(async () => {
+      const shown = [...document.querySelectorAll('tbody .status-badge')]
+        .map((node) => node.textContent.trim().split(/\\s+/).at(-1))
+      const response = await fetch('/api/v1/cases?page=1&limit=50&run_id=${allureRunId}&sort_by=status&sort_order=asc')
+      const body = await response.json()
+      return shown.join('\\n') === body.data.cases.map((item) => item.status).join('\\n')
+    })()`)
+    if (!caseStatusSortVerified) {
+      throw new Error('Case table does not match server-side status sorting')
+    }
 
     await evaluate(`(() => {
       const select = document.querySelector('#cases-status')
@@ -554,6 +591,8 @@ try {
         allureVerified,
         caseSearchVerified,
         caseSortVerified,
+        caseDateSortVerified,
+        caseStatusSortVerified,
         caseFiltersVerified,
         darkModalVerified,
         modalTabsAudited,

@@ -2,7 +2,8 @@ const CASE_SORT_FIELDS = Object.freeze({
     name: 'name',
     status: 'status',
     time: 'time',
-    class_name: 'class_name'
+    class_name: 'class_name',
+    timestamp: 'timestamp'
 });
 
 const escapeRegex = value => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');

@@ -20,6 +20,7 @@ test('case search escapes regular expression operators', () => {
 test('case sorting is deterministic and allowlisted', () => {
     assert.deepEqual(getCaseSort(), { field: 'name', direction: 1 });
     assert.deepEqual(getCaseSort('time', 'desc'), { field: 'time', direction: -1 });
+    assert.deepEqual(getCaseSort('timestamp', 'desc'), { field: 'timestamp', direction: -1 });
     assert.throws(() => getCaseSort('$where', 'asc'), /Invalid sort_by/);
     assert.throws(() => getCaseSort('name', 'sideways'), /Invalid sort_order/);
 });

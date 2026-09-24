@@ -307,7 +307,11 @@ th.sortable {
 }
 
 .sort-placeholder {
-  opacity: 0.3;
+  opacity: 0.65;
+}
+
+.sort-button:hover .sort-icon {
+  color: var(--primary-color);
 }
 
 tbody tr {

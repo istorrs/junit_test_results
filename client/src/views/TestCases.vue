@@ -111,6 +111,13 @@
       <template #cell-time="{ value }">
         <span class="duration">{{ formatDuration(((value as any) || 0) * 1000) }}</span>
       </template>
+
+      <template #cell-timestamp="{ value }">
+        <time v-if="value" class="run-date" :datetime="String(value)" :title="String(value)">
+          {{ formatDate(String(value)) }}
+        </time>
+        <span v-else class="run-date unavailable">Unknown</span>
+      </template>
     </DataTable>
 
     <PaginationControls
@@ -145,7 +152,7 @@ import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useTestDataStore } from '../stores/testData'
 import { apiClient, type Pagination, type TestCaseFilters } from '../api/client'
-import { formatDuration, getStatusIcon, truncateText } from '../utils/formatters'
+import { formatDate, formatDuration, getStatusIcon, truncateText } from '../utils/formatters'
 import Button from '../components/shared/Button.vue'
 import DataTable from '../components/shared/DataTable.vue'
 import SearchInput from '../components/shared/SearchInput.vue'
@@ -182,6 +189,7 @@ const columns = [
   { key: 'status', label: 'Status', sortable: true },
   { key: 'name', label: 'Test Name', sortable: true },
   { key: 'time', label: 'Duration', sortable: true },
+  { key: 'timestamp', label: 'Run Date', sortable: true },
 ]
 
 const getTestCaseRowLabel = (row: Record<string, unknown>) =>
@@ -504,5 +512,15 @@ h1 {
 .duration {
   color: var(--text-secondary);
   font-variant-numeric: tabular-nums;
+}
+
+.run-date {
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.run-date.unavailable {
+  font-style: italic;
 }
 </style>
