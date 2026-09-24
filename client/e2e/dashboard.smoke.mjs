@@ -158,11 +158,17 @@ try {
           contentType: document.contentType,
           text: document.body?.innerText?.slice(0, 200) || '',
           hasApp: Boolean(document.querySelector('#app')),
+          viewerText: document.querySelector('.attachment-content')?.textContent?.slice(0, 200) || '',
+          viewerError: document.querySelector('.viewer-state.error')?.textContent || '',
         })`,
         returnByValue: true,
       })
-      if (evaluation.result.value?.ready) {
-        result = evaluation.result.value
+      const value = evaluation.result.value
+      if (
+        value?.ready &&
+        (value.contentType !== 'text/html' || value.viewerText || value.viewerError)
+      ) {
+        result = value
         break
       }
       await delay(100)
@@ -397,7 +403,7 @@ try {
       "[...document.querySelectorAll('[role=tab]')].find((tab) => tab.textContent.includes('Steps & Attachments')).click()"
     )
     await waitFor(
-      "document.querySelector('.allure-details a[href^=\"/api/v1/attachments/\"]') && document.querySelector('.allure-step')",
+      "document.querySelector('.allure-details a[href^=\"/attachments/\"]') && document.querySelector('.allure-step')",
       'Allure steps and attachments'
     )
     modalTabsAudited = await evaluate(
@@ -449,19 +455,29 @@ try {
     )
     darkModalVerified = true
 
-    const attachmentPath = await evaluate(
-      "document.querySelector('.allure-details a[href^=\"/api/v1/attachments/\"]').getAttribute('href')"
-    )
-    await evaluate(
-      'document.querySelector(\'.allure-details a[href^="/api/v1/attachments/"]\').click()'
-    )
-    const attachmentPage = await inspectOpenedTarget(`${baseUrl}${attachmentPath}`)
-    if (
-      attachmentPage.contentType !== 'text/plain' ||
-      attachmentPage.hasApp ||
-      !attachmentPage.text
-    ) {
-      throw new Error(`Attachment opened as ${attachmentPage.contentType} instead of text/plain`)
+    const attachmentLinks = await evaluate(`
+      [...document.querySelectorAll('.allure-details .attachments a[href^="/attachments/"]')]
+        .map((link) => ({ label: link.textContent.trim(), href: link.getAttribute('href') }))
+        .filter((link) => link.label.startsWith('View log') || link.label.startsWith('View stderr'))
+    `)
+    for (const expectedLabel of ['View log', 'View stderr']) {
+      const attachment = attachmentLinks.find((link) => link.label.startsWith(expectedLabel))
+      if (!attachment) throw new Error(`Missing ${expectedLabel} attachment link`)
+      await evaluate(`
+        [...document.querySelectorAll('.allure-details .attachments a[href^="/attachments/"]')]
+          .find((link) => link.textContent.trim().startsWith(${JSON.stringify(expectedLabel)})).click()
+      `)
+      const attachmentPage = await inspectOpenedTarget(`${baseUrl}${attachment.href}`)
+      if (
+        attachmentPage.contentType !== 'text/html' ||
+        !attachmentPage.hasApp ||
+        attachmentPage.viewerError ||
+        !attachmentPage.viewerText
+      ) {
+        throw new Error(
+          `${expectedLabel} did not load in the attachment viewer: ${JSON.stringify(attachmentPage)}`
+        )
+      }
     }
     attachmentNavigationVerified = true
     allureVerified = true

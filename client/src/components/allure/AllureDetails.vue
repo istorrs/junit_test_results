@@ -37,7 +37,7 @@
         <a
           v-for="attachment in test.attachments"
           :key="attachment.source"
-          :href="attachment.attachment_id ? `/api/v1/attachments/${attachment.attachment_id}` : '#'"
+          :href="attachment.attachment_id ? `/attachments/${attachment.attachment_id}` : '#'"
           :aria-disabled="!attachment.attachment_id"
           :class="{ unavailable: !attachment.attachment_id }"
           target="_blank"

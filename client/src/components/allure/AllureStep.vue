@@ -36,7 +36,7 @@ import type { AllureStep } from '../../api/client'
 import { formatDuration, formatFileSize } from '../../utils/formatters'
 
 defineProps<{ step: AllureStep }>()
-const attachmentUrl = (id?: string) => (id ? `/api/v1/attachments/${id}` : '#')
+const attachmentUrl = (id?: string) => (id ? `/attachments/${id}` : '#')
 </script>
 
 <style scoped>

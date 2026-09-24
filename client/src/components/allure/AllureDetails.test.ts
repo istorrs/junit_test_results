@@ -39,7 +39,7 @@ describe('AllureDetails', () => {
     expect(wrapper.text()).toContain('Wait for frame')
     expect(wrapper.text()).toContain('Open camera')
     expect(wrapper.text()).toContain('/dev/video0')
-    const attachment = wrapper.get('a[href="/api/v1/attachments/attachment-1"]')
+    const attachment = wrapper.get('a[href="/attachments/attachment-1"]')
     expect(attachment.text()).toContain('View log')
     expect(attachment.attributes('target')).toBe('_blank')
   })
