@@ -8,6 +8,7 @@ const { buildCiRunQuery, generateUploadIdentity, hasCiBuildIdentity } = require(
 const { calculateRunStats } = require('./runStats');
 const { rollbackUpload } = require('./uploadRollback');
 const logger = require('../utils/logger');
+const { resolveTestDefinition } = require('./testDefinition');
 
 const suiteStats = results => ({
     total_tests: results.length,
@@ -176,7 +177,12 @@ const importAllureArchive = async (
 
             for (const result of results) {
                 const details = result.status_details || {};
+                const definitionId = await resolveTestDefinition(testRun, {
+                    ...result, result_format: 'allure', class_name: suiteName,
+                    timestamp: result.start || timestamp
+                });
                 const testCase = await TestCase.create({
+                    definition_id: definitionId,
                     suite_id: suite._id,
                     run_id: testRun._id,
                     file_upload_id: fileUpload._id,

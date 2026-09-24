@@ -4,6 +4,18 @@ This directory contains scripts for maintaining data integrity and quality in th
 
 ## Available Scripts
 
+### backfill-test-definitions.js
+
+**Purpose:** Link existing test executions to project-scoped stable definitions.
+
+```bash
+docker exec junit-backend node /app/scripts/backfill-test-definitions.js
+docker exec junit-backend node /app/scripts/backfill-test-definitions.js --apply
+```
+
+The first command is read-only. The second is idempotent, validates coverage, and
+does not remove any existing records. Back up MongoDB before applying it.
+
 ### 1. fix-test-run-counts.js
 
 **Purpose**: Fixes test runs with missing or incorrect test counts

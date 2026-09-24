@@ -11,6 +11,7 @@ const logger = require('../utils/logger');
 const { MAX_QUERY_LIMIT, DEFAULT_QUERY_LIMIT } = require('../config/constants');
 const { getRunSort, buildPassRateSortPipeline } = require('../services/runSorting');
 const { apiRateLimiter } = require('../middleware/rateLimiter');
+const { linkRuns } = require('../services/testDefinition');
 
 // GET /api/v1/runs/projects - Get all unique job names (projects)
 router.get('/projects', async (req, res, next) => {
@@ -220,10 +221,10 @@ router.get('/:id1/compare/:id2', async (req, res, next) => {
 
         // Create maps for easier lookup
         const cases1Map = new Map();
-        cases1.forEach(c => cases1Map.set(`${c.name}|${c.class_name}`, c));
+        cases1.forEach(c => cases1Map.set(String(c.definition_id || c._id), c));
 
         const cases2Map = new Map();
-        cases2.forEach(c => cases2Map.set(`${c.name}|${c.class_name}`, c));
+        cases2.forEach(c => cases2Map.set(String(c.definition_id || c._id), c));
 
         // Analysis
         const newFailures = [];
@@ -396,6 +397,9 @@ router.patch('/batch', async (req, res, next) => {
             { _id: { $in: objectIds } },
             [{ $set: persistedFields }]
         );
+        // Project is part of the definition identity. Keep existing executions
+        // consistent with the new project before returning success.
+        if (job_name !== undefined) await linkRuns(objectIds);
 
         res.json({
             success: true,

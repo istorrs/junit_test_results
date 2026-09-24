@@ -3,6 +3,8 @@ const { DEFAULT_QUERY_LIMIT } = require('../config/constants');
 const router = express.Router();
 const TestRun = require('../models/TestRun');
 const TestCase = require('../models/TestCase');
+const TestDefinition = require('../models/TestDefinition');
+const mongoose = require('mongoose');
 
 /**
  * GET /api/v1/comparison/runs
@@ -38,8 +40,8 @@ router.get('/runs', async (req, res) => {
         ]);
 
         // Create maps for quick lookup
-        const cases1Map = new Map(cases1.map(c => [`${c.class_name}.${c.name}`, c]));
-        const cases2Map = new Map(cases2.map(c => [`${c.class_name}.${c.name}`, c]));
+        const cases1Map = new Map(cases1.map(c => [String(c.definition_id || c._id), c]));
+        const cases2Map = new Map(cases2.map(c => [String(c.definition_id || c._id), c]));
 
         // Get all unique test identifiers
         const allTestIds = new Set([...cases1Map.keys(), ...cases2Map.keys()]);
@@ -235,9 +237,20 @@ router.get('/test/:testId', async (req, res) => {
         const cutoffDate = new Date();
         cutoffDate.setDate(cutoffDate.getDate() - parseInt(days));
 
-        // Find all test cases for this test
+        const selectedCase = mongoose.isValidObjectId(testId)
+            ? await TestCase.findById(testId).select('definition_id')
+            : null;
+        const matchingDefinitions = selectedCase ? [] : await TestDefinition.find({ name: { $eq: testId } })
+            .limit(2).select('_id').lean();
+        if (!selectedCase && matchingDefinitions.length > 1) {
+            return res.status(409).json({ error: 'Test name is ambiguous; use a case ID' });
+        }
+        const definitionId = selectedCase?.definition_id || matchingDefinitions[0]?._id;
+        if (!definitionId) return res.status(404).json({ error: 'Test not found' });
+
+        // Find all executions for the selected stable test definition.
         const testCases = await TestCase.find({
-            $or: [{ _id: testId }, { name: testId }],
+            definition_id: definitionId,
             created_at: { $gte: cutoffDate }
         })
             .sort({ created_at: -1 })

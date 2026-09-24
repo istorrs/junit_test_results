@@ -37,6 +37,11 @@ const testCaseSchema = new mongoose.Schema({
         ref: 'TestRun',
         required: true
     },
+    definition_id: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'TestDefinition',
+        index: true
+    },
     name: {
         type: String,
         required: true
@@ -111,5 +116,6 @@ const testCaseSchema = new mongoose.Schema({
 });
 
 testCaseSchema.index({ run_id: 1, 'labels.name': 1, 'labels.value': 1 });
+testCaseSchema.index({ definition_id: 1, timestamp: -1 });
 
 module.exports = mongoose.model('TestCase', testCaseSchema);

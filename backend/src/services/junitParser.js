@@ -11,6 +11,7 @@ const {
 const { calculateRunStats } = require('./runStats');
 const { rollbackUpload } = require('./uploadRollback');
 const logger = require('../utils/logger');
+const { resolveTestDefinition } = require('./testDefinition');
 
 /**
  * Normalize a value to a string, handling arrays and other types
@@ -302,7 +303,7 @@ const parseJUnitXML = async (
             }
 
             for (const suite of suites) {
-                await processTestSuite(suite, testRun._id, fileUpload._id, testRun.timestamp);
+                await processTestSuite(suite, testRun, fileUpload._id, testRun.timestamp);
             }
         }
 
@@ -348,7 +349,8 @@ const parseJUnitXML = async (
     }
 };
 
-const processTestSuite = async (suiteData, runId, fileUploadId, testRunTimestamp) => {
+const processTestSuite = async (suiteData, testRun, fileUploadId, testRunTimestamp) => {
+    const runId = testRun._id;
     // Determine suite timestamp: use suite's own timestamp if available, otherwise use test run timestamp
     const suiteTimestamp = suiteData.timestamp ? new Date(suiteData.timestamp) : testRunTimestamp;
 
@@ -391,7 +393,7 @@ const processTestSuite = async (suiteData, runId, fileUploadId, testRunTimestamp
             // Calculate this test's start time by adding accumulated duration to suite timestamp
             const testStartTime = new Date(suiteTimestamp.getTime() + accumulatedTime * 1000);
 
-            await processTestCase(testcase, testSuite._id, runId, fileUploadId, testStartTime);
+            await processTestCase(testcase, testSuite._id, testRun, fileUploadId, testStartTime);
 
             // Add this test's duration to accumulated time for next test
             accumulatedTime += parseFloat(testcase.time || 0);
@@ -422,7 +424,8 @@ const processTestSuite = async (suiteData, runId, fileUploadId, testRunTimestamp
     }
 };
 
-const processTestCase = async (caseData, suiteId, runId, fileUploadId, testStartTime) => {
+const processTestCase = async (caseData, suiteId, testRun, fileUploadId, testStartTime) => {
+    const runId = testRun._id;
     let status = 'passed';
     let errorMessage = null;
     let errorType = null;
@@ -537,7 +540,12 @@ const processTestCase = async (caseData, suiteId, runId, fileUploadId, testStart
     }
 
     // Create test case
+    const definitionId = await resolveTestDefinition(testRun, {
+        result_format: 'junit', name: caseData.name || 'Unnamed Test',
+        class_name: caseData.classname || '', timestamp: testStartTime
+    });
     await TestCase.create({
+        definition_id: definitionId,
         suite_id: suiteId,
         run_id: runId,
         name: caseData.name || 'Unnamed Test',
