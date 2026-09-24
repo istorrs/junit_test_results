@@ -93,10 +93,12 @@ router.get('/trends', async (req, res, next) => {
 router.get('/flaky-tests', async (req, res, next) => {
     try {
         const flakyTests = await TestCase.aggregate([
-            { $match: { is_flaky: true } },
+            { $match: { is_flaky: true, definition_id: { $exists: true } } },
             {
                 $group: {
-                    _id: { name: '$name', class_name: '$class_name' },
+                    _id: '$definition_id',
+                    name: { $first: '$name' },
+                    class_name: { $first: '$class_name' },
                     failure_count: {
                         $sum: {
                             $cond: [{ $in: ['$status', ['failed', 'error']] }, 1, 0]
@@ -108,8 +110,8 @@ router.get('/flaky-tests', async (req, res, next) => {
             },
             {
                 $project: {
-                    name: '$_id.name',
-                    class_name: '$_id.class_name',
+                    name: 1,
+                    class_name: 1,
                     failure_count: 1,
                     total_runs: 1,
                     failure_rate: {
@@ -135,11 +137,14 @@ router.get('/performance-regressions', async (req, res, next) => {
     try {
         const threshold = parseFloat(req.query.threshold) || 20; // 20% slower by default
 
-        // Get unique test names
+        // Keep regressions scoped to one stable test definition.
         const uniqueTests = await TestCase.aggregate([
+            { $match: { definition_id: { $exists: true } } },
             {
                 $group: {
-                    _id: { name: '$name', class_name: '$class_name' }
+                    _id: '$definition_id',
+                    name: { $first: '$name' },
+                    class_name: { $first: '$class_name' }
                 }
             }
         ]);
@@ -148,8 +153,7 @@ router.get('/performance-regressions', async (req, res, next) => {
 
         for (const test of uniqueTests) {
             const cases = await TestCase.find({
-                name: test._id.name,
-                class_name: test._id.class_name,
+                definition_id: test._id,
                 status: 'passed'
             })
                 .sort({ created_at: -1 })
@@ -168,8 +172,8 @@ router.get('/performance-regressions', async (req, res, next) => {
 
                     if (percentChange > threshold) {
                         regressions.push({
-                            name: test._id.name,
-                            class_name: test._id.class_name,
+                            name: test.name,
+                            class_name: test.class_name,
                             baseline_avg: baselineAvg.toFixed(3),
                             recent_avg: recentAvg.toFixed(3),
                             percent_change: percentChange.toFixed(1)
@@ -196,9 +200,12 @@ router.get('/slowest-tests', async (req, res, next) => {
         const limit = Math.min(parseInt(req.query.limit) || DEFAULT_QUERY_LIMIT, MAX_QUERY_LIMIT);
 
         const slowestTests = await TestCase.aggregate([
+            { $match: { definition_id: { $exists: true } } },
             {
                 $group: {
-                    _id: { name: '$name', class_name: '$class_name' },
+                    _id: '$definition_id',
+                    name: { $first: '$name' },
+                    class_name: { $first: '$class_name' },
                     avg_time: { $avg: '$time' },
                     max_time: { $max: '$time' },
                     min_time: { $min: '$time' },
@@ -207,8 +214,8 @@ router.get('/slowest-tests', async (req, res, next) => {
             },
             {
                 $project: {
-                    name: '$_id.name',
-                    class_name: '$_id.class_name',
+                    name: 1,
+                    class_name: 1,
                     avg_time: { $round: ['$avg_time', 3] },
                     max_time: { $round: ['$max_time', 3] },
                     min_time: { $round: ['$min_time', 3] },

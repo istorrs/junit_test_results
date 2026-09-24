@@ -376,13 +376,10 @@ router.get('/:id/history', async (req, res, next) => {
             });
         }
 
-        // Find all test cases with same name and class_name across runs
+        // A definition is project- and format-scoped; names alone are ambiguous.
         const history = await TestCase.aggregate([
             {
-                $match: {
-                    name: testCase.name,
-                    class_name: testCase.class_name
-                }
+                $match: { definition_id: testCase.definition_id || testCase._id }
             },
             {
                 $lookup: {
@@ -442,13 +439,10 @@ router.get('/:id/flakiness', async (req, res, next) => {
             });
         }
 
-        // Find all executions of this test (same name + class_name)
+        // Match the stable definition, not a name shared by other projects.
         const executions = await TestCase.aggregate([
             {
-                $match: {
-                    name: testCase.name,
-                    class_name: testCase.class_name
-                }
+                $match: { definition_id: testCase.definition_id || testCase._id }
             },
             {
                 $lookup: {

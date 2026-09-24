@@ -128,8 +128,8 @@ router.get('/flaky-tests', apiRateLimiter, async (req, res, next) => {
             initialMatch.run_id = { $in: runIds };
         }
 
-        // Find all unique test names and their execution history
-        const aggregatePipeline = [];
+        // A name can occur in multiple projects or formats.
+        const aggregatePipeline = [{ $match: { definition_id: { $exists: true } } }];
 
         // Add initial match if filtering by job
         if (Object.keys(initialMatch).length > 0) {
@@ -137,13 +137,13 @@ router.get('/flaky-tests', apiRateLimiter, async (req, res, next) => {
         }
 
         aggregatePipeline.push(
+            { $sort: { timestamp: -1, _id: -1 } },
             {
                 $group: {
-                    _id: {
-                        name: '$name',
-                        class_name: '$class_name'
-                    },
+                    _id: '$definition_id',
                     test_id: { $first: '$_id' },
+                    test_name: { $first: '$name' },
+                    class_name: { $first: '$class_name' },
                     total_runs: { $sum: 1 },
                     passed_runs: {
                         $sum: { $cond: [{ $eq: ['$status', 'passed'] }, 1, 0] }
@@ -206,8 +206,8 @@ router.get('/flaky-tests', apiRateLimiter, async (req, res, next) => {
             {
                 $project: {
                     test_id: { $toString: '$test_id' },
-                    test_name: '$_id.name',
-                    class_name: '$_id.class_name',
+                    test_name: 1,
+                    class_name: 1,
                     pass_rate: { $round: ['$pass_rate', 2] },
                     flakiness_score: { $round: ['$flakiness_score', 2] },
                     recent_runs: '$total_runs',

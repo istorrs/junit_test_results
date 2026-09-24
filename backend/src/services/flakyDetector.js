@@ -9,10 +9,10 @@ const detectFlakyTests = async (runId) => {
         });
 
         for (const testCase of testCases) {
+            if (!testCase.definition_id) continue;
             // Get historical results for this test
             const history = await TestCase.find({
-                name: testCase.name,
-                class_name: testCase.class_name
+                definition_id: testCase.definition_id
             }).sort({ created_at: -1 }).limit(10);
 
             if (history.length >= 3) {

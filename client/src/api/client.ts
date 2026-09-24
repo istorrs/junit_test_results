@@ -81,6 +81,7 @@ export interface TestRun {
 
 export interface TestCase {
   id: string
+  definition_id?: string
   suite_id?: string
   run_id?: string
   name: string

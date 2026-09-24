@@ -53,6 +53,31 @@ skip messages into their authoritative test-case documents, refuses ambiguous
 duplicate results, and reports orphaned data. It does not delete `testresults`;
 retain that collection through an observation period before removing it separately.
 
+## Stable Test Definitions
+
+Each imported execution remains a `TestCase` and now references a reusable
+`TestDefinition` through `definition_id`. History and flakiness use that reference,
+so identically named tests in different projects do not share history. Identity is
+scoped by project and repository when present. JUnit uses class plus test name;
+Allure prefers `historyId`, then `testCaseId` plus parameters, then `fullName` plus
+parameters. The two formats remain distinct because their identifiers have
+different semantics. Assigning a run to a different project re-links its cases.
+
+Before deploying this version against an existing database, run the read-only
+audit, then apply and verify the idempotent backfill:
+
+```bash
+npm run migrate:test-definitions
+npm run migrate:test-definitions -- --apply
+```
+
+The apply command reports case and definition counts and fails if any case lacks
+a definition. It never deletes executions or definitions. Back up MongoDB before
+running it against production data. New imports can proceed after the backfill.
+The performance and comparison history endpoints still accept a test name when it
+identifies exactly one definition; ambiguous names return HTTP 409 and require a
+case ID instead.
+
 ## API Endpoints
 
 ### Upload

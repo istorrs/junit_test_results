@@ -3,6 +3,9 @@ const { MAX_QUERY_LIMIT, DEFAULT_QUERY_LIMIT } = require('../config/constants');
 const router = express.Router();
 const TestCase = require('../models/TestCase');
 const TestRun = require('../models/TestRun');
+const TestDefinition = require('../models/TestDefinition');
+const mongoose = require('mongoose');
+const { apiRateLimiter } = require('../middleware/rateLimiter');
 const _ = require('lodash');
 
 const applyProjectFilter = async (matchCondition, jobName) => {
@@ -19,7 +22,7 @@ const applyProjectFilter = async (matchCondition, jobName) => {
  * Get performance trends for tests or test suites
  * Query params: testId, classNamecontains, days, granularity
  */
-router.get('/trends', async (req, res) => {
+router.get('/trends', apiRateLimiter, async (req, res) => {
     try {
         const { testId, className, days = 30, granularity = 'daily', job_name } = req.query;
 
@@ -32,7 +35,14 @@ router.get('/trends', async (req, res) => {
         };
 
         if (testId) {
-            matchCondition._id = testId;
+            if (!mongoose.isValidObjectId(testId)) {
+                return res.status(400).json({ error: 'testId must be a case ID' });
+            }
+            const selected = await TestCase.findOne({
+                _id: { $eq: new mongoose.Types.ObjectId(testId) }
+            }).select('definition_id');
+            if (!selected?.definition_id) return res.status(404).json({ error: 'Test not found' });
+            matchCondition.definition_id = selected.definition_id;
         }
 
         if (className) {
@@ -130,11 +140,13 @@ router.get('/slowest', async (req, res) => {
                 $match: matchCondition
             },
             {
+                $match: { definition_id: { $exists: true } }
+            },
+            {
                 $group: {
-                    _id: {
-                        test_name: '$name',
-                        class_name: '$class_name'
-                    },
+                    _id: '$definition_id',
+                    test_name: { $first: '$name' },
+                    class_name: { $first: '$class_name' },
                     avg_time: { $avg: '$time' },
                     max_time: { $max: '$time' },
                     min_time: { $min: '$time' },
@@ -145,8 +157,8 @@ router.get('/slowest', async (req, res) => {
             {
                 $project: {
                     _id: 0,
-                    test_name: '$_id.test_name',
-                    class_name: '$_id.class_name',
+                    test_name: 1,
+                    class_name: 1,
                     avg_time: { $round: ['$avg_time', 3] },
                     max_time: { $round: ['$max_time', 3] },
                     min_time: { $round: ['$min_time', 3] },
@@ -199,11 +211,13 @@ router.get('/regressions', async (req, res) => {
                 $match: matchCondition
             },
             {
+                $match: { definition_id: { $exists: true } }
+            },
+            {
                 $group: {
-                    _id: {
-                        test_name: '$name',
-                        class_name: '$class_name'
-                    },
+                    _id: '$definition_id',
+                    test_name: { $first: '$name' },
+                    class_name: { $first: '$class_name' },
                     recent_times: {
                         $push: {
                             $cond: [{ $gte: ['$created_at', cutoffDate] }, '$time', '$$REMOVE']
@@ -219,8 +233,8 @@ router.get('/regressions', async (req, res) => {
             {
                 $project: {
                     _id: 0,
-                    test_name: '$_id.test_name',
-                    class_name: '$_id.class_name',
+                    test_name: 1,
+                    class_name: 1,
                     recent_avg: { $avg: '$recent_times' },
                     baseline_avg: { $avg: '$baseline_times' },
                     recent_count: { $size: '$recent_times' },
@@ -293,7 +307,7 @@ router.get('/regressions', async (req, res) => {
  * GET /api/v1/performance/test/:testId
  * Get detailed performance history for a specific test
  */
-router.get('/test/:testId', async (req, res) => {
+router.get('/test/:testId', apiRateLimiter, async (req, res) => {
     try {
         const { testId } = req.params;
         const { days = 90 } = req.query;
@@ -301,8 +315,20 @@ router.get('/test/:testId', async (req, res) => {
         const cutoffDate = new Date();
         cutoffDate.setDate(cutoffDate.getDate() - parseInt(days));
 
+        const selectedCase = mongoose.isValidObjectId(testId)
+            ? await TestCase.findOne({ _id: { $eq: new mongoose.Types.ObjectId(testId) } })
+                .select('definition_id')
+            : null;
+        const matchingDefinitions = selectedCase ? [] : await TestDefinition.find({ name: { $eq: testId } })
+            .limit(2).select('_id').lean();
+        if (!selectedCase && matchingDefinitions.length > 1) {
+            return res.status(409).json({ error: 'Test name is ambiguous; use a case ID' });
+        }
+        const definitionId = selectedCase?.definition_id || matchingDefinitions[0]?._id;
+        if (!definitionId) return res.status(404).json({ error: 'Test not found' });
+
         const testHistory = await TestCase.find({
-            $or: [{ _id: testId }, { name: testId }],
+            definition_id: definitionId,
             created_at: { $gte: cutoffDate },
             time: { $exists: true }
         })

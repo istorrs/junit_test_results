@@ -9,7 +9,8 @@
     "test": "node --test",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "migrate:test-results": "node scripts/migrate-test-results.js"
+    "migrate:test-results": "node scripts/migrate-test-results.js",
+    "migrate:test-definitions": "node scripts/backfill-test-definitions.js"
   },
   "keywords": [
     "junit",
