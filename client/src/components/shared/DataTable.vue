@@ -23,8 +23,8 @@
               >
                 {{ column.label }}
                 <span class="sort-icon" aria-hidden="true">
-                  <span v-if="sortKey === column.key">
-                    {{ sortOrder === 'asc' ? '↑' : '↓' }}
+                  <span v-if="activeSortKey === column.key">
+                    {{ activeSortOrder === 'asc' ? '↑' : '↓' }}
                   </span>
                   <span v-else class="sort-placeholder">↕</span>
                 </span>
@@ -118,6 +118,9 @@ interface Props {
   paginate?: boolean
   pageSize?: number
   rowClickable?: boolean
+  manualSort?: boolean
+  sortKey?: string
+  sortOrder?: 'asc' | 'desc'
   // eslint-disable-next-line no-unused-vars
   rowAriaLabel?: (row: Record<string, unknown>, index: number) => string
 }
@@ -127,29 +130,35 @@ const props = withDefaults(defineProps<Props>(), {
   paginate: true,
   pageSize: 20,
   rowClickable: false,
+  manualSort: false,
+  sortKey: '',
+  sortOrder: 'asc',
 })
 
-defineEmits<{
+const emit = defineEmits<{
   'row-click': [row: Record<string, any>]
+  'sort-change': [sort: { key: string; order: 'asc' | 'desc' }]
 }>()
 
-const sortKey = ref<string>('')
-const sortOrder = ref<'asc' | 'desc'>('asc')
+const localSortKey = ref<string>('')
+const localSortOrder = ref<'asc' | 'desc'>('asc')
 const currentPage = ref(1)
+const activeSortKey = computed(() => (props.manualSort ? props.sortKey : localSortKey.value))
+const activeSortOrder = computed(() => (props.manualSort ? props.sortOrder : localSortOrder.value))
 
 const handleSort = (key: string) => {
-  if (sortKey.value === key) {
-    sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc'
-  } else {
-    sortKey.value = key
-    sortOrder.value = 'asc'
+  const nextOrder = activeSortKey.value === key && activeSortOrder.value === 'asc' ? 'desc' : 'asc'
+  if (!props.manualSort) {
+    localSortKey.value = key
+    localSortOrder.value = nextOrder
   }
   currentPage.value = 1
+  emit('sort-change', { key, order: nextOrder })
 }
 
 const getAriaSort = (key: string): 'ascending' | 'descending' | 'none' => {
-  if (sortKey.value !== key) return 'none'
-  return sortOrder.value === 'asc' ? 'ascending' : 'descending'
+  if (activeSortKey.value !== key) return 'none'
+  return activeSortOrder.value === 'asc' ? 'ascending' : 'descending'
 }
 
 const getRowAriaLabel = (row: Record<string, unknown>, index: number) =>
@@ -160,18 +169,18 @@ const getCellValue = (row: Record<string, any>, key: string) => {
 }
 
 const sortedData = computed(() => {
-  if (!sortKey.value) return props.data
+  if (props.manualSort || !activeSortKey.value) return props.data
 
   return [...props.data].sort((a, b) => {
-    const aVal = getCellValue(a, sortKey.value)
-    const bVal = getCellValue(b, sortKey.value)
+    const aVal = getCellValue(a, activeSortKey.value)
+    const bVal = getCellValue(b, activeSortKey.value)
 
     if (aVal === bVal) return 0
     if (aVal == null) return 1
     if (bVal == null) return -1
 
     const comparison = aVal > bVal ? 1 : -1
-    return sortOrder.value === 'asc' ? comparison : -comparison
+    return activeSortOrder.value === 'asc' ? comparison : -comparison
   })
 })
 

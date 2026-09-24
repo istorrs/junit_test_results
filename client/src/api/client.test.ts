@@ -89,6 +89,23 @@ describe('API Client', () => {
       )
     })
 
+    it('should send server-side sorting parameters', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          success: true,
+          data: { runs: [], pagination: { page: 1, limit: 50, total: 0 } },
+        }),
+      })
+
+      await apiClient.getRuns({ sort_by: 'pass_rate', sort_order: 'asc' })
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        '/api/v1/runs?page=1&limit=50&sort_by=pass_rate&sort_order=asc',
+        undefined
+      )
+    })
+
     it('should throw error when API returns error', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: false,

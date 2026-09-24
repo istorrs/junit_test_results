@@ -24,9 +24,13 @@
       :data="store.runs"
       :loading="store.loading"
       :paginate="false"
+      :manual-sort="true"
+      :sort-key="sortBy"
+      :sort-order="sortOrder"
       :row-clickable="true"
       :row-aria-label="getRunRowLabel"
       @row-click="(row: any) => viewRunDetails(row as TestRun)"
+      @sort-change="handleSortChange"
     >
       <template #filters>
         <div class="filters-grid">
@@ -123,11 +127,11 @@
         </div>
       </template>
 
-      <template #cell-total="{ row }">
+      <template #cell-total_tests="{ row }">
         <strong>{{ (row as any).total_tests }}</strong>
       </template>
 
-      <template #cell-rate="{ row }">
+      <template #cell-pass_rate="{ row }">
         <div v-if="(row as any).total_tests > 0" class="success-rate">
           <span :class="getSuccessRateClass(calculateSuccessRate(row as any))">
             {{ calculateSuccessRate(row as any) }}%
@@ -180,15 +184,17 @@ const showReleaseModal = ref(false)
 const selectAllCheckbox = ref<HTMLInputElement | null>(null)
 const pagination = ref<Pagination>({ page: 1, limit: 50, total: 0, pages: 1 })
 const loadError = ref('')
+const sortBy = ref<NonNullable<RunFilters['sort_by']>>('timestamp')
+const sortOrder = ref<NonNullable<RunFilters['sort_order']>>('desc')
 let filterTimer: ReturnType<typeof setTimeout> | undefined
 
 const columns = [
   { key: 'select', label: '', sortable: false },
-  { key: 'name', label: 'Run Name', sortable: false },
-  { key: 'timestamp', label: 'Date', sortable: false },
-  { key: 'total', label: 'Total Tests', sortable: false },
+  { key: 'name', label: 'Run Name', sortable: true },
+  { key: 'timestamp', label: 'Date', sortable: true },
+  { key: 'total_tests', label: 'Total Tests', sortable: true },
   { key: 'summary', label: 'Results', sortable: false },
-  { key: 'rate', label: 'Success Rate', sortable: false },
+  { key: 'pass_rate', label: 'Success Rate', sortable: true },
 ]
 
 const getRunRowLabel = (row: Record<string, unknown>) =>
@@ -317,6 +323,8 @@ const loadData = async (page = pagination.value.page) => {
     const filters: RunFilters = {
       page,
       limit: pagination.value.limit,
+      sort_by: sortBy.value,
+      sort_order: sortOrder.value,
     }
     if (store.globalProjectFilter) {
       filters.job_name = store.globalProjectFilter
@@ -344,6 +352,13 @@ const handlePageChange = (page: number) => {
 const handleLimitChange = (limit: number) => {
   clearSelection()
   pagination.value.limit = limit
+  loadData(1)
+}
+
+const handleSortChange = (sort: { key: string; order: 'asc' | 'desc' }) => {
+  sortBy.value = sort.key as NonNullable<RunFilters['sort_by']>
+  sortOrder.value = sort.order
+  clearSelection()
   loadData(1)
 }
 

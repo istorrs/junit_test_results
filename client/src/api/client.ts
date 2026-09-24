@@ -10,6 +10,17 @@ export interface RunFilters extends PaginationParams {
   to_date?: string
   search?: string
   status?: 'passed' | 'failed' | 'mixed'
+  sort_by?:
+    | 'name'
+    | 'timestamp'
+    | 'total_tests'
+    | 'passed'
+    | 'failed'
+    | 'errors'
+    | 'skipped'
+    | 'time'
+    | 'pass_rate'
+  sort_order?: 'asc' | 'desc'
 }
 
 export interface StatsFilters {

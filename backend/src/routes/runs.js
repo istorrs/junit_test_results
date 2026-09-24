@@ -8,6 +8,7 @@ const TestResult = require('../models/TestResult');
 const FileUpload = require('../models/FileUpload');
 const logger = require('../utils/logger');
 const { MAX_QUERY_LIMIT, DEFAULT_QUERY_LIMIT } = require('../config/constants');
+const { getRunSort, buildPassRateSortPipeline } = require('../services/runSorting');
 
 // GET /api/v1/runs/projects - Get all unique job names (projects)
 router.get('/projects', async (req, res, next) => {
@@ -32,6 +33,7 @@ router.get('/', async (req, res, next) => {
         const page = parseInt(req.query.page) || 1;
         const limit = Math.min(parseInt(req.query.limit) || DEFAULT_QUERY_LIMIT, MAX_QUERY_LIMIT);
         const skip = (page - 1) * limit;
+        const sort = getRunSort(req.query.sort_by, req.query.sort_order);
 
         const query = {};
 
@@ -82,13 +84,17 @@ router.get('/', async (req, res, next) => {
             query.$and = additionalFilters;
         }
 
-        const total = await TestRun.countDocuments(query);
-        const runs = await TestRun.find(query)
-            // Keep pagination stable when multiple runs share a timestamp.
-            .sort({ timestamp: -1, _id: -1 })
-            .skip(skip)
-            .limit(limit)
-            .lean();
+        const [total, runs] = await Promise.all([
+            TestRun.countDocuments(query),
+            sort.field === 'pass_rate'
+                ? TestRun.aggregate(buildPassRateSortPipeline(query, sort.direction, skip, limit))
+                : TestRun.find(query)
+                // Keep pagination stable when multiple runs share the selected value.
+                    .sort({ [sort.field]: sort.direction, _id: sort.direction })
+                    .skip(skip)
+                    .limit(limit)
+                    .lean()
+        ]);
 
         // Transform _id to id for each run
         const transformedRuns = runs.map(run => ({
