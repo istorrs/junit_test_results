@@ -322,15 +322,16 @@ router.get('/:id1/compare/:id2', async (req, res, next) => {
     }
 });
 
-// PATCH /api/v1/runs/batch - Bulk update test runs (for release tagging)
+// PATCH /api/v1/runs/batch - Bulk update test run metadata
 router.patch('/batch', async (req, res, next) => {
     try {
-        const { run_ids, release_tag, release_version } = req.body;
+        const { run_ids, release_tag, release_version, job_name } = req.body;
 
         logger.info('Batch update request received', {
             run_ids,
             release_tag,
             release_version,
+            job_name,
             body: req.body
         });
 
@@ -343,21 +344,46 @@ router.patch('/batch', async (req, res, next) => {
             });
         }
 
-        if (!release_tag && !release_version) {
-            logger.warn('No release metadata provided', { release_tag, release_version });
+        if (release_tag === undefined && release_version === undefined && job_name === undefined) {
+            logger.warn('No run metadata provided', { release_tag, release_version, job_name });
             return res.status(400).json({
                 success: false,
-                error: 'At least one of release_tag or release_version must be provided'
+                error: 'At least one run metadata field must be provided'
             });
         }
 
-        // Build update object
+        if (job_name !== undefined && job_name !== null && typeof job_name !== 'string') {
+            return res.status(400).json({ success: false, error: 'job_name must be a string or null' });
+        }
+        const normalizedJobName = typeof job_name === 'string' ? job_name.trim() : job_name;
+        if (normalizedJobName && normalizedJobName.length > 200) {
+            return res.status(400).json({ success: false, error: 'job_name must be 200 characters or fewer' });
+        }
+
+        if (run_ids.some(id => !mongoose.isValidObjectId(id))) {
+            return res.status(400).json({ success: false, error: 'run_ids contains an invalid ID' });
+        }
+
+        // Build an aggregation-pipeline update so assigning a project also works
+        // for manually uploaded runs whose ci_metadata field is currently null.
         const updateFields = {};
+        const persistedFields = {};
         if (release_tag !== undefined) {
             updateFields.release_tag = release_tag;
+            persistedFields.release_tag = { $literal: release_tag };
         }
         if (release_version !== undefined) {
             updateFields.release_version = release_version;
+            persistedFields.release_version = { $literal: release_version };
+        }
+        if (job_name !== undefined) {
+            updateFields['ci_metadata.job_name'] = normalizedJobName || null;
+            persistedFields.ci_metadata = {
+                $mergeObjects: [
+                    { $ifNull: ['$ci_metadata', {}] },
+                    { job_name: { $literal: normalizedJobName || null } }
+                ]
+            };
         }
 
         // Convert string IDs to ObjectIds
@@ -366,7 +392,7 @@ router.patch('/batch', async (req, res, next) => {
         // Update all runs
         const result = await TestRun.updateMany(
             { _id: { $in: objectIds } },
-            { $set: updateFields }
+            [{ $set: persistedFields }]
         );
 
         res.json({

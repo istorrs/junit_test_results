@@ -539,7 +539,11 @@ class ApiClient {
 
   async batchUpdateRuns(
     runIds: string[],
-    updates: { release_tag: string | null; release_version: string | null }
+    updates: {
+      release_tag?: string | null
+      release_version?: string | null
+      job_name?: string | null
+    }
   ): Promise<{ matched_count: number; modified_count: number }> {
     const response = await this.request<any>('/runs/batch', {
       method: 'PATCH',
@@ -550,6 +554,7 @@ class ApiClient {
         run_ids: runIds,
         release_tag: updates.release_tag,
         release_version: updates.release_version,
+        job_name: updates.job_name,
       }),
     })
     return response

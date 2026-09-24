@@ -127,6 +127,30 @@ describe('API Client', () => {
     })
   })
 
+  describe('batchUpdateRuns', () => {
+    it('assigns selected runs to a project', async () => {
+      const mockData = {
+        success: true,
+        data: { matched_count: 1, modified_count: 1 },
+      }
+      mockFetch.mockResolvedValueOnce({ ok: true, json: async () => mockData })
+
+      const result = await apiClient.batchUpdateRuns(['run-1'], {
+        job_name: 'xtg-pdw-gcs-hub-test',
+      })
+
+      expect(mockFetch).toHaveBeenCalledWith('/api/v1/runs/batch', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          run_ids: ['run-1'],
+          job_name: 'xtg-pdw-gcs-hub-test',
+        }),
+      })
+      expect(result).toEqual(mockData.data)
+    })
+  })
+
   describe('getProjects', () => {
     it('should fetch all unique projects', async () => {
       const mockData = {

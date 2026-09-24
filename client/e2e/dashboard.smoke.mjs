@@ -8,6 +8,8 @@ import { spawn } from 'node:child_process'
 const baseUrl = process.env.E2E_BASE_URL || 'http://127.0.0.1:8080'
 const allureRunId = process.env.E2E_ALLURE_RUN_ID
 const allureSearch = process.env.E2E_ALLURE_SEARCH || ''
+const assignRunId = process.env.E2E_ASSIGN_RUN_ID
+const assignProject = process.env.E2E_ASSIGN_PROJECT
 const chromeBinary = process.env.CHROME_BIN || '/usr/bin/google-chrome'
 const debugPort = Number(process.env.CHROME_DEBUG_PORT || 9336)
 const profileDirectory = await mkdtemp(join(tmpdir(), 'junit-dashboard-e2e-'))
@@ -130,13 +132,86 @@ try {
   })()`)
   if (!sortedRunsMatch) throw new Error('Run table does not match the server-sorted response')
 
-  await navigate('/cases')
+  let projectAssigned = false
+  if (assignRunId && assignProject) {
+    await evaluate(`(() => {
+      const input = document.querySelector('#runs-search')
+      input.value = ${JSON.stringify(assignRunId)}
+      input.dispatchEvent(new Event('input', { bubbles: true }))
+    })()`)
+    await waitFor(
+      "document.querySelectorAll('tbody tr').length === 1 && !document.querySelector('.loading-cell')",
+      'run selected for project assignment'
+    )
+    await evaluate("document.querySelector('tbody .run-checkbox').click()")
+    await waitFor(
+      "[...document.querySelectorAll('button')].some((button) => button.textContent.includes('Assign Project'))",
+      'Assign Project action'
+    )
+    await evaluate(
+      "[...document.querySelectorAll('button')].find((button) => button.textContent.includes('Assign Project')).click()"
+    )
+    await waitFor("document.querySelector('#project-name')", 'project assignment dialog')
+    await evaluate(`(() => {
+      const input = document.querySelector('#project-name')
+      input.value = ${JSON.stringify(assignProject)}
+      input.dispatchEvent(new Event('input', { bubbles: true }))
+    })()`)
+    await waitFor(
+      "[...document.querySelectorAll('.modal-footer button')].some((button) => button.textContent.includes('Assign Project') && !button.disabled)",
+      'enabled project assignment button'
+    )
+    await evaluate(
+      "[...document.querySelectorAll('.modal-footer button')].find((button) => button.textContent.includes('Assign Project')).click()"
+    )
+    await waitFor(
+      `${JSON.stringify(assignProject)} === [...document.querySelectorAll('#global-project-filter option')].find((option) => option.value === ${JSON.stringify(assignProject)})?.value && !document.querySelector('#project-name')`,
+      'assigned project in global selector'
+    )
+    await evaluate(`(() => {
+      const select = document.querySelector('#global-project-filter')
+      select.value = ${JSON.stringify(assignProject)}
+      select.dispatchEvent(new Event('change', { bubbles: true }))
+    })()`)
+    await waitFor(
+      `document.querySelector('#global-project-filter').value === ${JSON.stringify(assignProject)}`,
+      'assigned project selected globally'
+    )
+    await delay(400)
+    if (
+      !requests.some(
+        (url) =>
+          url.includes('/api/v1/runs?') &&
+          url.includes(`job_name=${encodeURIComponent(assignProject)}`)
+      )
+    ) {
+      throw new Error('Assigned project did not filter the run list')
+    }
+    projectAssigned = true
+  }
+
+  if (assignProject) {
+    await evaluate('document.querySelector(\'a[href="/cases"]\').click()')
+    await waitFor("document.querySelector('h1')?.textContent.includes('Test Cases')", '/cases')
+  } else {
+    await navigate('/cases')
+  }
   await waitFor(
     "document.querySelector('.pagination-controls') && !document.querySelector('.loading-cell') && document.querySelectorAll('tbody tr').length > 1",
     'case pagination'
   )
   const caseRows = await evaluate("document.querySelectorAll('tbody tr').length")
   if (caseRows < 1 || caseRows > 50) throw new Error(`Unexpected case row count: ${caseRows}`)
+  if (
+    assignProject &&
+    !requests.some(
+      (url) =>
+        url.includes('/api/v1/cases?') &&
+        url.includes(`job_name=${encodeURIComponent(assignProject)}`)
+    )
+  ) {
+    throw new Error('Assigned project did not filter the case list')
+  }
 
   let allureVerified = false
   if (allureRunId) {
@@ -226,6 +301,7 @@ try {
     JSON.stringify(
       {
         sortedRunsMatch,
+        projectAssigned,
         caseRows,
         allureVerified,
         runOptionCounts,

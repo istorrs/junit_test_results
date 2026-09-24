@@ -9,6 +9,9 @@
         <Button v-if="selectedRuns.size > 0" variant="primary" @click="openReleaseTagModal">
           Tag {{ selectedRuns.size }} Run{{ selectedRuns.size > 1 ? 's' : '' }} as Release
         </Button>
+        <Button v-if="selectedRuns.size > 0" variant="secondary" @click="openProjectModal">
+          Assign Project
+        </Button>
         <Button :loading="store.loading" variant="secondary" @click="loadData()"> Refresh </Button>
         <Button @click="$router.push('/upload')"> Upload New Results </Button>
       </div>
@@ -156,6 +159,13 @@
       @close="closeReleaseTagModal"
       @success="handleReleaseTagged"
     />
+    <ProjectAssignmentModal
+      :open="showProjectModal"
+      :run-ids="Array.from(selectedRuns)"
+      :projects="store.availableProjects"
+      @close="closeProjectModal"
+      @success="handleProjectAssigned"
+    />
   </div>
 </template>
 
@@ -171,6 +181,7 @@ import DataTable from '../components/shared/DataTable.vue'
 import SearchInput from '../components/shared/SearchInput.vue'
 import PaginationControls from '../components/shared/PaginationControls.vue'
 import ReleaseTagModal from '../components/modals/ReleaseTagModal.vue'
+import ProjectAssignmentModal from '../components/modals/ProjectAssignmentModal.vue'
 
 const router = useRouter()
 const store = useTestDataStore()
@@ -181,6 +192,7 @@ const dateFrom = ref('')
 const dateTo = ref('')
 const selectedRuns = ref<Set<string>>(new Set())
 const showReleaseModal = ref(false)
+const showProjectModal = ref(false)
 const selectAllCheckbox = ref<HTMLInputElement | null>(null)
 const pagination = ref<Pagination>({ page: 1, limit: 50, total: 0, pages: 1 })
 const loadError = ref('')
@@ -281,6 +293,19 @@ const closeReleaseTagModal = () => {
 const handleReleaseTagged = () => {
   clearSelection()
   loadData()
+}
+
+const openProjectModal = () => {
+  showProjectModal.value = true
+}
+
+const closeProjectModal = () => {
+  showProjectModal.value = false
+}
+
+const handleProjectAssigned = async () => {
+  clearSelection()
+  await Promise.all([store.fetchProjects(), loadData()])
 }
 
 const deleteSelectedRuns = async () => {
