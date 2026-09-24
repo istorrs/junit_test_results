@@ -350,6 +350,9 @@ npm run dev
 # Run tests
 npm run test
 
+# Run browser smoke tests against the Docker app on port 8080
+npm run test:e2e
+
 # Run tests with coverage
 npm run test:coverage
 
@@ -362,6 +365,8 @@ npm run build
 # Preview production build
 npm run preview
 ```
+
+Set `E2E_BASE_URL` or `CHROME_BIN` if the deployed URL or Chrome executable differs.
 
 ### Backend Development
 

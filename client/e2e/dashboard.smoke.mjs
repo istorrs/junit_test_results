@@ -1,0 +1,218 @@
+/* global process, setTimeout, fetch, WebSocket, console */
+import { mkdtemp, rm } from 'node:fs/promises'
+import { once } from 'node:events'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { spawn } from 'node:child_process'
+
+const baseUrl = process.env.E2E_BASE_URL || 'http://127.0.0.1:8080'
+const chromeBinary = process.env.CHROME_BIN || '/usr/bin/google-chrome'
+const debugPort = Number(process.env.CHROME_DEBUG_PORT || 9336)
+const profileDirectory = await mkdtemp(join(tmpdir(), 'junit-dashboard-e2e-'))
+const browser = spawn(
+  chromeBinary,
+  [
+    '--headless=new',
+    '--no-sandbox',
+    '--disable-gpu',
+    `--remote-debugging-port=${debugPort}`,
+    `--user-data-dir=${profileDirectory}`,
+    'about:blank',
+  ],
+  { stdio: 'ignore' }
+)
+
+const delay = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds))
+const requestJson = async (url, options) => {
+  const response = await fetch(url, options)
+  if (!response.ok) throw new Error(`${url}: HTTP ${response.status}`)
+  return response.json()
+}
+
+let socket
+try {
+  let target
+  for (let attempt = 0; attempt < 50; attempt += 1) {
+    try {
+      target = await requestJson(
+        `http://127.0.0.1:${debugPort}/json/new?${encodeURIComponent(`${baseUrl}/runs`)}`,
+        { method: 'PUT' }
+      )
+      break
+    } catch {
+      await delay(100)
+    }
+  }
+  if (!target) throw new Error('Chrome DevTools endpoint did not become ready')
+
+  socket = new WebSocket(target.webSocketDebuggerUrl)
+  await new Promise((resolve, reject) => {
+    socket.addEventListener('open', resolve, { once: true })
+    socket.addEventListener('error', reject, { once: true })
+  })
+
+  let commandId = 0
+  const pending = new Map()
+  const browserErrors = []
+  const apiErrors = []
+  const requests = []
+  socket.addEventListener('message', (event) => {
+    const message = JSON.parse(event.data)
+    if (message.id && pending.has(message.id)) {
+      const operation = pending.get(message.id)
+      pending.delete(message.id)
+      return message.error
+        ? operation.reject(new Error(message.error.message))
+        : operation.resolve(message.result)
+    }
+    if (message.method === 'Runtime.exceptionThrown') {
+      browserErrors.push(message.params.exceptionDetails.text)
+    }
+    if (message.method === 'Network.requestWillBeSent') requests.push(message.params.request.url)
+    if (
+      message.method === 'Network.responseReceived' &&
+      message.params.response.url.includes('/api/') &&
+      message.params.response.status >= 400
+    ) {
+      apiErrors.push(`${message.params.response.status} ${message.params.response.url}`)
+    }
+  })
+
+  const command = (method, params = {}) =>
+    new Promise((resolve, reject) => {
+      const id = ++commandId
+      pending.set(id, { resolve, reject })
+      socket.send(JSON.stringify({ id, method, params }))
+    })
+  const evaluate = async (expression) => {
+    const result = await command('Runtime.evaluate', {
+      expression,
+      returnByValue: true,
+      awaitPromise: true,
+    })
+    if (result.exceptionDetails) throw new Error(result.exceptionDetails.text)
+    return result.result.value
+  }
+  const waitFor = async (expression, label) => {
+    for (let attempt = 0; attempt < 100; attempt += 1) {
+      if (await evaluate(expression)) return
+      await delay(100)
+    }
+    throw new Error(`Timed out waiting for ${label}`)
+  }
+  const navigate = async (path) => {
+    await command('Page.navigate', { url: `${baseUrl}${path}` })
+    await waitFor("document.readyState === 'complete' && document.querySelector('h1')", path)
+  }
+
+  await command('Runtime.enable')
+  await command('Network.enable')
+  await command('Page.enable')
+
+  await waitFor(
+    "document.querySelector('th[aria-sort=\"descending\"]')?.textContent.includes('Date')",
+    'default run sorting'
+  )
+  await evaluate(
+    `([...document.querySelectorAll('th button')].find((button) => button.textContent.includes('Run Name'))).click()`
+  )
+  await waitFor(
+    "document.querySelector('th[aria-sort=\"ascending\"]')?.textContent.includes('Run Name') && !document.querySelector('.loading-cell')",
+    'server-side run sorting'
+  )
+  const sortedRunsMatch = await evaluate(`(async () => {
+    const shown = [...document.querySelectorAll('tbody .run-name strong')].map((node) => node.textContent.trim())
+    const response = await fetch('/api/v1/runs?page=1&limit=50&sort_by=name&sort_order=asc')
+    const body = await response.json()
+    return shown.join('\\n') === body.data.runs.map((run) => run.name).join('\\n')
+  })()`)
+  if (!sortedRunsMatch) throw new Error('Run table does not match the server-sorted response')
+
+  await navigate('/cases')
+  await waitFor(
+    "document.querySelector('.pagination-controls') && !document.querySelector('.loading-cell') && document.querySelectorAll('tbody tr').length > 1",
+    'case pagination'
+  )
+  const caseRows = await evaluate("document.querySelectorAll('tbody tr').length")
+  if (caseRows < 1 || caseRows > 50) throw new Error(`Unexpected case row count: ${caseRows}`)
+
+  await navigate('/compare')
+  await waitFor(
+    "document.querySelectorAll('.async-entity-select select').length === 2 && !document.body.innerText.includes('Loading options')",
+    'run comparison selectors'
+  )
+  const runOptionCounts = await evaluate(
+    "[...document.querySelectorAll('.async-entity-select select')].map((select) => select.options.length)"
+  )
+  if (runOptionCounts.some((count) => count > 26)) {
+    throw new Error(`Run selectors are not bounded: ${runOptionCounts.join(', ')}`)
+  }
+  await evaluate(`(() => {
+    const input = document.querySelector('.async-entity-select input[type=search]')
+    input.value = 'GITHUB_CD_GATEWAY_TEST'
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+  })()`)
+  await delay(500)
+  if (
+    !requests.some(
+      (url) => url.includes('/api/v1/runs?') && url.includes('search=GITHUB_CD_GATEWAY_TEST')
+    )
+  ) {
+    throw new Error('Run selector search request was not observed')
+  }
+
+  await navigate('/releases')
+  await waitFor(
+    "document.querySelectorAll('.async-entity-select select').length === 2",
+    'release selectors'
+  )
+  await evaluate(`(() => {
+    const input = document.querySelector('.async-entity-select input[type=search]')
+    input.value = '1.0'
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+  })()`)
+  await delay(500)
+  if (!requests.some((url) => url.includes('/api/v1/releases?') && url.includes('search=1.0'))) {
+    throw new Error('Release selector search request was not observed')
+  }
+
+  await command('Emulation.setDeviceMetricsOverride', {
+    width: 375,
+    height: 812,
+    deviceScaleFactor: 1,
+    mobile: true,
+  })
+  const routeHeadings = {}
+  for (const path of ['/', '/runs', '/cases', '/upload', '/releases', '/compare', '/performance']) {
+    await navigate(path)
+    const layout = await evaluate(`({
+      heading: document.querySelector('h1')?.textContent.trim(),
+      overflow: document.documentElement.scrollWidth > window.innerWidth,
+    })`)
+    if (!layout.heading) throw new Error(`Missing heading on ${path}`)
+    if (layout.overflow) throw new Error(`Horizontal page overflow on ${path}`)
+    routeHeadings[path] = layout.heading
+  }
+
+  if (browserErrors.length) throw new Error(`Browser exceptions: ${browserErrors.join('; ')}`)
+  if (apiErrors.length) throw new Error(`API failures: ${apiErrors.join('; ')}`)
+  console.log(
+    JSON.stringify(
+      {
+        sortedRunsMatch,
+        caseRows,
+        runOptionCounts,
+        routeHeadings,
+        browserErrors: 0,
+        apiErrors: 0,
+      },
+      null,
+      2
+    )
+  )
+} finally {
+  socket?.close()
+  browser.kill('SIGTERM')
+  await Promise.race([once(browser, 'exit'), delay(2000)])
+  await rm(profileDirectory, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 })
+}
