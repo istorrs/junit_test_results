@@ -98,9 +98,28 @@ try {
     if (result.exceptionDetails) throw new Error(result.exceptionDetails.text)
     return result.result.value
   }
+  const callFunction = async (functionDeclaration, ...values) => {
+    const receiver = await command('Runtime.evaluate', { expression: 'globalThis' })
+    const result = await command('Runtime.callFunctionOn', {
+      objectId: receiver.result.objectId,
+      functionDeclaration,
+      arguments: values.map((value) => ({ value })),
+      returnByValue: true,
+      awaitPromise: true,
+    })
+    if (result.exceptionDetails) throw new Error(result.exceptionDetails.text)
+    return result.result.value
+  }
   const waitFor = async (expression, label) => {
     for (let attempt = 0; attempt < 100; attempt += 1) {
       if (await evaluate(expression)) return
+      await delay(100)
+    }
+    throw new Error(`Timed out waiting for ${label}`)
+  }
+  const waitForFunction = async (functionDeclaration, values, label) => {
+    for (let attempt = 0; attempt < 100; attempt += 1) {
+      if (await callFunction(functionDeclaration, ...values)) return
       await delay(100)
     }
     throw new Error(`Timed out waiting for ${label}`)
@@ -210,11 +229,14 @@ try {
 
   let projectAssigned = false
   if (assignRunId && assignProject) {
-    await evaluate(`(() => {
+    await callFunction(
+      `function (runId) {
       const input = document.querySelector('#runs-search')
-      input.value = ${JSON.stringify(assignRunId)}
+      input.value = runId
       input.dispatchEvent(new Event('input', { bubbles: true }))
-    })()`)
+    }`,
+      assignRunId
+    )
     await waitFor(
       "document.querySelectorAll('tbody tr').length === 1 && !document.querySelector('.loading-cell')",
       'run selected for project assignment'
@@ -228,11 +250,14 @@ try {
       "[...document.querySelectorAll('button')].find((button) => button.textContent.includes('Assign Project')).click()"
     )
     await waitFor("document.querySelector('#project-name')", 'project assignment dialog')
-    await evaluate(`(() => {
+    await callFunction(
+      `function (project) {
       const input = document.querySelector('#project-name')
-      input.value = ${JSON.stringify(assignProject)}
+      input.value = project
       input.dispatchEvent(new Event('input', { bubbles: true }))
-    })()`)
+    }`,
+      assignProject
+    )
     await waitFor(
       "[...document.querySelectorAll('.modal-footer button')].some((button) => button.textContent.includes('Assign Project') && !button.disabled)",
       'enabled project assignment button'
@@ -240,17 +265,27 @@ try {
     await evaluate(
       "[...document.querySelectorAll('.modal-footer button')].find((button) => button.textContent.includes('Assign Project')).click()"
     )
-    await waitFor(
-      `${JSON.stringify(assignProject)} === [...document.querySelectorAll('#global-project-filter option')].find((option) => option.value === ${JSON.stringify(assignProject)})?.value && !document.querySelector('#project-name')`,
+    await waitForFunction(
+      `function (project) {
+        return project === [...document.querySelectorAll('#global-project-filter option')]
+          .find((option) => option.value === project)?.value && !document.querySelector('#project-name')
+      }`,
+      [assignProject],
       'assigned project in global selector'
     )
-    await evaluate(`(() => {
+    await callFunction(
+      `function (project) {
       const select = document.querySelector('#global-project-filter')
-      select.value = ${JSON.stringify(assignProject)}
+      select.value = project
       select.dispatchEvent(new Event('change', { bubbles: true }))
-    })()`)
-    await waitFor(
-      `document.querySelector('#global-project-filter').value === ${JSON.stringify(assignProject)}`,
+    }`,
+      assignProject
+    )
+    await waitForFunction(
+      `function (project) {
+        return document.querySelector('#global-project-filter').value === project
+      }`,
+      [assignProject],
       'assigned project selected globally'
     )
     await delay(400)
@@ -419,13 +454,21 @@ try {
     caseFiltersVerified = true
 
     if (allureSearch) {
-      await evaluate(`(() => {
+      await callFunction(
+        `function (search) {
         const input = document.querySelector('#cases-search')
-        input.value = ${JSON.stringify(allureSearch)}
+        input.value = search
         input.dispatchEvent(new Event('input', { bubbles: true }))
-      })()`)
-      await waitFor(
-        `document.querySelectorAll('tbody tr').length === 1 && document.querySelector('tbody tr')?.textContent.includes(${JSON.stringify(allureSearch)}) && !document.querySelector('.loading-cell')`,
+      }`,
+        allureSearch
+      )
+      await waitForFunction(
+        `function (search) {
+          return document.querySelectorAll('tbody tr').length === 1 &&
+            document.querySelector('tbody tr')?.textContent.includes(search) &&
+            !document.querySelector('.loading-cell')
+        }`,
+        [allureSearch],
         'literal case search'
       )
       caseSearchVerified = true
@@ -454,11 +497,19 @@ try {
       "[...document.querySelectorAll('[role=tab]')].map((tab) => tab.textContent.trim())"
     )
     for (const tabLabel of modalTabsAudited) {
-      await evaluate(
-        `([...document.querySelectorAll('[role=tab]')].find((tab) => tab.textContent.trim() === ${JSON.stringify(tabLabel)})).click()`
+      await callFunction(
+        `function (label) {
+        [...document.querySelectorAll('[role=tab]')]
+          .find((tab) => tab.textContent.trim() === label).click()
+      }`,
+        tabLabel
       )
-      await waitFor(
-        `[...document.querySelectorAll('[role=tab]')].some((tab) => tab.textContent.trim() === ${JSON.stringify(tabLabel)} && tab.getAttribute('aria-selected') === 'true')`,
+      await waitForFunction(
+        `function (label) {
+          return [...document.querySelectorAll('[role=tab]')]
+            .some((tab) => tab.textContent.trim() === label && tab.getAttribute('aria-selected') === 'true')
+        }`,
+        [tabLabel],
         `${tabLabel} tab`
       )
       const tabAudit = await evaluate(`(() => {
@@ -507,10 +558,13 @@ try {
     for (const expectedLabel of ['View log', 'View stderr']) {
       const attachment = attachmentLinks.find((link) => link.label.startsWith(expectedLabel))
       if (!attachment) throw new Error(`Missing ${expectedLabel} attachment link`)
-      await evaluate(`
+      await callFunction(
+        `function (label) {
         [...document.querySelectorAll('.allure-details .attachments a[href^="/attachments/"]')]
-          .find((link) => link.textContent.trim().startsWith(${JSON.stringify(expectedLabel)})).click()
-      `)
+          .find((link) => link.textContent.trim().startsWith(label)).click()
+      }`,
+        expectedLabel
+      )
       const attachmentPage = await inspectOpenedTarget(`${baseUrl}${attachment.href}`)
       if (
         attachmentPage.contentType !== 'text/html' ||

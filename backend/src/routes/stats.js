@@ -5,9 +5,10 @@ const TestRun = require('../models/TestRun');
 const TestCase = require('../models/TestCase');
 const { MAX_QUERY_LIMIT, DEFAULT_QUERY_LIMIT } = require('../config/constants');
 const { buildCaseSummaryPipeline, formatOverviewStats } = require('../services/overviewStats');
+const { apiRateLimiter } = require('../middleware/rateLimiter');
 
 // GET /api/v1/stats/overview - Get overall statistics
-router.get('/overview', async (req, res, next) => {
+router.get('/overview', apiRateLimiter, async (req, res, next) => {
     try {
         const runQuery = {};
 

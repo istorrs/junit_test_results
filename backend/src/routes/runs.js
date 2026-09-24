@@ -10,6 +10,7 @@ const AllureAttachment = require('../models/AllureAttachment');
 const logger = require('../utils/logger');
 const { MAX_QUERY_LIMIT, DEFAULT_QUERY_LIMIT } = require('../config/constants');
 const { getRunSort, buildPassRateSortPipeline } = require('../services/runSorting');
+const { apiRateLimiter } = require('../middleware/rateLimiter');
 
 // GET /api/v1/runs/projects - Get all unique job names (projects)
 router.get('/projects', async (req, res, next) => {
@@ -164,7 +165,7 @@ router.get('/:id', async (req, res, next) => {
 });
 
 // DELETE /api/v1/runs/:id - Delete test run and all related data
-router.delete('/:id', async (req, res, next) => {
+router.delete('/:id', apiRateLimiter, async (req, res, next) => {
     try {
         // Verify the test run exists
         const run = await TestRun.findById(req.params.id);

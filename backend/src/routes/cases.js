@@ -5,9 +5,10 @@ const TestCase = require('../models/TestCase');
 const TestRun = require('../models/TestRun');
 const { MAX_QUERY_LIMIT, DEFAULT_QUERY_LIMIT } = require('../config/constants');
 const { buildCaseSearch, getCaseSort } = require('../services/caseQuery');
+const { apiRateLimiter } = require('../middleware/rateLimiter');
 
 // GET /api/v1/cases/suites - Get suite names independently of result pagination
-router.get('/suites', async (req, res, next) => {
+router.get('/suites', apiRateLimiter, async (req, res, next) => {
     try {
         const matchQuery = {
             class_name: { $nin: [null, ''] }
@@ -41,7 +42,7 @@ router.get('/suites', async (req, res, next) => {
 });
 
 // GET /api/v1/cases/labels - Get values for an Allure label within the active scope
-router.get('/labels', async (req, res, next) => {
+router.get('/labels', apiRateLimiter, async (req, res, next) => {
     try {
         const name = req.query.name || 'tag';
         if (!/^[A-Za-z][A-Za-z0-9_.-]{0,63}$/.test(name)) {
@@ -76,7 +77,7 @@ router.get('/labels', async (req, res, next) => {
 });
 
 // GET /api/v1/cases - Get test cases with filtering
-router.get('/', async (req, res, next) => {
+router.get('/', apiRateLimiter, async (req, res, next) => {
     try {
         const page = parseInt(req.query.page) || 1;
         const limit = Math.min(parseInt(req.query.limit) || DEFAULT_QUERY_LIMIT, MAX_QUERY_LIMIT);
@@ -152,6 +153,9 @@ router.get('/', async (req, res, next) => {
 
         // Literal substring search keeps identifiers such as TC-VID-010 intact.
         if (req.query.search) {
+            if (typeof req.query.search !== 'string') {
+                return res.status(400).json({ success: false, error: 'search must be a string' });
+            }
             if (req.query.search.length > 200) {
                 return res.status(400).json({ success: false, error: 'search is too long' });
             }

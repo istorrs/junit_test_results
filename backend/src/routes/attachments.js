@@ -1,6 +1,7 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const AllureAttachment = require('../models/AllureAttachment');
+const { apiRateLimiter } = require('../middleware/rateLimiter');
 
 const router = express.Router();
 const INLINE_CONTENT_TYPES = new Set([
@@ -11,7 +12,7 @@ const INLINE_CONTENT_TYPES = new Set([
     'image/webp'
 ]);
 
-router.get('/:id', async (req, res, next) => {
+router.get('/:id', apiRateLimiter, async (req, res, next) => {
     try {
         if (!mongoose.isValidObjectId(req.params.id)) {
             return res.status(400).json({ success: false, error: 'Invalid attachment ID' });
