@@ -1,6 +1,23 @@
 <template>
   <div class="allure-details">
     <p v-if="test.description" class="description">{{ test.description }}</p>
+    <section v-if="test.attachments?.length">
+      <h3>Test Attachments</h3>
+      <div class="attachments">
+        <a
+          v-for="attachment in test.attachments"
+          :key="attachment.source"
+          :href="attachment.attachment_id ? `/attachments/${attachment.attachment_id}` : '#'"
+          :aria-disabled="!attachment.attachment_id"
+          :class="{ unavailable: !attachment.attachment_id }"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          View {{ attachment.name
+          }}<span v-if="attachment.size"> ({{ formatFileSize(attachment.size) }})</span>
+        </a>
+      </div>
+    </section>
     <section v-if="test.steps?.length">
       <h3>Test Steps</h3>
       <ul class="step-list">
@@ -30,23 +47,6 @@
           :step="step"
         />
       </ul>
-    </section>
-    <section v-if="test.attachments?.length">
-      <h3>Test Attachments</h3>
-      <div class="attachments">
-        <a
-          v-for="attachment in test.attachments"
-          :key="attachment.source"
-          :href="attachment.attachment_id ? `/attachments/${attachment.attachment_id}` : '#'"
-          :aria-disabled="!attachment.attachment_id"
-          :class="{ unavailable: !attachment.attachment_id }"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          View {{ attachment.name
-          }}<span v-if="attachment.size"> ({{ formatFileSize(attachment.size) }})</span>
-        </a>
-      </div>
     </section>
     <section v-if="test.labels?.length">
       <h3>Labels</h3>

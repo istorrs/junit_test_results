@@ -42,5 +42,7 @@ describe('AllureDetails', () => {
     const attachment = wrapper.get('a[href="/attachments/attachment-1"]')
     expect(attachment.text()).toContain('View log')
     expect(attachment.attributes('target')).toBe('_blank')
+    const headings = wrapper.findAll('h3').map((heading) => heading.text())
+    expect(headings.indexOf('Test Attachments')).toBeLessThan(headings.indexOf('Test Steps'))
   })
 })

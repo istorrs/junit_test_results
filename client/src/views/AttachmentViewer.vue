@@ -18,6 +18,13 @@
     <!-- renderAnsi escapes attachment text before adding its ANSI color spans. -->
     <!-- eslint-disable-next-line vue/no-v-html -->
     <pre v-else-if="textContent !== null" class="attachment-content" v-html="ansiHtml"></pre>
+    <iframe
+      v-else-if="isHtml && objectUrl"
+      :src="objectUrl"
+      :title="fileName"
+      class="attachment-document"
+      sandbox=""
+    ></iframe>
     <img
       v-else-if="isImage && objectUrl"
       :src="objectUrl"
@@ -45,6 +52,7 @@ const contentType = ref('')
 const textContent = ref<string | null>(null)
 const objectUrl = ref('')
 const isImage = computed(() => contentType.value.startsWith('image/'))
+const isHtml = computed(() => contentType.value === 'text/html')
 const ansiHtml = computed(() => (textContent.value === null ? '' : renderAnsi(textContent.value)))
 
 const parseFilename = (header: string | null) => {
@@ -65,7 +73,10 @@ const loadAttachment = async () => {
       (response.headers.get('content-type') || blob.type || '').split(';')[0] ?? ''
     fileName.value = parseFilename(response.headers.get('content-disposition'))
     objectUrl.value = URL.createObjectURL(blob)
-    if (contentType.value.startsWith('text/') || contentType.value === 'application/json') {
+    if (
+      (contentType.value.startsWith('text/') && contentType.value !== 'text/html') ||
+      contentType.value === 'application/json'
+    ) {
       textContent.value = await blob.text()
     }
   } catch (cause) {
@@ -153,6 +164,14 @@ onUnmounted(() => {
   display: block;
   max-width: 100%;
   margin: 0 auto;
+  border: 1px solid var(--border-color);
+  border-radius: 0.5rem;
+}
+.attachment-document {
+  display: block;
+  width: 100%;
+  min-height: 30rem;
+  background: white;
   border: 1px solid var(--border-color);
   border-radius: 0.5rem;
 }

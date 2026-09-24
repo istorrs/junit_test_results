@@ -8,6 +8,7 @@ import { spawn } from 'node:child_process'
 const baseUrl = process.env.E2E_BASE_URL || 'http://127.0.0.1:8080'
 const allureRunId = process.env.E2E_ALLURE_RUN_ID
 const allureSearch = process.env.E2E_ALLURE_SEARCH || ''
+const htmlAttachmentId = process.env.E2E_HTML_ATTACHMENT_ID
 const assignRunId = process.env.E2E_ASSIGN_RUN_ID
 const assignProject = process.env.E2E_ASSIGN_PROJECT
 const chromeBinary = process.env.CHROME_BIN || '/usr/bin/google-chrome'
@@ -160,6 +161,7 @@ try {
           hasApp: Boolean(document.querySelector('#app')),
           viewerText: document.querySelector('.attachment-content')?.textContent?.slice(0, 200) || '',
           viewerAnsiSpans: document.querySelectorAll('.attachment-content span[style*="color"]').length,
+          viewerDocument: Boolean(document.querySelector('iframe.attachment-document[sandbox]')),
           viewerError: document.querySelector('.viewer-state.error')?.textContent || '',
         })`,
         returnByValue: true,
@@ -167,7 +169,10 @@ try {
       const value = evaluation.result.value
       if (
         value?.ready &&
-        (value.contentType !== 'text/html' || value.viewerText || value.viewerError)
+        (value.contentType !== 'text/html' ||
+          value.viewerText ||
+          value.viewerDocument ||
+          value.viewerError)
       ) {
         result = value
         break
@@ -292,6 +297,7 @@ try {
   let caseFiltersVerified = false
   let darkModalVerified = false
   let attachmentNavigationVerified = false
+  let htmlAttachmentPreviewVerified = false
   let modalTabsAudited = []
   if (allureRunId) {
     const query = new URLSearchParams({ run_id: allureRunId })
@@ -522,6 +528,21 @@ try {
     allureVerified = true
   }
 
+  if (htmlAttachmentId) {
+    const attachmentPage = await inspectOpenedTarget(`${baseUrl}/attachments/${htmlAttachmentId}`)
+    if (
+      attachmentPage.contentType !== 'text/html' ||
+      !attachmentPage.hasApp ||
+      attachmentPage.viewerError ||
+      !attachmentPage.viewerDocument
+    ) {
+      throw new Error(
+        `HTML attachment did not load in a sandboxed preview: ${JSON.stringify(attachmentPage)}`
+      )
+    }
+    htmlAttachmentPreviewVerified = true
+  }
+
   await navigate('/compare')
   await waitFor(
     "document.querySelectorAll('.async-entity-select select').length === 2 && !document.body.innerText.includes('Loading options')",
@@ -597,6 +618,7 @@ try {
         darkModalVerified,
         modalTabsAudited,
         attachmentNavigationVerified,
+        htmlAttachmentPreviewVerified,
         runOptionCounts,
         routeHeadings,
         browserErrors: 0,
