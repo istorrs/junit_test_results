@@ -1,6 +1,6 @@
-# JUnit Dashboard Backend API
+# Test Results Dashboard Backend API
 
-MongoDB-based backend for the JUnit Test Results Dashboard.
+MongoDB-based backend for JUnit XML and Allure test results.
 
 ## Quick Start
 
@@ -41,8 +41,8 @@ pm2 start ecosystem.config.js
 
 ### Upload
 
-- `POST /api/v1/upload` - Upload single JUnit XML file
-- `POST /api/v1/upload/batch` - Upload multiple files
+- `POST /api/v1/upload` - Upload one JUnit XML file or Allure results ZIP
+- `POST /api/v1/upload/batch` - Upload multiple JUnit XML files
 
 ### Test Runs
 
@@ -75,6 +75,20 @@ curl -X POST http://localhost:5000/api/v1/upload \
   -F "file=@sample-test-results.xml" \
   -F 'ci_metadata={"provider":"manual","source":"curl"}'
 ```
+
+### Upload Allure Results
+
+Zip the raw `allure-results` directory rather than the generated HTML report:
+
+```bash
+(cd allure-results && zip -r ../allure-results.zip .)
+curl --fail-with-body http://localhost:5000/api/v1/upload \
+  -F "file=@allure-results.zip" \
+  -F "format=allure" \
+  -F 'ci_metadata={"provider":"manual","job_name":"my-project","build_number":"42"}'
+```
+
+See [`docs/API_INTEGRATION.md`](../docs/API_INTEGRATION.md) for the accepted Allure files, archive limits, CI examples, and attachment retrieval API.
 
 ### Get Test Runs
 

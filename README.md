@@ -10,7 +10,7 @@ A modern, comprehensive web application for viewing, analyzing, and managing tes
 - 🔄 **CI/CD Integration** - Direct API access from Jenkins, GitHub Actions, and other CI/CD tools
 - 📈 **Real Trend Analysis** - Track test success rates and execution times with historical data
 - 🔍 **Advanced Filtering** - Search and filter tests by status, name, date, and more
-- 📁 **Batch Upload** - Upload multiple JUnit XML files at once
+- 📁 **JUnit and Allure Uploads** - Import JUnit XML or raw Allure results with steps and attachments
 - 🗄️ **MongoDB Backend** - Scalable database for storing test history
 - 🌓 **Dark Mode** - Beautiful dark theme with persistent user preferences
 - 📱 **Responsive Design** - Works seamlessly on desktop and mobile devices
@@ -166,7 +166,7 @@ sudo systemctl restart nginx
 ### Web Dashboard
 
 1. Open browser and navigate to: `http://YOUR_SERVER_IP`
-2. Upload JUnit XML files via drag-and-drop on the Upload page
+2. Upload JUnit XML files or zipped Allure results via the Upload page
 3. View test results, trends, and statistics on the Dashboard
 
 JUnit XML files and zipped Allure results directories are accepted. For a curl-friendly Allure upload:
@@ -224,8 +224,8 @@ JUNIT_API_URL=http://your-server:5000 ./ci-cd-examples/upload-test-results.sh ./
 #### Core Endpoints
 
 ```
-POST   /api/v1/upload              - Upload JUnit XML file
-POST   /api/v1/upload/batch        - Upload multiple files
+POST   /api/v1/upload              - Upload JUnit XML or an Allure results ZIP
+POST   /api/v1/upload/batch        - Upload multiple JUnit XML files
 GET    /api/v1/runs                - Get test runs (paginated)
 GET    /api/v1/runs/:id            - Get specific test run
 DELETE /api/v1/runs/:id            - Delete test run
@@ -240,6 +240,7 @@ GET    /api/v1/cases/:id           - Get test case details
 GET    /api/v1/cases/:id/history   - Get test execution history
 GET    /api/v1/cases/:id/flakiness - Get flakiness metrics
 GET    /api/v1/cases/:id/trends    - Get performance trends
+GET    /api/v1/attachments/:id     - Download an Allure attachment
 ```
 
 #### Statistics & Analytics
