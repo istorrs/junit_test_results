@@ -4,9 +4,10 @@ const _mongoose = require('mongoose');
 const TestCase = require('../models/TestCase');
 const TestRun = require('../models/TestRun');
 const { MAX_QUERY_LIMIT, DEFAULT_QUERY_LIMIT } = require('../config/constants');
+const { apiRateLimiter } = require('../middleware/rateLimiter');
 
 // GET /api/v1/analytics/failure-patterns - Get common failure patterns across recent runs
-router.get('/failure-patterns', async (req, res, next) => {
+router.get('/failure-patterns', apiRateLimiter, async (req, res, next) => {
     try {
         const days = parseInt(req.query.days) || 7;
         const limit = Math.min(parseInt(req.query.limit) || DEFAULT_QUERY_LIMIT, MAX_QUERY_LIMIT);
@@ -109,7 +110,7 @@ router.get('/failure-patterns', async (req, res, next) => {
 });
 
 // GET /api/v1/analytics/flaky-tests - Get top flaky tests
-router.get('/flaky-tests', async (req, res, next) => {
+router.get('/flaky-tests', apiRateLimiter, async (req, res, next) => {
     try {
         const limit = Math.min(parseInt(req.query.limit) || DEFAULT_QUERY_LIMIT, MAX_QUERY_LIMIT);
         const minRuns = parseInt(req.query.min_runs) || 5; // Minimum runs to be considered
