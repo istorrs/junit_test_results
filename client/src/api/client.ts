@@ -89,6 +89,7 @@ export interface TestCase {
   status: 'passed' | 'failed' | 'error' | 'skipped' | 'unknown'
   error_message?: string
   error_type?: string
+  skipped_message?: string
   stack_trace?: string
   assertions?: number
   file?: string
@@ -115,6 +116,7 @@ export interface TestCase {
   flaky_detected_at?: string
   file_upload_id?: string
   timestamp?: string
+  execution_timestamp?: string
   run_name?: string
   run_source?: string
   run_ci_metadata?: {

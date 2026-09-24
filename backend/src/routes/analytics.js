@@ -2,7 +2,6 @@ const express = require('express');
 const router = express.Router();
 const _mongoose = require('mongoose');
 const TestCase = require('../models/TestCase');
-const TestResult = require('../models/TestResult');
 const TestRun = require('../models/TestRun');
 const { MAX_QUERY_LIMIT, DEFAULT_QUERY_LIMIT } = require('../config/constants');
 
@@ -25,18 +24,15 @@ router.get('/failure-patterns', async (req, res, next) => {
 
         // If job_name is specified, find matching run_ids
         if (job_name) {
-            const runs = await TestRun.find({ 'ci_metadata.job_name': job_name }).select('_id');
+            const runs = await TestRun.find({
+                'ci_metadata.job_name': { $eq: job_name }
+            }).select('_id');
             const runIds = runs.map(r => r._id);
-
-            // Find case_ids from those runs
-            const cases = await TestCase.find({ run_id: { $in: runIds } }).select('_id');
-            const caseIds = cases.map(c => c._id);
-
-            matchFilter.case_id = { $in: caseIds };
+            matchFilter.run_id = { $in: runIds };
         }
 
         // Aggregate failure patterns by error type and message
-        const patterns = await TestResult.aggregate([
+        const patterns = await TestCase.aggregate([
             {
                 $match: matchFilter
             },
@@ -49,7 +45,7 @@ router.get('/failure-patterns', async (req, res, next) => {
                         }
                     },
                     count: { $sum: 1 },
-                    test_cases: { $addToSet: '$case_id' },
+                    test_cases: { $addToSet: '$_id' },
                     first_seen: { $min: '$timestamp' },
                     last_seen: { $max: '$timestamp' }
                 }
@@ -124,7 +120,9 @@ router.get('/flaky-tests', async (req, res, next) => {
 
         // If job_name is specified, filter by run_ids
         if (job_name) {
-            const runs = await TestRun.find({ 'ci_metadata.job_name': job_name }).select('_id');
+            const runs = await TestRun.find({
+                'ci_metadata.job_name': { $eq: job_name }
+            }).select('_id');
             const runIds = runs.map(r => r._id);
             initialMatch.run_id = { $in: runIds };
         }

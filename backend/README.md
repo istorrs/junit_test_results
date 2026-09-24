@@ -37,6 +37,22 @@ Production with PM2:
 pm2 start ecosystem.config.js
 ```
 
+## Test Result Consolidation
+
+New imports store each execution directly in `testcases`; the former `testresults`
+collection is retained temporarily for migration and rollback compatibility. Before
+deploying this schema change, audit the existing database and then apply the backfill:
+
+```bash
+npm run migrate:test-results
+npm run migrate:test-results -- --apply
+```
+
+The first command is read-only. The second copies legacy execution timestamps and
+skip messages into their authoritative test-case documents, refuses ambiguous
+duplicate results, and reports orphaned data. It does not delete `testresults`;
+retain that collection through an observation period before removing it separately.
+
 ## API Endpoints
 
 ### Upload

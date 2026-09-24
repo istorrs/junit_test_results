@@ -20,6 +20,7 @@ const rollbackUpload = async (
 ) => {
     const caseIds = await TestCaseModel.distinct('_id', { file_upload_id: fileUploadId });
 
+    // Clean up legacy rows during the transition; new importers no longer create them.
     await TestResultModel.deleteMany({
         $or: [{ file_upload_id: fileUploadId }, { case_id: { $in: caseIds } }]
     });

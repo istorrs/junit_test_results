@@ -5,6 +5,7 @@ const TestCase = require('../models/TestCase');
 const TestRun = require('../models/TestRun');
 const { MAX_QUERY_LIMIT, DEFAULT_QUERY_LIMIT } = require('../config/constants');
 const { buildCaseSearch, getCaseSort } = require('../services/caseQuery');
+const { buildLegacyResult } = require('../services/testExecution');
 const { apiRateLimiter } = require('../middleware/rateLimiter');
 
 // GET /api/v1/cases/suites - Get suite names independently of result pagination
@@ -191,7 +192,8 @@ router.get('/', apiRateLimiter, async (req, res, next) => {
             },
             {
                 $addFields: {
-                    // Add run's timestamp as the test execution time
+                    execution_timestamp: '$timestamp',
+                    // Keep the existing list API contract: timestamp identifies the run.
                     timestamp: '$run.timestamp',
                     run_name: '$run.name',
                     run_source: '$run.source',
@@ -266,23 +268,9 @@ router.get('/:id', async (req, res, next) => {
     try {
         console.log('[Cases API] GET /:id - Request ID:', req.params.id);
 
-        // Use aggregation to join with TestSuite (for suite properties) and TestRun (for ci_metadata)
+        // Join suite and run metadata; execution data lives entirely on TestCase.
         const pipeline = [
             { $match: { _id: new mongoose.Types.ObjectId(req.params.id) } },
-            {
-                $lookup: {
-                    from: 'testresults',
-                    localField: '_id',
-                    foreignField: 'case_id',
-                    as: 'result'
-                }
-            },
-            {
-                $unwind: {
-                    path: '$result',
-                    preserveNullAndEmptyArrays: true
-                }
-            },
             {
                 $lookup: {
                     from: 'testsuites',
@@ -313,6 +301,7 @@ router.get('/:id', async (req, res, next) => {
             },
             {
                 $addFields: {
+                    execution_timestamp: '$timestamp',
                     timestamp: '$run.timestamp',
                     run_name: '$run.name',
                     run_source: '$run.source',
@@ -362,14 +351,9 @@ router.get('/:id', async (req, res, next) => {
             _id: undefined
         };
 
-        // Transform result if it exists
-        if (transformedCase.result) {
-            transformedCase.result = {
-                ...transformedCase.result,
-                id: transformedCase.result._id?.toString(),
-                _id: undefined
-            };
-        }
+        // Preserve the legacy nested result shape while TestCase becomes the
+        // authoritative execution record. Consumers can migrate to top-level fields.
+        transformedCase.result = buildLegacyResult(transformedCase);
 
         res.json({
             success: true,
@@ -402,20 +386,6 @@ router.get('/:id/history', async (req, res, next) => {
             },
             {
                 $lookup: {
-                    from: 'testresults',
-                    localField: '_id',
-                    foreignField: 'case_id',
-                    as: 'result'
-                }
-            },
-            {
-                $unwind: {
-                    path: '$result',
-                    preserveNullAndEmptyArrays: true
-                }
-            },
-            {
-                $lookup: {
                     from: 'testruns',
                     localField: 'run_id',
                     foreignField: '_id',
@@ -434,7 +404,8 @@ router.get('/:id/history', async (req, res, next) => {
                     status: 1,
                     time: '$time',
                     timestamp: '$run.timestamp',
-                    error_message: '$result.error_message'
+                    execution_timestamp: '$timestamp',
+                    error_message: 1
                 }
             },
             { $sort: { timestamp: -1 } },
