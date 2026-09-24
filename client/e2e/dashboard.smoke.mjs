@@ -159,6 +159,7 @@ try {
           text: document.body?.innerText?.slice(0, 200) || '',
           hasApp: Boolean(document.querySelector('#app')),
           viewerText: document.querySelector('.attachment-content')?.textContent?.slice(0, 200) || '',
+          viewerAnsiSpans: document.querySelectorAll('.attachment-content span[style*="color"]').length,
           viewerError: document.querySelector('.viewer-state.error')?.textContent || '',
         })`,
         returnByValue: true,
@@ -472,7 +473,8 @@ try {
         attachmentPage.contentType !== 'text/html' ||
         !attachmentPage.hasApp ||
         attachmentPage.viewerError ||
-        !attachmentPage.viewerText
+        !attachmentPage.viewerText ||
+        attachmentPage.viewerAnsiSpans < 1
       ) {
         throw new Error(
           `${expectedLabel} did not load in the attachment viewer: ${JSON.stringify(attachmentPage)}`

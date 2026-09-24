@@ -15,7 +15,9 @@
 
     <div v-if="loading" class="viewer-state">Loading attachment…</div>
     <div v-else-if="error" class="viewer-state error" role="alert">{{ error }}</div>
-    <pre v-else-if="textContent !== null" class="attachment-content">{{ textContent }}</pre>
+    <!-- renderAnsi escapes attachment text before adding its ANSI color spans. -->
+    <!-- eslint-disable-next-line vue/no-v-html -->
+    <pre v-else-if="textContent !== null" class="attachment-content" v-html="ansiHtml"></pre>
     <img
       v-else-if="isImage && objectUrl"
       :src="objectUrl"
@@ -32,6 +34,7 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import Button from '../components/shared/Button.vue'
+import { renderAnsi } from '../utils/ansi'
 
 const route = useRoute()
 const router = useRouter()
@@ -42,6 +45,7 @@ const contentType = ref('')
 const textContent = ref<string | null>(null)
 const objectUrl = ref('')
 const isImage = computed(() => contentType.value.startsWith('image/'))
+const ansiHtml = computed(() => (textContent.value === null ? '' : renderAnsi(textContent.value)))
 
 const parseFilename = (header: string | null) => {
   const encoded = header?.match(/filename\*=UTF-8''([^;]+)/i)?.[1]
@@ -131,6 +135,8 @@ onUnmounted(() => {
   overflow: auto;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
+  color: #d4d4d4;
+  background: #1e1e1e;
   font:
     0.875rem/1.5 ui-monospace,
     SFMono-Regular,
@@ -138,6 +144,10 @@ onUnmounted(() => {
     Monaco,
     Consolas,
     monospace;
+}
+.attachment-content :deep(span) {
+  font-family: inherit;
+  line-height: inherit;
 }
 .attachment-image {
   display: block;

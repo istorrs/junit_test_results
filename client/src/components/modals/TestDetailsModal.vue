@@ -262,7 +262,6 @@
 
 <script setup lang="ts">
 import { ref, watch, computed, nextTick } from 'vue'
-import AnsiToHtml from 'ansi-to-html'
 import Modal from '../shared/Modal.vue'
 import Button from '../shared/Button.vue'
 import FlakinessIndicator from '../shared/FlakinessIndicator.vue'
@@ -270,24 +269,8 @@ import ErrorStackTrace from '../shared/ErrorStackTrace.vue'
 import HistoryChart from '../charts/HistoryChart.vue'
 import AllureDetails from '../allure/AllureDetails.vue'
 import { formatDate, formatDuration } from '../../utils/formatters'
+import { renderAnsi } from '../../utils/ansi'
 import { apiClient } from '../../api/client'
-
-// Configure ANSI to HTML converter
-const ansiConverter = new AnsiToHtml({
-  fg: '#d4d4d4',
-  bg: '#1e1e1e',
-  escapeXML: true,
-  colors: {
-    0: '#2e3436', // black
-    1: '#cc0000', // red
-    2: '#4e9a06', // green
-    3: '#c4a000', // yellow
-    4: '#3465a4', // blue
-    5: '#75507b', // magenta
-    6: '#06989a', // cyan
-    7: '#d3d7cf', // white
-  },
-})
 
 interface Props {
   open: boolean
@@ -367,17 +350,13 @@ const statusClass = computed(() => {
 const systemOutHtml = computed(() => {
   const systemOut = testCaseDetails.value?.system_out
   if (!systemOut) return ''
-  // Replace literal #x1B with actual ESC character (\x1B)
-  const withRealEscapes = systemOut.replace(/#x1B/g, '\x1B')
-  return ansiConverter.toHtml(withRealEscapes)
+  return renderAnsi(systemOut)
 })
 
 const systemErrHtml = computed(() => {
   const systemErr = testCaseDetails.value?.system_err
   if (!systemErr) return ''
-  // Replace literal #x1B with actual ESC character (\x1B)
-  const withRealEscapes = systemErr.replace(/#x1B/g, '\x1B')
-  return ansiConverter.toHtml(withRealEscapes)
+  return renderAnsi(systemErr)
 })
 
 // Parse test steps from System Error output
