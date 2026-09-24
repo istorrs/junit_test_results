@@ -46,6 +46,7 @@
               <option value="failed">✗ Failed</option>
               <option value="error">⚠ Error</option>
               <option value="skipped">⊘ Skipped</option>
+              <option value="unknown">? Unknown</option>
             </select>
           </div>
 
@@ -451,6 +452,11 @@ h1 {
 }
 
 .status-badge.skipped {
+  background: var(--bg-hover);
+  color: var(--text-secondary);
+}
+
+.status-badge.unknown {
   background: var(--bg-hover);
   color: var(--text-secondary);
 }

@@ -4,6 +4,7 @@ const yazl = require('yazl');
 const { normalizeEntryName } = require('../src/services/allureArchive');
 const {
     mapStatus,
+    normalizeAllureStep,
     normalizeAllureResult,
     parseEnvironmentProperties,
     parseAllureFiles,
@@ -69,6 +70,22 @@ test('maps broken Allure tests to dashboard errors', () => {
     assert.equal(mapStatus('broken'), 'error');
     assert.equal(mapStatus('failed'), 'failed');
     assert.equal(mapStatus('unexpected'), 'error');
+});
+
+test('preserves unknown and missing Allure fixture status', () => {
+    assert.equal(mapStatus('unknown'), 'unknown');
+    assert.equal(mapStatus(undefined), 'unknown');
+    assert.deepEqual(normalizeAllureStep({ name: 'fixture::<lambda>', start: 1000 }), {
+        name: 'fixture::<lambda>',
+        status: 'unknown',
+        start: new Date(1000),
+        stop: null,
+        time: 0,
+        status_details: {},
+        parameters: [],
+        attachments: [],
+        steps: []
+    });
 });
 
 test('classifies result, container, and attachment files', () => {

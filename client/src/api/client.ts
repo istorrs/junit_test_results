@@ -86,7 +86,7 @@ export interface TestCase {
   name: string
   class_name?: string
   time: number
-  status: 'passed' | 'failed' | 'error' | 'skipped'
+  status: 'passed' | 'failed' | 'error' | 'skipped' | 'unknown'
   error_message?: string
   error_type?: string
   stack_trace?: string
@@ -156,7 +156,7 @@ export interface AllureParameter {
 
 export interface AllureStep {
   name: string
-  status: 'passed' | 'failed' | 'error' | 'skipped'
+  status: 'passed' | 'failed' | 'error' | 'skipped' | 'unknown'
   start?: string
   stop?: string
   time?: number
@@ -204,7 +204,7 @@ export interface UploadResponse {
 
 export interface TestHistoryRun {
   run_id: string
-  status: 'passed' | 'failed' | 'error' | 'skipped'
+  status: 'passed' | 'failed' | 'error' | 'skipped' | 'unknown'
   time: number
   timestamp: string
   error_message?: string

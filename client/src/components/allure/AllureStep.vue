@@ -1,7 +1,7 @@
 <template>
   <li class="allure-step">
     <div class="step-summary">
-      <span :class="['step-status', step.status]">{{ step.status }}</span>
+      <span :class="['step-status', displayStatus]">{{ displayStatus }}</span>
       <strong>{{ step.name }}</strong>
       <span v-if="step.time !== undefined" class="step-time">{{
         formatDuration(step.time * 1000)
@@ -32,10 +32,23 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import type { AllureStep } from '../../api/client'
 import { formatDuration, formatFileSize } from '../../utils/formatters'
 
-defineProps<{ step: AllureStep }>()
+const props = defineProps<{ step: AllureStep }>()
+const displayStatus = computed(() => {
+  const details = props.step.status_details || {}
+  const hasFailureDetails = Boolean(details.message || details.trace || Object.keys(details).length)
+  const isLegacyMissingStatus =
+    props.step.status === 'error' &&
+    Boolean(props.step.start) &&
+    !props.step.stop &&
+    (props.step.time ?? 0) === 0 &&
+    !hasFailureDetails
+
+  return isLegacyMissingStatus ? 'unknown' : props.step.status
+})
 const attachmentUrl = (id?: string) => (id ? `/attachments/${id}` : '#')
 </script>
 
@@ -66,6 +79,9 @@ const attachmentUrl = (id?: string) => (id ? `/attachments/${id}` : '#')
 }
 .step-status.skipped {
   color: var(--warning-color);
+}
+.step-status.unknown {
+  color: var(--text-secondary);
 }
 .step-time {
   margin-left: auto;

@@ -22,7 +22,7 @@ const testResultSchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        enum: ['passed', 'failed', 'error', 'skipped'],
+        enum: ['passed', 'failed', 'error', 'skipped', 'unknown'],
         required: true
     },
     time: Number,

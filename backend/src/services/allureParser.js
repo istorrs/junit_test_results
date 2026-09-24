@@ -5,10 +5,13 @@ const ALLURE_STATUS_MAP = Object.freeze({
     failed: 'failed',
     broken: 'error',
     skipped: 'skipped',
-    unknown: 'error'
+    unknown: 'unknown'
 });
 
-const mapStatus = status => ALLURE_STATUS_MAP[status] || 'error';
+const mapStatus = status => {
+    if (status === undefined || status === null || status === '') return 'unknown';
+    return ALLURE_STATUS_MAP[status] || 'error';
+};
 const durationSeconds = (start, stop) =>
     Number.isFinite(start) && Number.isFinite(stop) && stop >= start ? (stop - start) / 1000 : 0;
 

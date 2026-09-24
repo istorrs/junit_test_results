@@ -53,7 +53,7 @@ curl --fail-with-body http://your-server:5000/api/v1/upload \
   -F 'ci_metadata={"provider":"github_actions","job_name":"my-app","build_number":"42","build_time":"2026-09-24T03:17:00Z"}'
 ```
 
-The importer preserves nested steps, step/test attachments, setup and teardown fixtures, descriptions, parameters, links, Allure labels, executor data, environment properties, and categories. Allure `broken` maps to dashboard status `error`. Referenced attachment files must be included in the ZIP to be downloadable. Archives must contain at least one `*-result.json` file.
+The importer preserves nested steps, step/test attachments, setup and teardown fixtures, descriptions, parameters, links, Allure labels, executor data, environment properties, and categories. Allure `broken` maps to dashboard status `error`; `unknown` and missing fixture outcomes remain `unknown` and are not presented as errors. Referenced attachment files must be included in the ZIP to be downloadable. Archives must contain at least one `*-result.json` file.
 
 Default limits are 50 MiB compressed (`MAX_FILE_SIZE`), 10,000 archive entries, 250 MiB expanded, and 15 MiB per entry. A repeated byte-identical archive is treated as a duplicate.
 

@@ -14,7 +14,7 @@ const attachmentReferenceSchema = new mongoose.Schema(
 const allureStepSchema = new mongoose.Schema(
     {
         name: { type: String, required: true },
-        status: { type: String, enum: ['passed', 'failed', 'error', 'skipped'] },
+        status: { type: String, enum: ['passed', 'failed', 'error', 'skipped', 'unknown'] },
         start: Date,
         stop: Date,
         time: Number,
@@ -48,7 +48,7 @@ const testCaseSchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        enum: ['passed', 'failed', 'error', 'skipped'],
+        enum: ['passed', 'failed', 'error', 'skipped', 'unknown'],
         required: true
     },
     error_message: String,
