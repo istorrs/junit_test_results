@@ -1,6 +1,10 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { buildReleaseMatch, getReleasePagination } = require('../src/services/releaseQuery');
+const {
+    buildReleaseMatch,
+    getReleasePagination,
+    calculateReleaseMetrics
+} = require('../src/services/releaseQuery');
 
 test('buildReleaseMatch applies project and escaped release search', () => {
     const match = buildReleaseMatch({ job_name: 'project', search: '1.0+' });
@@ -24,4 +28,23 @@ test('getReleasePagination retains legacy skip support', () => {
         limit: 25,
         skip: 75
     });
+});
+
+test('release metrics preserve legacy and current response field names', () => {
+    const metrics = calculateReleaseMetrics([
+        {
+            total_tests: 10,
+            failed: 2,
+            errors: 1,
+            skipped: 1,
+            time: 5,
+            timestamp: new Date('2026-01-01')
+        }
+    ]);
+
+    assert.equal(metrics.passed, 6);
+    assert.equal(metrics.total_passed, metrics.passed);
+    assert.equal(metrics.total_failed, metrics.failed);
+    assert.equal(metrics.total_errors, metrics.errors);
+    assert.equal(metrics.total_skipped, metrics.skipped);
 });

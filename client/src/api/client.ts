@@ -277,6 +277,11 @@ export interface ReleaseMetrics {
   failed: number
   errors: number
   skipped: number
+  /** Legacy API aliases retained for existing consumers. */
+  total_passed: number
+  total_failed: number
+  total_errors: number
+  total_skipped: number
   pass_rate: number
   total_time: number
   avg_time_per_run: number
@@ -296,6 +301,8 @@ export interface ReleaseComparisonResponse {
     test_count_change: number
     pass_rate_change: number
     failure_change: number
+    /** Legacy API alias retained for existing consumers. */
+    failed_change: number
     time_change: number
     time_change_percent: number
   }

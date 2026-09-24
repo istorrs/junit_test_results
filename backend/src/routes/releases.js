@@ -1,6 +1,10 @@
 const express = require('express');
 const { DEFAULT_QUERY_LIMIT, MAX_QUERY_LIMIT } = require('../config/constants');
-const { buildReleaseMatch, getReleasePagination } = require('../services/releaseQuery');
+const {
+    buildReleaseMatch,
+    getReleasePagination,
+    calculateReleaseMetrics
+} = require('../services/releaseQuery');
 const router = express.Router();
 const TestRun = require('../models/TestRun');
 
@@ -120,34 +124,11 @@ router.get('/compare', async (req, res) => {
             });
         }
 
-        // Calculate aggregate metrics for each release
-        const calculateMetrics = runs => {
-            const totalTests = runs.reduce((sum, run) => sum + run.total_tests, 0);
-            const totalFailed = runs.reduce((sum, run) => sum + run.failed, 0);
-            const totalErrors = runs.reduce((sum, run) => sum + run.errors, 0);
-            const totalSkipped = runs.reduce((sum, run) => sum + run.skipped, 0);
-            const totalPassed = totalTests - totalFailed - totalErrors - totalSkipped;
-            const totalTime = runs.reduce((sum, run) => sum + (run.time || 0), 0);
-
-            return {
-                total_runs: runs.length,
-                total_tests: totalTests,
-                passed: totalPassed,
-                failed: totalFailed,
-                errors: totalErrors,
-                skipped: totalSkipped,
-                pass_rate: totalTests > 0 ? (totalPassed / totalTests) * 100 : 0,
-                total_time: totalTime,
-                avg_time_per_run: runs.length > 0 ? totalTime / runs.length : 0,
-                first_run: runs[runs.length - 1]?.timestamp,
-                last_run: runs[0]?.timestamp
-            };
-        };
-
-        const metrics1 = calculateMetrics(runs1);
-        const metrics2 = calculateMetrics(runs2);
+        const metrics1 = calculateReleaseMetrics(runs1);
+        const metrics2 = calculateReleaseMetrics(runs2);
 
         // Calculate differences
+        const failedChange = metrics2.failed - metrics1.failed;
         const comparison = {
             release1: {
                 tag: release1,
@@ -162,7 +143,9 @@ router.get('/compare', async (req, res) => {
             diff: {
                 test_count_change: metrics2.total_tests - metrics1.total_tests,
                 pass_rate_change: metrics2.pass_rate - metrics1.pass_rate,
-                failure_change: metrics2.failed - metrics1.failed,
+                failure_change: failedChange,
+                // Backward-compatible alias retained for curl and CI consumers.
+                failed_change: failedChange,
                 time_change: metrics2.avg_time_per_run - metrics1.avg_time_per_run,
                 time_change_percent:
                     metrics1.avg_time_per_run > 0
