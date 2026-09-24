@@ -120,7 +120,18 @@ router.get('/', async (req, res, next) => {
                     // and avoid MongoDB 16MB document size limit
                     run: 0,
                     system_out: 0,
-                    system_err: 0
+                    system_err: 0,
+                    // Allure detail trees and attachment metadata are loaded only when
+                    // the details modal requests a single case.
+                    steps: 0,
+                    attachments: 0,
+                    fixtures: 0,
+                    description: 0,
+                    description_html: 0,
+                    status_details: 0,
+                    labels: 0,
+                    parameters: 0,
+                    links: 0
                 }
             },
             // Use _id as a deterministic tie-breaker so cases with the same run
