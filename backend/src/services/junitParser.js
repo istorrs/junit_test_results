@@ -4,7 +4,13 @@ const TestSuite = require('../models/TestSuite');
 const TestCase = require('../models/TestCase');
 const TestResult = require('../models/TestResult');
 const FileUpload = require('../models/FileUpload');
-const { generateHash } = require('./hashGenerator');
+const {
+    buildCiRunQuery,
+    generateUploadIdentity,
+    hasCiBuildIdentity
+} = require('./uploadIdentity');
+const { calculateRunStats } = require('./runStats');
+const { rollbackUpload } = require('./uploadRollback');
 const logger = require('../utils/logger');
 
 /**
@@ -72,6 +78,10 @@ const parseJUnitXML = async (
     uploaderInfo = {},
     releaseMetadata = {}
 ) => {
+    let fileUpload;
+    let testRun;
+    let createdRun = false;
+
     try {
         const parser = new xml2js.Parser({
             explicitArray: false,
@@ -81,8 +91,14 @@ const parseJUnitXML = async (
 
         const result = await parser.parseStringPromise(xmlContent);
 
-        // Generate content hash for duplicate detection
-        const contentHash = generateHash(xmlContent);
+        // Scope idempotency to the originating build/release so identical test output from
+        // different executions is retained as distinct history.
+        const { contentHash, rawContentHash, scope } = generateUploadIdentity(
+            xmlContent,
+            filename,
+            ciMetadata,
+            releaseMetadata
+        );
 
         // Check for duplicate file - if this exact XML was already uploaded, skip it
         const existingUpload = await FileUpload.findOne({
@@ -94,22 +110,47 @@ const parseJUnitXML = async (
                 filename,
                 contentHash,
                 existing_file_id: existingUpload._id,
-                existing_run_id: existingUpload.run_id
+                existing_run_id: existingUpload.run_id,
+                scope
             });
+
+            const existingRun = await TestRun.findById(existingUpload.run_id);
+            if (existingRun && (releaseMetadata.release_tag || releaseMetadata.release_version)) {
+                if (releaseMetadata.release_tag) {
+                    existingRun.release_tag = releaseMetadata.release_tag;
+                }
+                if (releaseMetadata.release_version) {
+                    existingRun.release_version = releaseMetadata.release_version;
+                }
+                await existingRun.save();
+            }
+
             return {
                 success: true,
                 duplicate: true,
                 run_id: existingUpload.run_id,
                 file_upload_id: existingUpload._id,
+                stats: existingRun
+                    ? {
+                        total_tests: existingRun.total_tests,
+                        passed: existingRun.passed,
+                        failed: existingRun.failed,
+                        errors: existingRun.errors,
+                        skipped: existingRun.skipped,
+                        time: existingRun.time
+                    }
+                    : undefined,
                 message: 'Duplicate file skipped'
             };
         }
 
         // Create file upload record
-        const fileUpload = await FileUpload.create({
+        fileUpload = await FileUpload.create({
             filename,
             file_size: xmlContent.length,
             content_hash: contentHash,
+            raw_content_hash: rawContentHash,
+            deduplication_scope: scope,
             status: 'processing',
             uploader: uploaderInfo
         });
@@ -128,8 +169,6 @@ const parseJUnitXML = async (
         // Extract properties from first testsuite element (typically contains test run level properties)
         const suiteElement = testsuites[0];
         const runProperties = extractProperties(suiteElement.testsuite || suiteElement);
-
-        let testRun;
 
         // Determine the correct timestamp
         // Priority: CI metadata build_time > XML timestamp > current time
@@ -175,15 +214,15 @@ const parseJUnitXML = async (
         }
 
         // Find or create test run based on CI metadata
-        if (ciMetadata && ciMetadata.job_name && ciMetadata.build_number) {
+        if (hasCiBuildIdentity(ciMetadata)) {
             // Look for existing test run with same job_name and build_number
             // Multiple XML uploads from the same build will merge into one test run
-            testRun = await TestRun.findOne({
-                'ci_metadata.job_name': ciMetadata.job_name,
-                'ci_metadata.build_number': ciMetadata.build_number
-            });
+            testRun = await TestRun.findOne(buildCiRunQuery(ciMetadata));
 
             if (testRun) {
+                await TestRun.findByIdAndUpdate(testRun._id, {
+                    $addToSet: { result_formats: 'junit' }
+                });
                 logger.info('Found existing test run - adding XML to it', {
                     run_id: testRun._id,
                     job_name: ciMetadata.job_name,
@@ -205,11 +244,13 @@ const parseJUnitXML = async (
                     skipped: 0,
                     file_upload_id: fileUpload._id,
                     source: 'ci_cd',
+                    result_formats: ['junit'],
                     ci_metadata: ciMetadata,
                     release_tag: releaseMetadata.release_tag || null,
                     release_version: releaseMetadata.release_version || null,
                     properties: runProperties
                 });
+                createdRun = true;
 
                 logger.info('Created new test run from CI metadata', {
                     run_id: testRun._id,
@@ -233,11 +274,13 @@ const parseJUnitXML = async (
                 file_upload_id: fileUpload._id,
                 content_hash: contentHash,
                 source: 'api',
+                result_formats: ['junit'],
                 ci_metadata: null,
                 release_tag: releaseMetadata.release_tag || null,
                 release_version: releaseMetadata.release_version || null,
                 properties: runProperties
             });
+            createdRun = true;
 
             logger.info('Created test run without CI metadata', {
                 run_id: testRun._id,
@@ -245,6 +288,11 @@ const parseJUnitXML = async (
                 filename
             });
         }
+
+        await FileUpload.findByIdAndUpdate(fileUpload._id, {
+            run_id: testRun._id,
+            created_run: createdRun
+        });
 
         // Process all test suites from this XML
         for (const suiteElement of testsuites) {
@@ -266,7 +314,7 @@ const parseJUnitXML = async (
         });
 
         // Calculate statistics from actual test cases and update the test run
-        const stats = await calculateStats(testRun._id);
+        const stats = await calculateRunStats(testRun._id);
         await TestRun.findByIdAndUpdate(testRun._id, stats);
 
         logger.info('JUnit XML parsed successfully', { run_id: testRun._id, stats });
@@ -279,6 +327,24 @@ const parseJUnitXML = async (
         };
     } catch (error) {
         logger.error('Error parsing JUnit XML', { error: error.message });
+
+        if (fileUpload) {
+            try {
+                await rollbackUpload({
+                    fileUploadId: fileUpload._id,
+                    runId: testRun?._id,
+                    createdRun,
+                    errorMessage: error.message
+                });
+            } catch (rollbackError) {
+                logger.error('Failed to roll back partial JUnit upload', {
+                    file_upload_id: fileUpload._id,
+                    original_error: error.message,
+                    rollback_error: rollbackError.message
+                });
+            }
+        }
+
         throw error;
     }
 };
@@ -495,6 +561,7 @@ const processTestCase = async (caseData, suiteId, runId, fileUploadId, testStart
         case_id: testCase._id,
         suite_id: suiteId,
         run_id: runId,
+        file_upload_id: fileUploadId,
         status,
         time: testCase.time,
         error_message: errorMessage,
@@ -505,21 +572,6 @@ const processTestCase = async (caseData, suiteId, runId, fileUploadId, testStart
         stack_trace: stackTrace,
         timestamp: testStartTime
     });
-};
-
-const calculateStats = async runId => {
-    const cases = await TestCase.find({ run_id: runId });
-    const passed = cases.filter(c => c.status === 'passed').length;
-    const failed = cases.filter(c => c.status === 'failed').length;
-
-    return {
-        total_tests: cases.length,
-        passed,
-        failed,
-        errors: cases.filter(c => c.status === 'error').length,
-        skipped: cases.filter(c => c.status === 'skipped').length,
-        time: cases.reduce((sum, c) => sum + c.time, 0)
-    };
 };
 
 module.exports = { parseJUnitXML };

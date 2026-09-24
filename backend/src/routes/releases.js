@@ -1,5 +1,10 @@
 const express = require('express');
-const { DEFAULT_QUERY_LIMIT } = require('../config/constants');
+const { DEFAULT_QUERY_LIMIT, MAX_QUERY_LIMIT } = require('../config/constants');
+const {
+    buildReleaseMatch,
+    getReleasePagination,
+    calculateReleaseMetrics
+} = require('../services/releaseQuery');
 const router = express.Router();
 const TestRun = require('../models/TestRun');
 
@@ -9,17 +14,12 @@ const TestRun = require('../models/TestRun');
  */
 router.get('/', async (req, res) => {
     try {
-        const { limit = DEFAULT_QUERY_LIMIT, skip = 0, job_name } = req.query;
-
-        // Build match criteria
-        const matchCriteria = {
-            release_tag: { $exists: true, $ne: null }
-        };
-
-        // Add job_name filter if provided
-        if (job_name) {
-            matchCriteria['ci_metadata.job_name'] = job_name;
-        }
+        const { page, limit, skip } = getReleasePagination(
+            req.query,
+            DEFAULT_QUERY_LIMIT,
+            MAX_QUERY_LIMIT
+        );
+        const matchCriteria = buildReleaseMatch(req.query);
 
         // Aggregate to get unique releases with stats
         const releases = await TestRun.aggregate([
@@ -34,6 +34,7 @@ router.get('/', async (req, res) => {
                     last_run: { $max: '$timestamp' },
                     total_runs: { $sum: 1 },
                     total_tests_sum: { $sum: '$total_tests' },
+                    passed_sum: { $sum: '$passed' },
                     failed_sum: { $sum: '$failed' },
                     errors_sum: { $sum: '$errors' },
                     skipped_sum: { $sum: '$skipped' }
@@ -48,30 +49,22 @@ router.get('/', async (req, res) => {
                     last_run: 1,
                     total_runs: 1,
                     total_tests: '$total_tests_sum',
+                    passed: '$passed_sum',
                     failed: '$failed_sum',
                     errors: '$errors_sum',
                     skipped: '$skipped_sum',
                     pass_rate: {
-                        $multiply: [
-                            {
-                                $divide: [
-                                    {
-                                        $subtract: [
-                                            '$total_tests_sum',
-                                            { $add: ['$failed_sum', '$errors_sum'] }
-                                        ]
-                                    },
-                                    '$total_tests_sum'
-                                ]
-                            },
-                            100
+                        $cond: [
+                            { $gt: ['$total_tests_sum', 0] },
+                            { $multiply: [{ $divide: ['$passed_sum', '$total_tests_sum'] }, 100] },
+                            0
                         ]
                     }
                 }
             },
             { $sort: { last_run: -1 } },
-            { $skip: parseInt(skip) },
-            { $limit: parseInt(limit) }
+            { $skip: skip },
+            { $limit: limit }
         ]);
 
         // Get total count with same filter
@@ -84,10 +77,12 @@ router.get('/', async (req, res) => {
             data: {
                 releases,
                 pagination: {
+                    page,
                     total: totalCount,
-                    limit: parseInt(limit),
-                    skip: parseInt(skip),
-                    has_more: parseInt(skip) + releases.length < totalCount
+                    pages: Math.ceil(totalCount / limit),
+                    limit,
+                    skip,
+                    has_more: skip + releases.length < totalCount
                 }
             }
         });
@@ -104,7 +99,7 @@ router.get('/', async (req, res) => {
  */
 router.get('/compare', async (req, res) => {
     try {
-        const { release1, release2 } = req.query;
+        const { release1, release2, job_name: jobName } = req.query;
 
         if (!release1 || !release2) {
             return res.status(400).json({
@@ -113,9 +108,14 @@ router.get('/compare', async (req, res) => {
         }
 
         // Get all test runs for both releases
+        const projectFilter = jobName ? { 'ci_metadata.job_name': { $eq: jobName } } : {};
         const [runs1, runs2] = await Promise.all([
-            TestRun.find({ release_tag: release1 }).sort({ timestamp: -1 }).lean(),
-            TestRun.find({ release_tag: release2 }).sort({ timestamp: -1 }).lean()
+            TestRun.find({ release_tag: { $eq: release1 }, ...projectFilter })
+                .sort({ timestamp: -1 })
+                .lean(),
+            TestRun.find({ release_tag: { $eq: release2 }, ...projectFilter })
+                .sort({ timestamp: -1 })
+                .lean()
         ]);
 
         if (runs1.length === 0 || runs2.length === 0) {
@@ -124,34 +124,11 @@ router.get('/compare', async (req, res) => {
             });
         }
 
-        // Calculate aggregate metrics for each release
-        const calculateMetrics = runs => {
-            const totalTests = runs.reduce((sum, run) => sum + run.total_tests, 0);
-            const totalFailed = runs.reduce((sum, run) => sum + run.failed, 0);
-            const totalErrors = runs.reduce((sum, run) => sum + run.errors, 0);
-            const totalSkipped = runs.reduce((sum, run) => sum + run.skipped, 0);
-            const totalPassed = totalTests - totalFailed - totalErrors - totalSkipped;
-            const totalTime = runs.reduce((sum, run) => sum + (run.time || 0), 0);
-
-            return {
-                total_runs: runs.length,
-                total_tests: totalTests,
-                total_passed: totalPassed,
-                total_failed: totalFailed,
-                total_errors: totalErrors,
-                total_skipped: totalSkipped,
-                pass_rate: totalTests > 0 ? (totalPassed / totalTests) * 100 : 0,
-                total_time: totalTime,
-                avg_time_per_run: runs.length > 0 ? totalTime / runs.length : 0,
-                first_run: runs[runs.length - 1]?.timestamp,
-                last_run: runs[0]?.timestamp
-            };
-        };
-
-        const metrics1 = calculateMetrics(runs1);
-        const metrics2 = calculateMetrics(runs2);
+        const metrics1 = calculateReleaseMetrics(runs1);
+        const metrics2 = calculateReleaseMetrics(runs2);
 
         // Calculate differences
+        const failedChange = metrics2.failed - metrics1.failed;
         const comparison = {
             release1: {
                 tag: release1,
@@ -166,7 +143,9 @@ router.get('/compare', async (req, res) => {
             diff: {
                 test_count_change: metrics2.total_tests - metrics1.total_tests,
                 pass_rate_change: metrics2.pass_rate - metrics1.pass_rate,
-                failed_change: metrics2.total_failed - metrics1.total_failed,
+                failure_change: failedChange,
+                // Backward-compatible alias retained for curl and CI consumers.
+                failed_change: failedChange,
                 time_change: metrics2.avg_time_per_run - metrics1.avg_time_per_run,
                 time_change_percent:
                     metrics1.avg_time_per_run > 0

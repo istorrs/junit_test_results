@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import { createRouter, createMemoryHistory } from 'vue-router'
 import { nextTick } from 'vue'
+import { createPinia, setActivePinia } from 'pinia'
 import FailurePatternsSummary from '../FailurePatternsSummary.vue'
 
 // Mock the API client module
@@ -28,6 +29,7 @@ describe('FailurePatternsSummary', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    setActivePinia(createPinia())
 
     router = createRouter({
       history: createMemoryHistory(),

@@ -30,6 +30,8 @@ const createIndexes = async () => {
         await db.collection('testruns').createIndex({ 'ci_metadata.build_id': 1 });
         await db.collection('testruns').createIndex({ 'ci_metadata.commit_sha': 1 });
         await db.collection('testruns').createIndex({ 'ci_metadata.branch': 1 });
+        await db.collection('testruns').createIndex({ 'ci_metadata.job_name': 1, timestamp: -1 });
+        await db.collection('testruns').createIndex({ 'ci_metadata.job_name': 1, created_at: 1 });
 
         // test_suites indexes
         await db.collection('testsuites').createIndex({ run_id: 1 });
@@ -41,11 +43,24 @@ const createIndexes = async () => {
         await db.collection('testcases').createIndex({ status: 1 });
         await db.collection('testcases').createIndex({ name: 1, class_name: 1 });
         await db.collection('testcases').createIndex({ is_flaky: 1 });
+        await db.collection('testcases').createIndex({ run_id: 1, is_flaky: 1 });
+
+        // Replace the legacy text index, which used the removed `classname` field.
+        // MongoDB permits only one text index per collection, so leaving it in place
+        // prevents this and every subsequent startup index from being created.
+        const caseIndexes = await db.collection('testcases').indexes();
+        const legacyTextIndex = caseIndexes.find(
+            index => index.weights?.classname && !index.weights?.class_name
+        );
+        if (legacyTextIndex) {
+            await db.collection('testcases').dropIndex(legacyTextIndex.name);
+        }
         await db.collection('testcases').createIndex({ name: 'text', class_name: 'text' });
 
         // test_results indexes
         await db.collection('testresults').createIndex({ case_id: 1 });
         await db.collection('testresults').createIndex({ run_id: 1 });
+        await db.collection('testresults').createIndex({ file_upload_id: 1 });
         await db.collection('testresults').createIndex({ timestamp: -1 });
 
         // file_uploads indexes

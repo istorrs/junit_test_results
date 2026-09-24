@@ -2,14 +2,92 @@ const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
 const TestCase = require('../models/TestCase');
+const TestRun = require('../models/TestRun');
 const { MAX_QUERY_LIMIT, DEFAULT_QUERY_LIMIT } = require('../config/constants');
+const { buildCaseSearch, getCaseSort } = require('../services/caseQuery');
+const { apiRateLimiter } = require('../middleware/rateLimiter');
+
+// GET /api/v1/cases/suites - Get suite names independently of result pagination
+router.get('/suites', apiRateLimiter, async (req, res, next) => {
+    try {
+        const matchQuery = {
+            class_name: { $nin: [null, ''] }
+        };
+
+        if (req.query.run_id && req.query.run_id !== 'undefined') {
+            if (!mongoose.isValidObjectId(req.query.run_id)) {
+                return res.status(400).json({ success: false, error: 'Invalid run ID' });
+            }
+            matchQuery.run_id = new mongoose.Types.ObjectId(req.query.run_id);
+        }
+
+        if (req.query.job_name) {
+            const runQuery = { 'ci_metadata.job_name': { $eq: req.query.job_name } };
+            if (matchQuery.run_id) runQuery._id = matchQuery.run_id;
+
+            const runIds = await TestRun.distinct('_id', runQuery);
+            matchQuery.run_id = { $in: runIds };
+        }
+
+        const suites = await TestCase.distinct('class_name', matchQuery);
+        suites.sort((a, b) => a.localeCompare(b));
+
+        res.json({
+            success: true,
+            data: { suites }
+        });
+    } catch (error) {
+        next(error);
+    }
+});
+
+// GET /api/v1/cases/labels - Get values for an Allure label within the active scope
+router.get('/labels', apiRateLimiter, async (req, res, next) => {
+    try {
+        const name = req.query.name || 'tag';
+        if (!/^[A-Za-z][A-Za-z0-9_.-]{0,63}$/.test(name)) {
+            return res.status(400).json({ success: false, error: 'Invalid label name' });
+        }
+
+        const match = { 'labels.name': name };
+        if (req.query.run_id && req.query.run_id !== 'undefined') {
+            if (!mongoose.isValidObjectId(req.query.run_id)) {
+                return res.status(400).json({ success: false, error: 'Invalid run ID' });
+            }
+            match.run_id = new mongoose.Types.ObjectId(req.query.run_id);
+        }
+        if (req.query.job_name) {
+            const runQuery = { 'ci_metadata.job_name': { $eq: req.query.job_name } };
+            if (match.run_id) runQuery._id = match.run_id;
+            match.run_id = { $in: await TestRun.distinct('_id', runQuery) };
+        }
+
+        const values = await TestCase.aggregate([
+            { $match: match },
+            { $unwind: '$labels' },
+            { $match: { 'labels.name': name } },
+            { $group: { _id: '$labels.value' } },
+            { $match: { _id: { $nin: [null, ''] } } },
+            { $sort: { _id: 1 } }
+        ]);
+        res.json({ success: true, data: { name, values: values.map(item => item._id) } });
+    } catch (error) {
+        next(error);
+    }
+});
 
 // GET /api/v1/cases - Get test cases with filtering
-router.get('/', async (req, res, next) => {
+router.get('/', apiRateLimiter, async (req, res, next) => {
     try {
         const page = parseInt(req.query.page) || 1;
         const limit = Math.min(parseInt(req.query.limit) || DEFAULT_QUERY_LIMIT, MAX_QUERY_LIMIT);
         const skip = (page - 1) * limit;
+        let sort;
+        try {
+            sort = getCaseSort(req.query.sort_by, req.query.sort_order);
+        } catch (error) {
+            return res.status(400).json({ success: false, error: error.message });
+        }
 
         console.log('[Cases API] Query params:', { page, limit, skip, run_id: req.query.run_id });
 
@@ -23,40 +101,80 @@ router.get('/', async (req, res, next) => {
             matchQuery.suite_id = new mongoose.Types.ObjectId(req.query.suite_id);
         }
         if (req.query.class_name) {
-            matchQuery.class_name = req.query.class_name;
+            matchQuery.class_name = { $eq: req.query.class_name };
         }
         if (req.query.name) {
-            matchQuery.name = req.query.name;
+            matchQuery.name = { $eq: req.query.name };
         }
         if (req.query.status) {
-            matchQuery.status = req.query.status;
+            matchQuery.status = { $eq: req.query.status };
         }
         if (req.query.is_flaky) {
             matchQuery.is_flaky = req.query.is_flaky === 'true';
         }
+        if ((req.query.label_name && !req.query.label_value) || (!req.query.label_name && req.query.label_value)) {
+            return res.status(400).json({
+                success: false,
+                error: 'label_name and label_value must be provided together'
+            });
+        }
+        const labelFilters = [];
+        if (req.query.label_name) {
+            labelFilters.push({
+                labels: {
+                    $elemMatch: {
+                        name: { $eq: req.query.label_name },
+                        value: { $eq: req.query.label_value }
+                    }
+                }
+            });
+        }
+        const namedLabelFilters = {
+            tag: 'tag',
+            package: 'package',
+            framework: 'framework',
+            host: 'host',
+            parent_suite: 'parentSuite',
+            allure_suite: 'suite',
+            sub_suite: 'subSuite'
+        };
+        for (const [parameter, labelName] of Object.entries(namedLabelFilters)) {
+            if (req.query[parameter]) {
+                labelFilters.push({
+                    labels: {
+                        $elemMatch: { name: labelName, value: { $eq: req.query[parameter] } }
+                    }
+                });
+            }
+        }
+        if (labelFilters.length) matchQuery.$and = labelFilters;
 
-        // Text search
+        // Resolve the global project filter to run IDs before aggregation. This
+        // keeps both the list query and its count on indexed testcase fields.
+        if (req.query.job_name) {
+            const runQuery = { 'ci_metadata.job_name': { $eq: req.query.job_name } };
+            if (matchQuery.run_id) runQuery._id = matchQuery.run_id;
+            const runIds = await TestRun.distinct('_id', runQuery);
+            matchQuery.run_id = { $in: runIds };
+        }
+
+        // Literal substring search keeps identifiers such as TC-VID-010 intact.
         if (req.query.search) {
-            matchQuery.$text = { $search: req.query.search };
+            if (typeof req.query.search !== 'string') {
+                return res.status(400).json({ success: false, error: 'search must be a string' });
+            }
+            if (req.query.search.length > 200) {
+                return res.status(400).json({ success: false, error: 'search is too long' });
+            }
+            const searchQuery = buildCaseSearch(req.query.search);
+            if (searchQuery) {
+                matchQuery.$and = [...(matchQuery.$and || []), searchQuery];
+            }
         }
 
         // Build aggregation pipeline
         const pipeline = [
             { $match: matchQuery },
-            {
-                $lookup: {
-                    from: 'testresults',
-                    localField: '_id',
-                    foreignField: 'case_id',
-                    as: 'result'
-                }
-            },
-            {
-                $unwind: {
-                    path: '$result',
-                    preserveNullAndEmptyArrays: true
-                }
-            },
             {
                 $lookup: {
                     from: 'testruns',
@@ -83,15 +201,6 @@ router.get('/', async (req, res, next) => {
             }
         ];
 
-        // Add job_name filter after joining with runs
-        if (req.query.job_name) {
-            pipeline.push({
-                $match: {
-                    'run_ci_metadata.job_name': req.query.job_name
-                }
-            });
-        }
-
         pipeline.push(
             {
                 $project: {
@@ -99,27 +208,31 @@ router.get('/', async (req, res, next) => {
                     // and avoid MongoDB 16MB document size limit
                     run: 0,
                     system_out: 0,
-                    system_err: 0
+                    system_err: 0,
+                    // Allure detail trees and attachment metadata are loaded only when
+                    // the details modal requests a single case.
+                    steps: 0,
+                    attachments: 0,
+                    fixtures: 0,
+                    description: 0,
+                    description_html: 0,
+                    status_details: 0,
+                    labels: 0,
+                    parameters: 0,
+                    links: 0
                 }
             },
-            { $sort: { timestamp: -1 } },
+            // Use _id as a deterministic tie-breaker so cases with the same run
+            // timestamp cannot move between pages.
+            { $sort: { [sort.field]: sort.direction, _id: 1 } },
             { $skip: skip },
             { $limit: limit }
         );
 
-        // Get total count with same filters
-        const countPipeline = [...pipeline];
-        // Remove skip, limit, and project stages for count
-        const skipIndex = countPipeline.findIndex(stage => stage.$skip !== undefined);
-        if (skipIndex !== -1) {
-            countPipeline.splice(skipIndex);
-        }
-        countPipeline.push({ $count: 'total' });
-
-        const countResult = await TestCase.aggregate(countPipeline);
-        const total = countResult.length > 0 ? countResult[0].total : 0;
-
-        const cases = await TestCase.aggregate(pipeline);
+        const [total, cases] = await Promise.all([
+            TestCase.countDocuments(matchQuery),
+            TestCase.aggregate(pipeline)
+        ]);
 
         console.log('[Cases API] Found cases:', cases.length);
 
@@ -204,6 +317,7 @@ router.get('/:id', async (req, res, next) => {
                     run_name: '$run.name',
                     run_source: '$run.source',
                     run_ci_metadata: '$run.ci_metadata',
+                    run_allure_metadata: '$run.allure_metadata',
                     suite_properties: '$suite.properties' // Get properties from TestSuite, not TestRun
                 }
             },

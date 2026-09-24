@@ -12,17 +12,24 @@
               v-for="column in columns"
               :key="column.key"
               :class="{ sortable: column.sortable }"
-              @click="column.sortable ? handleSort(column.key) : null"
+              scope="col"
+              :aria-sort="column.sortable ? getAriaSort(column.key) : undefined"
             >
-              <div class="th-content">
+              <button
+                v-if="column.sortable"
+                type="button"
+                class="sort-button th-content"
+                @click="handleSort(column.key)"
+              >
                 {{ column.label }}
-                <span v-if="column.sortable" class="sort-icon">
-                  <span v-if="sortKey === column.key">
-                    {{ sortOrder === 'asc' ? '↑' : '↓' }}
+                <span class="sort-icon" aria-hidden="true">
+                  <span v-if="activeSortKey === column.key">
+                    {{ activeSortOrder === 'asc' ? '↑' : '↓' }}
                   </span>
                   <span v-else class="sort-placeholder">↕</span>
                 </span>
-              </div>
+              </button>
+              <div v-else class="th-content">{{ column.label }}</div>
             </th>
           </tr>
         </thead>
@@ -41,7 +48,11 @@
             v-else
             :key="index"
             :class="{ clickable: rowClickable }"
+            :tabindex="rowClickable ? 0 : undefined"
+            :aria-label="rowClickable ? getRowAriaLabel(row, index) : undefined"
             @click="rowClickable ? $emit('row-click', row) : null"
+            @keydown.enter="rowClickable ? $emit('row-click', row) : null"
+            @keydown.space.prevent="rowClickable ? $emit('row-click', row) : null"
           >
             <td v-for="column in columns" :key="column.key">
               <slot :name="`cell-${column.key}`" :row="row" :value="getCellValue(row, column.key)">
@@ -107,6 +118,11 @@ interface Props {
   paginate?: boolean
   pageSize?: number
   rowClickable?: boolean
+  manualSort?: boolean
+  sortKey?: string
+  sortOrder?: 'asc' | 'desc'
+  // eslint-disable-next-line no-unused-vars
+  rowAriaLabel?: (row: Record<string, unknown>, index: number) => string
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -114,43 +130,57 @@ const props = withDefaults(defineProps<Props>(), {
   paginate: true,
   pageSize: 20,
   rowClickable: false,
+  manualSort: false,
+  sortKey: '',
+  sortOrder: 'asc',
 })
 
-defineEmits<{
+const emit = defineEmits<{
   'row-click': [row: Record<string, any>]
+  'sort-change': [sort: { key: string; order: 'asc' | 'desc' }]
 }>()
 
-const sortKey = ref<string>('')
-const sortOrder = ref<'asc' | 'desc'>('asc')
+const localSortKey = ref<string>('')
+const localSortOrder = ref<'asc' | 'desc'>('asc')
 const currentPage = ref(1)
+const activeSortKey = computed(() => (props.manualSort ? props.sortKey : localSortKey.value))
+const activeSortOrder = computed(() => (props.manualSort ? props.sortOrder : localSortOrder.value))
 
 const handleSort = (key: string) => {
-  if (sortKey.value === key) {
-    sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc'
-  } else {
-    sortKey.value = key
-    sortOrder.value = 'asc'
+  const nextOrder = activeSortKey.value === key && activeSortOrder.value === 'asc' ? 'desc' : 'asc'
+  if (!props.manualSort) {
+    localSortKey.value = key
+    localSortOrder.value = nextOrder
   }
   currentPage.value = 1
+  emit('sort-change', { key, order: nextOrder })
 }
+
+const getAriaSort = (key: string): 'ascending' | 'descending' | 'none' => {
+  if (activeSortKey.value !== key) return 'none'
+  return activeSortOrder.value === 'asc' ? 'ascending' : 'descending'
+}
+
+const getRowAriaLabel = (row: Record<string, unknown>, index: number) =>
+  props.rowAriaLabel?.(row, index) || `Open row ${index + 1}`
 
 const getCellValue = (row: Record<string, any>, key: string) => {
   return row[key]
 }
 
 const sortedData = computed(() => {
-  if (!sortKey.value) return props.data
+  if (props.manualSort || !activeSortKey.value) return props.data
 
   return [...props.data].sort((a, b) => {
-    const aVal = getCellValue(a, sortKey.value)
-    const bVal = getCellValue(b, sortKey.value)
+    const aVal = getCellValue(a, activeSortKey.value)
+    const bVal = getCellValue(b, activeSortKey.value)
 
     if (aVal === bVal) return 0
     if (aVal == null) return 1
     if (bVal == null) return -1
 
     const comparison = aVal > bVal ? 1 : -1
-    return sortOrder.value === 'asc' ? comparison : -comparison
+    return activeSortOrder.value === 'asc' ? comparison : -comparison
   })
 })
 
@@ -245,12 +275,24 @@ th {
 }
 
 th.sortable {
-  cursor: pointer;
   user-select: none;
 }
 
-th.sortable:hover {
-  background: var(--bg-hover);
+.sort-button {
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-transform: inherit;
+  letter-spacing: inherit;
+  cursor: pointer;
+}
+
+.sort-button:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 4px;
 }
 
 .th-content {
@@ -265,7 +307,11 @@ th.sortable:hover {
 }
 
 .sort-placeholder {
-  opacity: 0.3;
+  opacity: 0.65;
+}
+
+.sort-button:hover .sort-icon {
+  color: var(--primary-color);
 }
 
 tbody tr {
@@ -282,6 +328,12 @@ tbody tr.clickable {
 }
 
 tbody tr.clickable:hover {
+  background: var(--primary-bg);
+}
+
+tbody tr.clickable:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: -2px;
   background: var(--primary-bg);
 }
 

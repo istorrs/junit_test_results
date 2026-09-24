@@ -8,6 +8,19 @@ export interface RunFilters extends PaginationParams {
   branch?: string
   from_date?: string
   to_date?: string
+  search?: string
+  status?: 'passed' | 'failed' | 'mixed'
+  sort_by?:
+    | 'name'
+    | 'timestamp'
+    | 'total_tests'
+    | 'passed'
+    | 'failed'
+    | 'errors'
+    | 'skipped'
+    | 'time'
+    | 'pass_rate'
+  sort_order?: 'asc' | 'desc'
 }
 
 export interface StatsFilters {
@@ -22,6 +35,19 @@ export interface TestCaseFilters extends PaginationParams {
   status?: string
   class_name?: string
   job_name?: string
+  search?: string
+  is_flaky?: boolean
+  tag?: string
+  package?: string
+  framework?: string
+  host?: string
+  parent_suite?: string
+  allure_suite?: string
+  sub_suite?: string
+  label_name?: string
+  label_value?: string
+  sort_by?: 'name' | 'status' | 'time' | 'class_name' | 'timestamp'
+  sort_order?: 'asc' | 'desc'
 }
 
 export interface TestRun {
@@ -60,7 +86,7 @@ export interface TestCase {
   name: string
   class_name?: string
   time: number
-  status: 'passed' | 'failed' | 'error' | 'skipped'
+  status: 'passed' | 'failed' | 'error' | 'skipped' | 'unknown'
   error_message?: string
   error_type?: string
   stack_trace?: string
@@ -69,6 +95,22 @@ export interface TestCase {
   line?: number
   system_out?: string
   system_err?: string
+  result_format?: 'junit' | 'allure'
+  external_id?: string
+  history_id?: string
+  test_case_id?: string
+  full_name?: string
+  description?: string
+  description_html?: string
+  start?: string
+  stop?: string
+  status_details?: Record<string, unknown>
+  labels?: Array<{ name: string; value: string }>
+  parameters?: AllureParameter[]
+  links?: Array<{ name?: string; url: string; type?: string }>
+  steps?: AllureStep[]
+  attachments?: AllureAttachmentReference[]
+  fixtures?: { befores?: AllureStep[]; afters?: AllureStep[] }
   is_flaky?: boolean
   flaky_detected_at?: string
   file_upload_id?: string
@@ -80,9 +122,48 @@ export interface TestCase {
     branch?: string
     build_number?: string
   }
+  run_allure_metadata?: {
+    executor?: {
+      name?: string
+      type?: string
+      url?: string
+      buildName?: string
+      buildUrl?: string
+      reportName?: string
+    } | null
+    environment?: Record<string, string>
+    categories?: Array<Record<string, unknown>>
+  }
   suite_properties?: Record<string, any>
   created_at?: string
   updated_at?: string
+}
+
+export interface AllureAttachmentReference {
+  attachment_id?: string
+  name: string
+  source: string
+  type?: string
+  size?: number
+}
+
+export interface AllureParameter {
+  name: string
+  value?: unknown
+  excluded?: boolean
+  mode?: string
+}
+
+export interface AllureStep {
+  name: string
+  status: 'passed' | 'failed' | 'error' | 'skipped' | 'unknown'
+  start?: string
+  stop?: string
+  time?: number
+  status_details?: Record<string, unknown>
+  parameters?: AllureParameter[]
+  attachments?: AllureAttachmentReference[]
+  steps?: AllureStep[]
 }
 
 export interface Stats {
@@ -101,6 +182,7 @@ export interface Pagination {
   page: number
   limit: number
   total: number
+  pages: number
 }
 
 export interface RunsResponse {
@@ -122,7 +204,7 @@ export interface UploadResponse {
 
 export interface TestHistoryRun {
   run_id: string
-  status: 'passed' | 'failed' | 'error' | 'skipped'
+  status: 'passed' | 'failed' | 'error' | 'skipped' | 'unknown'
   time: number
   timestamp: string
   error_message?: string
@@ -185,7 +267,7 @@ export interface Release {
 
 export interface ReleasesResponse {
   releases: Release[]
-  pagination: Pagination
+  pagination: Pagination & { skip?: number; has_more?: boolean }
 }
 
 export interface ReleaseMetrics {
@@ -195,6 +277,11 @@ export interface ReleaseMetrics {
   failed: number
   errors: number
   skipped: number
+  /** Legacy API aliases retained for existing consumers. */
+  total_passed: number
+  total_failed: number
+  total_errors: number
+  total_skipped: number
   pass_rate: number
   total_time: number
   avg_time_per_run: number
@@ -214,6 +301,8 @@ export interface ReleaseComparisonResponse {
     test_count_change: number
     pass_rate_change: number
     failure_change: number
+    /** Legacy API alias retained for existing consumers. */
+    failed_change: number
     time_change: number
     time_change_percent: number
   }
@@ -316,6 +405,7 @@ export interface PerformanceTrendsParams {
   className?: string
   days?: number
   granularity?: 'hourly' | 'daily' | 'weekly'
+  job_name?: string
 }
 
 export interface PerformanceTrend {
@@ -404,16 +494,17 @@ class ApiClient {
     const response = await fetch(url, options)
 
     if (!response.ok) {
-      // Try to extract error message from response body
+      let errorMessage = `Failed to ${options?.method || 'GET'} ${endpoint}: ${response.status}`
+
       try {
         const errorData = await response.json()
-        const errorMessage =
+        errorMessage =
           errorData.error || errorData.message || `Request failed with status ${response.status}`
-        throw new Error(errorMessage)
       } catch {
-        // If JSON parsing fails, throw generic error
-        throw new Error(`Failed to ${options?.method || 'GET'} ${endpoint}: ${response.status}`)
+        // Keep the fallback message when the response body is not JSON.
       }
+
+      throw new Error(errorMessage)
     }
 
     const data = await response.json()
@@ -457,7 +548,11 @@ class ApiClient {
 
   async batchUpdateRuns(
     runIds: string[],
-    updates: { release_tag: string | null; release_version: string | null }
+    updates: {
+      release_tag?: string | null
+      release_version?: string | null
+      job_name?: string | null
+    }
   ): Promise<{ matched_count: number; modified_count: number }> {
     const response = await this.request<any>('/runs/batch', {
       method: 'PATCH',
@@ -468,6 +563,7 @@ class ApiClient {
         run_ids: runIds,
         release_tag: updates.release_tag,
         release_version: updates.release_version,
+        job_name: updates.job_name,
       }),
     })
     return response
@@ -510,6 +606,25 @@ class ApiClient {
     }
   }
 
+  async getTestCaseSuites(
+    filters: Pick<TestCaseFilters, 'run_id' | 'job_name'> = {}
+  ): Promise<string[]> {
+    const queryString = this.buildQueryString(filters)
+    const response = await this.request<{ suites: string[] }>(`/cases/suites${queryString}`)
+    return response.suites
+  }
+
+  async getTestCaseLabels(
+    name: string,
+    filters: Pick<TestCaseFilters, 'run_id' | 'job_name'> = {}
+  ): Promise<string[]> {
+    const queryString = this.buildQueryString({ name, ...filters })
+    const response = await this.request<{ name: string; values: string[] }>(
+      `/cases/labels${queryString}`
+    )
+    return response.values
+  }
+
   async getTestCase(testId: string): Promise<TestCase> {
     return this.request<TestCase>(`/cases/${testId}`)
   }
@@ -524,7 +639,14 @@ class ApiClient {
     })
 
     if (!response.ok) {
-      throw new Error(`Failed to upload test results: ${response.status}`)
+      let message = `Failed to upload test results: ${response.status}`
+      try {
+        const error = await response.json()
+        message = error.error || error.message || message
+      } catch {
+        // Retain the status-based message for non-JSON responses.
+      }
+      throw new Error(message)
     }
 
     const data = await response.json()
@@ -557,18 +679,23 @@ class ApiClient {
 
   // Tier 2: Release Comparison
   async getReleases(params?: {
+    page?: number
     limit?: number
     skip?: number
     job_name?: string
+    search?: string
   }): Promise<ReleasesResponse> {
     const queryString = this.buildQueryString(params || {})
     return this.request<ReleasesResponse>(`/releases${queryString}`)
   }
 
-  async compareReleases(release1: string, release2: string): Promise<ReleaseComparisonResponse> {
-    return this.request<ReleaseComparisonResponse>(
-      `/releases/compare?release1=${release1}&release2=${release2}`
-    )
+  async compareReleases(
+    release1: string,
+    release2: string,
+    jobName?: string
+  ): Promise<ReleaseComparisonResponse> {
+    const queryString = this.buildQueryString({ release1, release2, job_name: jobName })
+    return this.request<ReleaseComparisonResponse>(`/releases/compare${queryString}`)
   }
 
   async getReleaseRuns(
@@ -576,7 +703,7 @@ class ApiClient {
     params?: { limit?: number; skip?: number }
   ): Promise<RunsResponse> {
     const queryString = this.buildQueryString(params || {})
-    return this.request<RunsResponse>(`/releases/${tag}/runs${queryString}`)
+    return this.request<RunsResponse>(`/releases/${encodeURIComponent(tag)}/runs${queryString}`)
   }
 
   // Tier 2: Test Run Comparison
@@ -602,6 +729,7 @@ class ApiClient {
     limit?: number
     days?: number
     threshold?: number
+    job_name?: string
   }): Promise<SlowestTestsResponse> {
     const queryString = this.buildQueryString(params || {})
     return this.request<SlowestTestsResponse>(`/performance/slowest${queryString}`)
@@ -611,6 +739,7 @@ class ApiClient {
     days?: number
     threshold_percent?: number
     min_baseline_runs?: number
+    job_name?: string
   }): Promise<PerformanceRegressionsResponse> {
     const queryString = this.buildQueryString(params || {})
     return this.request<PerformanceRegressionsResponse>(`/performance/regressions${queryString}`)

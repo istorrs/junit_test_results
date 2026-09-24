@@ -10,7 +10,7 @@ A modern, comprehensive web application for viewing, analyzing, and managing tes
 - 🔄 **CI/CD Integration** - Direct API access from Jenkins, GitHub Actions, and other CI/CD tools
 - 📈 **Real Trend Analysis** - Track test success rates and execution times with historical data
 - 🔍 **Advanced Filtering** - Search and filter tests by status, name, date, and more
-- 📁 **Batch Upload** - Upload multiple JUnit XML files at once
+- 📁 **JUnit and Allure Uploads** - Import JUnit XML or raw Allure results with steps and attachments
 - 🗄️ **MongoDB Backend** - Scalable database for storing test history
 - 🌓 **Dark Mode** - Beautiful dark theme with persistent user preferences
 - 📱 **Responsive Design** - Works seamlessly on desktop and mobile devices
@@ -166,8 +166,17 @@ sudo systemctl restart nginx
 ### Web Dashboard
 
 1. Open browser and navigate to: `http://YOUR_SERVER_IP`
-2. Upload JUnit XML files via drag-and-drop on the Upload page
+2. Upload JUnit XML files or zipped Allure results via the Upload page
 3. View test results, trends, and statistics on the Dashboard
+
+JUnit XML files and zipped Allure results directories are accepted. For a curl-friendly Allure upload:
+
+```bash
+zip -r allure-results.zip allure-results/
+curl -F "file=@allure-results.zip" -F "format=allure" \
+  http://localhost:8080/api/v1/upload
+```
+
 4. Explore test runs and cases with filtering and search
 5. Click any test to see detailed history and analytics
 
@@ -215,8 +224,8 @@ JUNIT_API_URL=http://your-server:5000 ./ci-cd-examples/upload-test-results.sh ./
 #### Core Endpoints
 
 ```
-POST   /api/v1/upload              - Upload JUnit XML file
-POST   /api/v1/upload/batch        - Upload multiple files
+POST   /api/v1/upload              - Upload JUnit XML or an Allure results ZIP
+POST   /api/v1/upload/batch        - Upload multiple JUnit XML or Allure ZIP files
 GET    /api/v1/runs                - Get test runs (paginated)
 GET    /api/v1/runs/:id            - Get specific test run
 DELETE /api/v1/runs/:id            - Delete test run
@@ -231,6 +240,7 @@ GET    /api/v1/cases/:id           - Get test case details
 GET    /api/v1/cases/:id/history   - Get test execution history
 GET    /api/v1/cases/:id/flakiness - Get flakiness metrics
 GET    /api/v1/cases/:id/trends    - Get performance trends
+GET    /api/v1/attachments/:id     - Download an Allure attachment
 ```
 
 #### Statistics & Analytics
@@ -350,6 +360,9 @@ npm run dev
 # Run tests
 npm run test
 
+# Run browser smoke tests against the Docker app on port 8080
+npm run test:e2e
+
 # Run tests with coverage
 npm run test:coverage
 
@@ -362,6 +375,8 @@ npm run build
 # Preview production build
 npm run preview
 ```
+
+Set `E2E_BASE_URL` or `CHROME_BIN` if the deployed URL or Chrome executable differs.
 
 ### Backend Development
 
@@ -564,7 +579,8 @@ pm2 restart junit-dashboard-api
 
 ## Documentation
 
-- **[VUE3_MIGRATION_GUIDE.md](VUE3_MIGRATION_GUIDE.md)** - Complete Vue 3 migration journey
+- **[docs/API_INTEGRATION.md](docs/API_INTEGRATION.md)** - How to upload results from Jenkins, GitHub Actions, GitLab CI, or a plain curl script
+- **[docs/VUE3_MIGRATION_GUIDE.md](docs/VUE3_MIGRATION_GUIDE.md)** - Complete Vue 3 migration journey
 - **[client/TIER1_ARCHITECTURE.md](client/TIER1_ARCHITECTURE.md)** - Tier 1 features architecture
 - **[backend/README.md](backend/README.md)** - Backend API documentation
 - **Component Tests** - See `__tests__` directories in `client/src/components/`

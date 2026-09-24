@@ -9,6 +9,7 @@
     "preview": "vite preview",
     "type-check": "vue-tsc -b --noEmit",
     "test": "vitest",
+    "test:e2e": "node e2e/dashboard.smoke.mjs",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage",
     "lint": "eslint .",

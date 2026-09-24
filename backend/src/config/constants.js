@@ -1,8 +1,7 @@
 /**
  * Global application constants
  *
- * IMPORTANT: These limits are set high to accommodate large test suites.
- * DO NOT reduce these values without explicit user approval.
+ * Keep these limits aligned with the frontend constants.
  */
 
 // Maximum number of records to return in API queries
@@ -10,7 +9,7 @@
 const MAX_QUERY_LIMIT = 10000;
 
 // Default limit if not specified in request
-const DEFAULT_QUERY_LIMIT = 10000;
+const DEFAULT_QUERY_LIMIT = 50;
 
 module.exports = {
     MAX_QUERY_LIMIT,

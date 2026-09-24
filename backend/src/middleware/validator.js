@@ -10,10 +10,10 @@ const validateUpload = (req, res, next) => {
 
     const file = req.file || (req.files && req.files[0]);
 
-    if (!file.originalname.endsWith('.xml')) {
+    if (!/\.(xml|zip)$/i.test(file.originalname)) {
         return res.status(400).json({
             success: false,
-            error: 'Only XML files are allowed'
+            error: 'Only JUnit XML and Allure ZIP files are allowed'
         });
     }
 

@@ -8,48 +8,56 @@
     <Card title="Select Releases to Compare">
       <div class="release-selectors">
         <div class="selector-group">
-          <label>Release 1 (Baseline)</label>
-          <select v-model="selectedRelease1" class="release-select">
-            <option value="">Select a release...</option>
-            <option
-              v-for="release in releases"
-              :key="release.release_tag"
-              :value="release.release_tag"
-            >
-              {{ release.release_tag }}
-              {{ release.release_version ? `(${release.release_version})` : '' }}
-            </option>
-          </select>
+          <label for="release-1">Release 1 (Baseline)</label>
+          <AsyncEntitySelect
+            v-model="selectedRelease1"
+            input-id="release-1"
+            placeholder="Select a release..."
+            search-label="Search baseline releases"
+            search-placeholder="Search release tags or versions..."
+            :reload-key="store.globalProjectFilter"
+            :load-options="loadReleaseOptions"
+          />
         </div>
 
         <div class="selector-group">
-          <label>Release 2 (Compare to)</label>
-          <select v-model="selectedRelease2" class="release-select">
-            <option value="">Select a release...</option>
-            <option
-              v-for="release in releases"
-              :key="release.release_tag"
-              :value="release.release_tag"
-            >
-              {{ release.release_tag }}
-              {{ release.release_version ? `(${release.release_version})` : '' }}
-            </option>
-          </select>
+          <label for="release-2">Release 2 (Compare to)</label>
+          <AsyncEntitySelect
+            v-model="selectedRelease2"
+            input-id="release-2"
+            placeholder="Select a release..."
+            search-label="Search comparison releases"
+            search-placeholder="Search release tags or versions..."
+            :reload-key="store.globalProjectFilter"
+            :load-options="loadReleaseOptions"
+          />
         </div>
 
         <button
-          :disabled="!selectedRelease1 || !selectedRelease2 || loading"
+          :disabled="
+            !selectedRelease1 ||
+            !selectedRelease2 ||
+            selectedRelease1 === selectedRelease2 ||
+            loading
+          "
           class="compare-button"
           @click="compareReleases"
         >
           {{ loading ? 'Comparing...' : 'Compare' }}
         </button>
       </div>
+      <p
+        v-if="selectedRelease1 && selectedRelease1 === selectedRelease2"
+        class="selection-error"
+        role="alert"
+      >
+        Choose two different releases to compare.
+      </p>
     </Card>
 
     <div v-if="comparison" class="comparison-results">
       <div class="metrics-grid">
-        <Card title="Release 1: {{ comparison.release1.tag }}">
+        <Card :title="`Release 1: ${comparison.release1.tag}`">
           <div class="metrics">
             <div class="metric">
               <span class="metric-label">Total Tests</span>
@@ -74,7 +82,7 @@
           </div>
         </Card>
 
-        <Card title="Release 2: {{ comparison.release2.tag }}">
+        <Card :title="`Release 2: ${comparison.release2.tag}`">
           <div class="metrics">
             <div class="metric">
               <span class="metric-label">Total Tests</span>
@@ -141,31 +149,40 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
+import { ref, watch } from 'vue'
 import { apiClient } from '../api/client'
-import type { Release, ReleaseComparisonResponse } from '../api/client'
+import type { ReleaseComparisonResponse } from '../api/client'
 import Card from '../components/shared/Card.vue'
+import AsyncEntitySelect, {
+  type EntityOptionsPage,
+} from '../components/shared/AsyncEntitySelect.vue'
 import { useTestDataStore } from '../stores/testData'
 
 const store = useTestDataStore()
-const releases = ref<Release[]>([])
 const selectedRelease1 = ref('')
 const selectedRelease2 = ref('')
 const comparison = ref<ReleaseComparisonResponse | null>(null)
 const loading = ref(false)
 const error = ref('')
 
-const loadReleases = async () => {
-  try {
-    const params: any = { limit: 100 }
-    if (store.globalProjectFilter) {
-      params.job_name = store.globalProjectFilter
-    }
-    const data = await apiClient.getReleases(params)
-    releases.value = data.releases
-  } catch (err) {
-    error.value = 'Failed to load releases'
-    console.error(err)
+const loadReleaseOptions = async (
+  search: string,
+  page: number,
+  limit: number
+): Promise<EntityOptionsPage> => {
+  const data = await apiClient.getReleases({
+    page,
+    limit,
+    search: search || undefined,
+    job_name: store.globalProjectFilter || undefined,
+  })
+  return {
+    options: data.releases.map((release) => ({
+      value: release.release_tag,
+      label: `${release.release_tag}${release.release_version ? ` (${release.release_version})` : ''}`,
+    })),
+    total: data.pagination.total,
+    pages: data.pagination.pages,
   }
 }
 
@@ -173,17 +190,12 @@ const loadReleases = async () => {
 watch(
   () => store.globalProjectFilter,
   () => {
-    loadReleases()
     // Clear selections when filter changes
     selectedRelease1.value = ''
     selectedRelease2.value = ''
     comparison.value = null
   }
 )
-
-onMounted(() => {
-  loadReleases()
-})
 
 const compareReleases = async () => {
   if (!selectedRelease1.value || !selectedRelease2.value) return
@@ -195,7 +207,8 @@ const compareReleases = async () => {
   try {
     comparison.value = await apiClient.compareReleases(
       selectedRelease1.value,
-      selectedRelease2.value
+      selectedRelease2.value,
+      store.globalProjectFilter || undefined
     )
   } catch (err) {
     error.value = 'Failed to compare releases'
@@ -260,15 +273,6 @@ const getDiffClass = (value: number) => {
   color: var(--text-primary);
 }
 
-.release-select {
-  padding: 0.75rem;
-  border: 1px solid var(--border-color);
-  border-radius: 0.375rem;
-  background: var(--bg-primary);
-  color: var(--text-primary);
-  font-size: 0.875rem;
-}
-
 .compare-button {
   padding: 0.75rem 2rem;
   background: var(--primary-color);
@@ -287,6 +291,12 @@ const getDiffClass = (value: number) => {
 
 .compare-button:not(:disabled):hover {
   opacity: 0.9;
+}
+
+.selection-error {
+  margin: 0.75rem 0 0;
+  color: var(--error-color);
+  font-size: 0.875rem;
 }
 
 .comparison-results {

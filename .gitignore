@@ -2,8 +2,8 @@
 node_modules/
 backend/node_modules/
 
-# Build output
-public/
+# Root build output (client/public contains source PWA assets)
+/public/
 
 # Logs
 *.log

@@ -6,6 +6,7 @@ import { apiClient } from '../../../api/client'
 // Mock the API client
 vi.mock('../../../api/client', () => ({
   apiClient: {
+    getTestCase: vi.fn(),
     getTestHistory: vi.fn(),
     getTestFlakiness: vi.fn(),
   },
@@ -49,6 +50,9 @@ vi.mock('../../charts/HistoryChart.vue', () => ({
 describe('TestDetailsModal', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.mocked(apiClient.getTestCase).mockResolvedValue(null as never)
+    vi.mocked(apiClient.getTestHistory).mockResolvedValue({ runs: [] })
+    vi.mocked(apiClient.getTestFlakiness).mockResolvedValue(null as never)
   })
 
   const defaultProps = {
@@ -120,7 +124,7 @@ describe('TestDetailsModal', () => {
     expect(tabs.length).toBe(4)
   })
 
-  it('displays error details for failed tests', () => {
+  it('displays error details for failed tests', async () => {
     const wrapper = mount(TestDetailsModal, {
       props: {
         ...defaultProps,
@@ -130,6 +134,7 @@ describe('TestDetailsModal', () => {
         stackTrace: 'at com.example.Test.method(Test.java:42)',
       },
     })
+    await flushPromises()
 
     expect(wrapper.text()).toContain('AssertionError')
     expect(wrapper.text()).toContain('Expected 5 but was 3')
@@ -147,25 +152,27 @@ describe('TestDetailsModal', () => {
     expect(wrapper.text()).toContain('No failure details')
   })
 
-  it('displays duration when provided', () => {
+  it('displays duration when provided', async () => {
     const wrapper = mount(TestDetailsModal, {
       props: {
         ...defaultProps,
         duration: 2.5,
       },
     })
+    await flushPromises()
 
     // Duration should be displayed
     expect(wrapper.text()).toContain('Duration')
   })
 
-  it('displays N/A for missing duration', () => {
+  it('displays N/A for missing duration', async () => {
     const wrapper = mount(TestDetailsModal, {
       props: {
         ...defaultProps,
         duration: undefined,
       },
     })
+    await flushPromises()
 
     expect(wrapper.text()).toContain('N/A')
   })
@@ -182,6 +189,7 @@ describe('TestDetailsModal', () => {
   })
 
   it('handles API errors gracefully', async () => {
+    vi.mocked(apiClient.getTestCase).mockRejectedValue(new Error('API Error'))
     vi.mocked(apiClient.getTestHistory).mockRejectedValue(new Error('API Error'))
     vi.mocked(apiClient.getTestFlakiness).mockRejectedValue(new Error('API Error'))
 
@@ -193,6 +201,29 @@ describe('TestDetailsModal', () => {
 
     // Should not crash, should handle error
     expect(wrapper.find('.mock-modal').exists()).toBe(true)
+  })
+
+  it('escapes HTML in captured system output', async () => {
+    vi.mocked(apiClient.getTestCase).mockResolvedValue({
+      id: 'test-123',
+      name: 'testAddition',
+      status: 'passed',
+      time: 1.5,
+      system_out: '<img src=x onerror="alert(1)">',
+    })
+
+    const wrapper = mount(TestDetailsModal, {
+      props: defaultProps,
+    })
+    await flushPromises()
+
+    const outputTab = wrapper.findAll('.tab-button').find((tab) => tab.text() === 'System Output')
+    expect(outputTab).toBeDefined()
+    await outputTab!.trigger('click')
+
+    const output = wrapper.find('.ansi-output')
+    expect(output.find('img').exists()).toBe(false)
+    expect(output.html()).toContain('&lt;img')
   })
 
   it('displays test information', () => {

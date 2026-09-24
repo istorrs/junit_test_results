@@ -6,8 +6,11 @@ const TestSuite = require('../models/TestSuite');
 const TestCase = require('../models/TestCase');
 const TestResult = require('../models/TestResult');
 const FileUpload = require('../models/FileUpload');
+const AllureAttachment = require('../models/AllureAttachment');
 const logger = require('../utils/logger');
 const { MAX_QUERY_LIMIT, DEFAULT_QUERY_LIMIT } = require('../config/constants');
+const { getRunSort, buildPassRateSortPipeline } = require('../services/runSorting');
+const { apiRateLimiter } = require('../middleware/rateLimiter');
 
 // GET /api/v1/runs/projects - Get all unique job names (projects)
 router.get('/projects', async (req, res, next) => {
@@ -32,29 +35,68 @@ router.get('/', async (req, res, next) => {
         const page = parseInt(req.query.page) || 1;
         const limit = Math.min(parseInt(req.query.limit) || DEFAULT_QUERY_LIMIT, MAX_QUERY_LIMIT);
         const skip = (page - 1) * limit;
+        const sort = getRunSort(req.query.sort_by, req.query.sort_order);
 
         const query = {};
 
         // Filters
         if (req.query.job_name) {
-            query['ci_metadata.job_name'] = req.query.job_name;
+            query['ci_metadata.job_name'] = { $eq: req.query.job_name };
         }
         if (req.query.branch) {
-            query['ci_metadata.branch'] = req.query.branch;
+            query['ci_metadata.branch'] = { $eq: req.query.branch };
         }
         if (req.query.from_date) {
             query.timestamp = { $gte: new Date(req.query.from_date) };
         }
         if (req.query.to_date) {
-            query.timestamp = { ...query.timestamp, $lte: new Date(req.query.to_date) };
+            const toDate = new Date(req.query.to_date);
+            if (/^\d{4}-\d{2}-\d{2}$/.test(req.query.to_date)) {
+                toDate.setUTCHours(23, 59, 59, 999);
+            }
+            query.timestamp = { ...query.timestamp, $lte: toDate };
         }
 
-        const total = await TestRun.countDocuments(query);
-        const runs = await TestRun.find(query)
-            .sort({ timestamp: -1 })
-            .skip(skip)
-            .limit(limit)
-            .lean();
+        const additionalFilters = [];
+        if (req.query.search) {
+            const escapedSearch = req.query.search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const searchPattern = new RegExp(escapedSearch, 'i');
+            const searchFilters = [
+                { name: searchPattern },
+                { 'ci_metadata.job_name': searchPattern },
+                { 'ci_metadata.branch': searchPattern }
+            ];
+            if (mongoose.isValidObjectId(req.query.search)) {
+                searchFilters.push({ _id: new mongoose.Types.ObjectId(req.query.search) });
+            }
+            additionalFilters.push({ $or: searchFilters });
+        }
+        if (req.query.status === 'passed') {
+            additionalFilters.push({ $expr: { $eq: ['$passed', '$total_tests'] } });
+        } else if (req.query.status === 'failed') {
+            additionalFilters.push({ $or: [{ failed: { $gt: 0 } }, { errors: { $gt: 0 } }] });
+        } else if (req.query.status === 'mixed') {
+            additionalFilters.push({
+                $expr: {
+                    $and: [{ $gt: ['$passed', 0] }, { $lt: ['$passed', '$total_tests'] }]
+                }
+            });
+        }
+        if (additionalFilters.length > 0) {
+            query.$and = additionalFilters;
+        }
+
+        const [total, runs] = await Promise.all([
+            TestRun.countDocuments(query),
+            sort.field === 'pass_rate'
+                ? TestRun.aggregate(buildPassRateSortPipeline(query, sort.direction, skip, limit))
+                : TestRun.find(query)
+                // Keep pagination stable when multiple runs share the selected value.
+                    .sort({ [sort.field]: sort.direction, _id: sort.direction })
+                    .skip(skip)
+                    .limit(limit)
+                    .lean()
+        ]);
 
         // Transform _id to id for each run
         const transformedRuns = runs.map(run => ({
@@ -123,7 +165,7 @@ router.get('/:id', async (req, res, next) => {
 });
 
 // DELETE /api/v1/runs/:id - Delete test run and all related data
-router.delete('/:id', async (req, res, next) => {
+router.delete('/:id', apiRateLimiter, async (req, res, next) => {
     try {
         // Verify the test run exists
         const run = await TestRun.findById(req.params.id);
@@ -137,6 +179,7 @@ router.delete('/:id', async (req, res, next) => {
         // Delete all related data (no transaction needed for standalone MongoDB)
         const runObjectId = new mongoose.Types.ObjectId(req.params.id);
         await TestResult.deleteMany({ run_id: runObjectId });
+        await AllureAttachment.deleteMany({ run_id: runObjectId });
         await TestCase.deleteMany({ run_id: runObjectId });
         await TestSuite.deleteMany({ run_id: runObjectId });
         await FileUpload.deleteMany({ run_id: runObjectId });
@@ -280,15 +323,16 @@ router.get('/:id1/compare/:id2', async (req, res, next) => {
     }
 });
 
-// PATCH /api/v1/runs/batch - Bulk update test runs (for release tagging)
+// PATCH /api/v1/runs/batch - Bulk update test run metadata
 router.patch('/batch', async (req, res, next) => {
     try {
-        const { run_ids, release_tag, release_version } = req.body;
+        const { run_ids, release_tag, release_version, job_name } = req.body;
 
         logger.info('Batch update request received', {
             run_ids,
             release_tag,
             release_version,
+            job_name,
             body: req.body
         });
 
@@ -301,21 +345,46 @@ router.patch('/batch', async (req, res, next) => {
             });
         }
 
-        if (!release_tag && !release_version) {
-            logger.warn('No release metadata provided', { release_tag, release_version });
+        if (release_tag === undefined && release_version === undefined && job_name === undefined) {
+            logger.warn('No run metadata provided', { release_tag, release_version, job_name });
             return res.status(400).json({
                 success: false,
-                error: 'At least one of release_tag or release_version must be provided'
+                error: 'At least one run metadata field must be provided'
             });
         }
 
-        // Build update object
+        if (job_name !== undefined && job_name !== null && typeof job_name !== 'string') {
+            return res.status(400).json({ success: false, error: 'job_name must be a string or null' });
+        }
+        const normalizedJobName = typeof job_name === 'string' ? job_name.trim() : job_name;
+        if (normalizedJobName && normalizedJobName.length > 200) {
+            return res.status(400).json({ success: false, error: 'job_name must be 200 characters or fewer' });
+        }
+
+        if (run_ids.some(id => !mongoose.isValidObjectId(id))) {
+            return res.status(400).json({ success: false, error: 'run_ids contains an invalid ID' });
+        }
+
+        // Build an aggregation-pipeline update so assigning a project also works
+        // for manually uploaded runs whose ci_metadata field is currently null.
         const updateFields = {};
+        const persistedFields = {};
         if (release_tag !== undefined) {
             updateFields.release_tag = release_tag;
+            persistedFields.release_tag = { $literal: release_tag };
         }
         if (release_version !== undefined) {
             updateFields.release_version = release_version;
+            persistedFields.release_version = { $literal: release_version };
+        }
+        if (job_name !== undefined) {
+            updateFields['ci_metadata.job_name'] = normalizedJobName || null;
+            persistedFields.ci_metadata = {
+                $mergeObjects: [
+                    { $ifNull: ['$ci_metadata', {}] },
+                    { job_name: { $literal: normalizedJobName || null } }
+                ]
+            };
         }
 
         // Convert string IDs to ObjectIds
@@ -324,7 +393,7 @@ router.patch('/batch', async (req, res, next) => {
         // Update all runs
         const result = await TestRun.updateMany(
             { _id: { $in: objectIds } },
-            { $set: updateFields }
+            [{ $set: persistedFields }]
         );
 
         res.json({

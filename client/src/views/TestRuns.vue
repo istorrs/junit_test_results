@@ -9,30 +9,48 @@
         <Button v-if="selectedRuns.size > 0" variant="primary" @click="openReleaseTagModal">
           Tag {{ selectedRuns.size }} Run{{ selectedRuns.size > 1 ? 's' : '' }} as Release
         </Button>
-        <Button :loading="store.loading" variant="secondary" @click="loadData"> Refresh </Button>
+        <Button v-if="selectedRuns.size > 0" variant="secondary" @click="openProjectModal">
+          Assign Project
+        </Button>
+        <Button :loading="store.loading" variant="secondary" @click="loadData()"> Refresh </Button>
         <Button @click="$router.push('/upload')"> Upload New Results </Button>
       </div>
     </div>
 
+    <div v-if="loadError" class="load-error" role="alert">
+      <span>{{ loadError }}</span>
+      <Button size="sm" variant="secondary" @click="loadData(1)">Try again</Button>
+    </div>
+
     <DataTable
       :columns="columns"
-      :data="filteredRuns"
+      :data="store.runs"
       :loading="store.loading"
+      :paginate="false"
+      :manual-sort="true"
+      :sort-key="sortBy"
+      :sort-order="sortOrder"
       :row-clickable="true"
-      :page-size="1000"
+      :row-aria-label="getRunRowLabel"
       @row-click="(row: any) => viewRunDetails(row as TestRun)"
+      @sort-change="handleSortChange"
     >
       <template #filters>
         <div class="filters-grid">
           <div class="filter-group">
-            <label>Search</label>
-            <SearchInput v-model="searchQuery" placeholder="Search by name, job, branch..." />
+            <label for="runs-search">Search</label>
+            <SearchInput
+              id="runs-search"
+              v-model="searchQuery"
+              aria-label="Search test runs"
+              placeholder="Search by name, job, branch..."
+            />
           </div>
 
           <div class="filter-group">
-            <label>Status</label>
-            <select v-model="selectedStatus" class="filter-select">
-              <option value="">All</option>
+            <label for="runs-status">Status</label>
+            <select id="runs-status" v-model="selectedStatus" class="filter-select">
+              <option value="">Any status</option>
               <option value="passed">Passed</option>
               <option value="failed">Failed</option>
               <option value="mixed">Mixed</option>
@@ -40,13 +58,13 @@
           </div>
 
           <div class="filter-group">
-            <label>Date Range</label>
-            <input v-model="dateFrom" type="date" class="filter-input" placeholder="From" />
+            <label for="runs-date-from">From date</label>
+            <input id="runs-date-from" v-model="dateFrom" type="date" class="filter-input" />
           </div>
 
           <div class="filter-group">
-            <label>To</label>
-            <input v-model="dateTo" type="date" class="filter-input" placeholder="To" />
+            <label for="runs-date-to">To date</label>
+            <input id="runs-date-to" v-model="dateTo" type="date" class="filter-input" />
           </div>
 
           <div class="filter-group align-end">
@@ -64,6 +82,7 @@
           :checked="allRunsSelected"
           class="run-checkbox"
           title="Select/Deselect All"
+          aria-label="Select all runs on this page"
           @change="toggleAllRuns"
         />
       </template>
@@ -73,6 +92,7 @@
           type="checkbox"
           :checked="selectedRuns.has((row as any).id)"
           class="run-checkbox"
+          :aria-label="`Select run ${(row as any).name || (row as any).id}`"
           @change="toggleRunSelection((row as any).id)"
           @click.stop
         />
@@ -110,11 +130,11 @@
         </div>
       </template>
 
-      <template #cell-total="{ row }">
+      <template #cell-total_tests="{ row }">
         <strong>{{ (row as any).total_tests }}</strong>
       </template>
 
-      <template #cell-rate="{ row }">
+      <template #cell-pass_rate="{ row }">
         <div v-if="(row as any).total_tests > 0" class="success-rate">
           <span :class="getSuccessRateClass(calculateSuccessRate(row as any))">
             {{ calculateSuccessRate(row as any) }}%
@@ -124,26 +144,44 @@
       </template>
     </DataTable>
 
+    <PaginationControls
+      :page="pagination.page"
+      :limit="pagination.limit"
+      :total="pagination.total"
+      :pages="Math.max(pagination.pages, 1)"
+      @page-change="handlePageChange"
+      @limit-change="handleLimitChange"
+    />
+
     <ReleaseTagModal
       :open="showReleaseModal"
       :run-ids="Array.from(selectedRuns)"
       @close="closeReleaseTagModal"
       @success="handleReleaseTagged"
     />
+    <ProjectAssignmentModal
+      :open="showProjectModal"
+      :run-ids="Array.from(selectedRuns)"
+      :projects="store.availableProjects"
+      @close="closeProjectModal"
+      @success="handleProjectAssigned"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useTestDataStore } from '../stores/testData'
 import { formatDate } from '../utils/formatters'
-import type { TestRun } from '../api/client'
+import type { Pagination, RunFilters, TestRun } from '../api/client'
 import { apiClient } from '../api/client'
 import Button from '../components/shared/Button.vue'
 import DataTable from '../components/shared/DataTable.vue'
 import SearchInput from '../components/shared/SearchInput.vue'
+import PaginationControls from '../components/shared/PaginationControls.vue'
 import ReleaseTagModal from '../components/modals/ReleaseTagModal.vue'
+import ProjectAssignmentModal from '../components/modals/ProjectAssignmentModal.vue'
 
 const router = useRouter()
 const store = useTestDataStore()
@@ -154,59 +192,25 @@ const dateFrom = ref('')
 const dateTo = ref('')
 const selectedRuns = ref<Set<string>>(new Set())
 const showReleaseModal = ref(false)
+const showProjectModal = ref(false)
 const selectAllCheckbox = ref<HTMLInputElement | null>(null)
+const pagination = ref<Pagination>({ page: 1, limit: 50, total: 0, pages: 1 })
+const loadError = ref('')
+const sortBy = ref<NonNullable<RunFilters['sort_by']>>('timestamp')
+const sortOrder = ref<NonNullable<RunFilters['sort_order']>>('desc')
+let filterTimer: ReturnType<typeof setTimeout> | undefined
 
 const columns = [
   { key: 'select', label: '', sortable: false },
   { key: 'name', label: 'Run Name', sortable: true },
   { key: 'timestamp', label: 'Date', sortable: true },
-  { key: 'total', label: 'Total Tests', sortable: true },
+  { key: 'total_tests', label: 'Total Tests', sortable: true },
   { key: 'summary', label: 'Results', sortable: false },
-  { key: 'rate', label: 'Success Rate', sortable: true },
+  { key: 'pass_rate', label: 'Success Rate', sortable: true },
 ]
 
-const filteredRuns = computed(() => {
-  let filtered = [...store.runs]
-
-  // Search filter
-  if (searchQuery.value) {
-    const query = searchQuery.value.toLowerCase()
-    filtered = filtered.filter((run) => {
-      return (
-        run.name?.toLowerCase().includes(query) ||
-        run.ci_metadata?.job_name?.toLowerCase().includes(query) ||
-        run.ci_metadata?.branch?.toLowerCase().includes(query) ||
-        run.id?.toLowerCase().includes(query)
-      )
-    })
-  }
-
-  // Status filter
-  if (selectedStatus.value) {
-    filtered = filtered.filter((run) => {
-      const hasFailures = run.failed > 0 || run.errors > 0
-      const rate = calculateSuccessRate(run)
-      if (selectedStatus.value === 'passed') return rate === 100
-      if (selectedStatus.value === 'failed') return hasFailures
-      if (selectedStatus.value === 'mixed') return rate > 0 && rate < 100
-      return true
-    })
-  }
-
-  // Date filters
-  if (dateFrom.value) {
-    const from = new Date(dateFrom.value)
-    filtered = filtered.filter((run) => new Date(run.timestamp) >= from)
-  }
-
-  if (dateTo.value) {
-    const to = new Date(dateTo.value)
-    to.setHours(23, 59, 59, 999)
-    filtered = filtered.filter((run) => new Date(run.timestamp) <= to)
-  }
-
-  return filtered
-})
+const getRunRowLabel = (row: Record<string, unknown>) =>
+  `Open test run ${String(row.name || 'Unnamed Run')}`
 
 const hasActiveFilters = computed(() => {
   return !!(searchQuery.value || selectedStatus.value || dateFrom.value || dateTo.value)
@@ -242,22 +246,22 @@ const viewRunDetails = (run: TestRun) => {
 
 // Select All functionality
 const allRunsSelected = computed(() => {
-  if (filteredRuns.value.length === 0) return false
-  return filteredRuns.value.every((run) => selectedRuns.value.has(run.id))
+  if (store.runs.length === 0) return false
+  return store.runs.every((run) => selectedRuns.value.has(run.id))
 })
 
 const someRunsSelected = computed(() => {
   if (selectedRuns.value.size === 0) return false
-  return !allRunsSelected.value && filteredRuns.value.some((run) => selectedRuns.value.has(run.id))
+  return !allRunsSelected.value && store.runs.some((run) => selectedRuns.value.has(run.id))
 })
 
 const toggleAllRuns = () => {
   if (allRunsSelected.value) {
     // Deselect all visible runs
-    filteredRuns.value.forEach((run) => selectedRuns.value.delete(run.id))
+    store.runs.forEach((run) => selectedRuns.value.delete(run.id))
   } else {
     // Select all visible runs
-    filteredRuns.value.forEach((run) => selectedRuns.value.add(run.id))
+    store.runs.forEach((run) => selectedRuns.value.add(run.id))
   }
   // Force reactivity
   selectedRuns.value = new Set(selectedRuns.value)
@@ -289,6 +293,19 @@ const closeReleaseTagModal = () => {
 const handleReleaseTagged = () => {
   clearSelection()
   loadData()
+}
+
+const openProjectModal = () => {
+  showProjectModal.value = true
+}
+
+const closeProjectModal = () => {
+  showProjectModal.value = false
+}
+
+const handleProjectAssigned = async () => {
+  clearSelection()
+  await Promise.all([store.fetchProjects(), loadData()])
 }
 
 const deleteSelectedRuns = async () => {
@@ -325,17 +342,56 @@ const deleteSelectedRuns = async () => {
   }
 }
 
-const loadData = async () => {
+const loadData = async (page = pagination.value.page) => {
+  loadError.value = ''
   try {
-    const filters: any = { limit: 100 }
+    const filters: RunFilters = {
+      page,
+      limit: pagination.value.limit,
+      sort_by: sortBy.value,
+      sort_order: sortOrder.value,
+    }
     if (store.globalProjectFilter) {
       filters.job_name = store.globalProjectFilter
     }
-    await store.fetchRuns(filters)
+    if (searchQuery.value.trim()) filters.search = searchQuery.value.trim()
+    if (selectedStatus.value) {
+      filters.status = selectedStatus.value as RunFilters['status']
+    }
+    if (dateFrom.value) filters.from_date = dateFrom.value
+    if (dateTo.value) filters.to_date = dateTo.value
+
+    const response = await store.fetchRuns(filters)
+    pagination.value = response.pagination
   } catch (error) {
+    loadError.value = error instanceof Error ? error.message : 'Failed to load test runs'
     console.error('Failed to load test runs:', error)
   }
 }
+
+const handlePageChange = (page: number) => {
+  clearSelection()
+  loadData(page)
+}
+
+const handleLimitChange = (limit: number) => {
+  clearSelection()
+  pagination.value.limit = limit
+  loadData(1)
+}
+
+const handleSortChange = (sort: { key: string; order: 'asc' | 'desc' }) => {
+  sortBy.value = sort.key as NonNullable<RunFilters['sort_by']>
+  sortOrder.value = sort.order
+  clearSelection()
+  loadData(1)
+}
+
+watch([searchQuery, selectedStatus, dateFrom, dateTo], () => {
+  clearSelection()
+  clearTimeout(filterTimer)
+  filterTimer = setTimeout(() => loadData(1), 300)
+})
 
 // Update indeterminate state of select-all checkbox
 watch(someRunsSelected, (value) => {
@@ -348,13 +404,16 @@ watch(someRunsSelected, (value) => {
 watch(
   () => store.globalProjectFilter,
   () => {
-    loadData()
+    clearSelection()
+    loadData(1)
   }
 )
 
 onMounted(() => {
-  loadData()
+  loadData(1)
 })
+
+onUnmounted(() => clearTimeout(filterTimer))
 </script>
 
 <style scoped>
@@ -381,6 +440,18 @@ h1 {
 .header-actions {
   display: flex;
   gap: 1rem;
+}
+
+.load-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding: 0.75rem 1rem;
+  color: var(--error-color);
+  background: var(--error-bg);
+  border-radius: 0.5rem;
 }
 
 .filters-grid {
@@ -531,5 +602,22 @@ h1 {
 .run-checkbox:indeterminate {
   accent-color: var(--primary-color);
   opacity: 0.7;
+}
+
+@media (max-width: 600px) {
+  .test-runs {
+    padding: 1.25rem;
+  }
+
+  .page-header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .header-actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
 }
 </style>

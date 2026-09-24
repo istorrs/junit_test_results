@@ -1,0 +1,38 @@
+{
+  "uuid": "codex-allure-fail",
+  "historyId": "stream-starts",
+  "testCaseId": "V4L-010",
+  "name": "test_v4l2_stream_starts",
+  "fullName": "tests.video.test_v4l2_stream_starts",
+  "status": "failed",
+  "statusDetails": {
+    "message": "Expected a frame within 500 ms",
+    "trace": "AssertionError: no video frame received"
+  },
+  "labels": [
+    { "name": "parentSuite", "value": "Hardware" },
+    { "name": "suite", "value": "V4L2" },
+    { "name": "tag", "value": "streaming" }
+  ],
+  "steps": [
+    {
+      "name": "Start video stream",
+      "status": "failed",
+      "start": 1790189701600,
+      "stop": 1790189702200,
+      "steps": [
+        {
+          "name": "Wait for first frame",
+          "status": "failed",
+          "start": 1790189701700,
+          "stop": 1790189702200
+        }
+      ],
+      "attachments": [
+        { "name": "stderr", "source": "stderr-attachment.txt", "type": "text/plain" }
+      ]
+    }
+  ],
+  "start": 1790189701600,
+  "stop": 1790189702200
+}

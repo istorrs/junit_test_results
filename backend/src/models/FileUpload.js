@@ -10,6 +10,11 @@ const fileUploadSchema = new mongoose.Schema({
         default: Date.now
     },
     file_size: Number,
+    result_format: {
+        type: String,
+        enum: ['junit', 'allure'],
+        default: 'junit'
+    },
     status: {
         type: String,
         enum: ['processing', 'completed', 'failed'],
@@ -19,10 +24,19 @@ const fileUploadSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'TestRun'
     },
+    created_run: {
+        type: Boolean,
+        default: false
+    },
     content_hash: {
         type: String,
         unique: true,
         sparse: true
+    },
+    raw_content_hash: String,
+    deduplication_scope: {
+        type: mongoose.Schema.Types.Mixed,
+        default: {}
     },
     uploader: {
         ip: String,

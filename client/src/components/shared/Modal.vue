@@ -1,11 +1,31 @@
 <template>
   <Teleport to="body">
     <Transition name="modal-fade">
-      <div v-if="open" class="modal-overlay" @click="handleOverlayClick">
-        <div :class="modalClasses" @click.stop>
+      <div v-if="open" class="modal-overlay" @click="handleOverlayClick" @keydown="handleKeydown">
+        <div
+          ref="modalContent"
+          :class="modalClasses"
+          role="dialog"
+          aria-modal="true"
+          :aria-labelledby="title || $slots.header ? titleId : undefined"
+          :aria-label="title || $slots.header ? undefined : 'Dialog'"
+          tabindex="-1"
+          @click.stop
+        >
           <div class="modal-header">
-            <h3 v-if="title" class="modal-title">{{ title }}</h3>
-            <button v-if="!hideClose" class="modal-close" @click="handleClose">×</button>
+            <div v-if="$slots.header" :id="titleId" class="modal-title-slot">
+              <slot name="header" />
+            </div>
+            <h3 v-else-if="title" :id="titleId" class="modal-title">{{ title }}</h3>
+            <button
+              v-if="!hideClose"
+              type="button"
+              class="modal-close"
+              aria-label="Close dialog"
+              @click="handleClose"
+            >
+              ×
+            </button>
           </div>
 
           <div class="modal-body">
@@ -22,7 +42,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, watch } from 'vue'
+import { computed, nextTick, onUnmounted, ref, useId, watch } from 'vue'
 
 interface Props {
   open: boolean
@@ -43,7 +63,23 @@ const emit = defineEmits<{
   close: []
 }>()
 
+const titleId = `modal-title-${useId()}`
+const modalContent = ref<HTMLElement | null>(null)
+let previouslyFocusedElement: HTMLElement | null = null
 const modalClasses = computed(() => ['modal-content', `modal-${props.size}`])
+const focusableSelector = [
+  'a[href]',
+  'button:not([disabled])',
+  'input:not([disabled])',
+  'select:not([disabled])',
+  'textarea:not([disabled])',
+  '[tabindex]:not([tabindex="-1"])',
+].join(',')
+
+const getFocusableElements = () =>
+  Array.from(modalContent.value?.querySelectorAll<HTMLElement>(focusableSelector) || []).filter(
+    (element) => !element.hidden
+  )
 
 const handleClose = () => {
   emit('close')
@@ -55,17 +91,56 @@ const handleOverlayClick = () => {
   }
 }
 
+const handleKeydown = (event: KeyboardEvent) => {
+  if (event.key === 'Escape') {
+    event.preventDefault()
+    handleClose()
+    return
+  }
+
+  if (event.key !== 'Tab') return
+
+  const focusableElements = getFocusableElements()
+  if (focusableElements.length === 0) {
+    event.preventDefault()
+    modalContent.value?.focus()
+    return
+  }
+
+  const firstElement = focusableElements[0]
+  const lastElement = focusableElements[focusableElements.length - 1]
+  if (event.shiftKey && document.activeElement === firstElement) {
+    event.preventDefault()
+    lastElement?.focus()
+  } else if (!event.shiftKey && document.activeElement === lastElement) {
+    event.preventDefault()
+    firstElement?.focus()
+  }
+}
+
 // Prevent body scroll when modal is open
 watch(
   () => props.open,
-  (isOpen) => {
+  async (isOpen) => {
     if (isOpen) {
+      previouslyFocusedElement = document.activeElement as HTMLElement | null
       document.body.style.overflow = 'hidden'
+      await nextTick()
+      const [firstFocusableElement] = getFocusableElements()
+      ;(firstFocusableElement || modalContent.value)?.focus()
     } else {
       document.body.style.overflow = ''
+      previouslyFocusedElement?.focus()
+      previouslyFocusedElement = null
     }
-  }
+  },
+  { immediate: true }
 )
+
+onUnmounted(() => {
+  document.body.style.overflow = ''
+  previouslyFocusedElement?.focus()
+})
 </script>
 
 <style scoped>
@@ -121,7 +196,7 @@ watch(
   align-items: center;
   justify-content: space-between;
   padding: 1rem 1.5rem;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .modal-title {
@@ -129,6 +204,11 @@ watch(
   font-size: 1.25rem;
   font-weight: 600;
   color: var(--text-primary);
+}
+
+.modal-title-slot {
+  flex: 1;
+  min-width: 0;
 }
 
 .modal-close {
@@ -149,7 +229,7 @@ watch(
 }
 
 .modal-close:hover {
-  background-color: #f3f4f6;
+  background-color: var(--bg-hover);
   color: var(--text-primary);
 }
 
@@ -161,8 +241,8 @@ watch(
 
 .modal-footer {
   padding: 1rem 1.5rem;
-  border-top: 1px solid #e5e7eb;
-  background: #f9fafb;
+  border-top: 1px solid var(--border-color);
+  background: var(--bg-tertiary);
   display: flex;
   gap: 0.5rem;
   justify-content: flex-end;

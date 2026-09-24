@@ -73,12 +73,14 @@
 
       <!-- Tabs -->
       <Card>
-        <div class="tabs">
+        <div class="tabs" role="tablist" aria-label="Performance views">
           <button
             v-for="tab in tabs"
             :key="tab.id"
             class="tab"
             :class="{ active: activeTab === tab.id }"
+            role="tab"
+            :aria-selected="activeTab === tab.id"
             @click="activeTab = tab.id"
           >
             {{ tab.label }}
@@ -214,8 +216,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import Card from '../components/shared/Card.vue'
+import { useTestDataStore } from '../stores/testData'
 import {
   apiClient,
   type SlowestTest,
@@ -236,6 +239,7 @@ const filters = ref({
 const slowestTests = ref<SlowestTest[]>([])
 const regressions = ref<PerformanceRegression[]>([])
 const trends = ref<PerformanceTrend[]>([])
+const store = useTestDataStore()
 
 const tabs = [
   { id: 'slowest', label: 'Slowest Tests' },
@@ -278,25 +282,26 @@ const loadData = async () => {
   error.value = ''
 
   try {
-    // Load slowest tests
-    const slowestResponse = await apiClient.getSlowestTests({
-      limit: filters.value.limit,
-      days: filters.value.days,
-    })
+    const projectFilter = store.globalProjectFilter ? { job_name: store.globalProjectFilter } : {}
+    const [slowestResponse, regressionsResponse, trendsResponse] = await Promise.all([
+      apiClient.getSlowestTests({
+        limit: filters.value.limit,
+        days: filters.value.days,
+        ...projectFilter,
+      }),
+      apiClient.getPerformanceRegressions({
+        days: filters.value.days,
+        threshold_percent: filters.value.threshold,
+        ...projectFilter,
+      }),
+      apiClient.getPerformanceTrends({
+        days: filters.value.days,
+        granularity: 'daily',
+        ...projectFilter,
+      }),
+    ])
     slowestTests.value = slowestResponse.slowest_tests
-
-    // Load performance regressions
-    const regressionsResponse = await apiClient.getPerformanceRegressions({
-      days: filters.value.days,
-      threshold_percent: filters.value.threshold,
-    })
     regressions.value = regressionsResponse.regressions
-
-    // Load trends data
-    const trendsResponse = await apiClient.getPerformanceTrends({
-      days: filters.value.days,
-      granularity: 'daily',
-    })
     trends.value = trendsResponse.trends.slice(0, 10) // Show last 10 data points
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Failed to load performance data'
@@ -309,6 +314,11 @@ const loadData = async () => {
 onMounted(() => {
   loadData()
 })
+
+watch(
+  () => store.globalProjectFilter,
+  () => loadData()
+)
 </script>
 
 <style scoped>
@@ -437,6 +447,7 @@ onMounted(() => {
   gap: 0.5rem;
   border-bottom: 2px solid var(--border-color);
   margin-bottom: 1.5rem;
+  overflow-x: auto;
 }
 
 .tab {
@@ -449,6 +460,7 @@ onMounted(() => {
   cursor: pointer;
   transition: all 0.2s;
   margin-bottom: -2px;
+  flex: 0 0 auto;
 }
 
 .tab:hover {
@@ -610,5 +622,11 @@ onMounted(() => {
 
 .trends-table tbody tr:hover {
   background-color: var(--surface-color);
+}
+
+@media (max-width: 768px) {
+  .performance-view {
+    padding: 1.25rem;
+  }
 }
 </style>

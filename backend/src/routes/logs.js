@@ -76,7 +76,7 @@ router.get('/', logsRateLimiter, async (req, res, next) => {
                     if (logTime >= since) {
                         logs.push(logEntry);
                     }
-                } catch (parseError) {
+                } catch {
                     // Skip malformed log entries
                     continue;
                 }
@@ -129,7 +129,7 @@ router.get('/errors', logsRateLimiter, async (req, res, next) => {
                     if (logTime >= since) {
                         errors.push(logEntry);
                     }
-                } catch (parseError) {
+                } catch {
                     continue;
                 }
             }
@@ -194,7 +194,7 @@ router.get('/tail', logsRateLimiter, async (req, res, next) => {
                 try {
                     const logEntry = JSON.parse(line);
                     logs.push(logEntry);
-                } catch (parseError) {
+                } catch {
                     continue;
                 }
             }

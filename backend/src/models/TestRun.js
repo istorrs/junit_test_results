@@ -51,6 +51,16 @@ const testRunSchema = new mongoose.Schema(
             enum: ['manual_upload', 'ci_cd', 'api'],
             default: 'api'
         },
+        result_formats: [
+            {
+                type: String,
+                enum: ['junit', 'allure']
+            }
+        ],
+        allure_metadata: {
+            type: mongoose.Schema.Types.Mixed,
+            default: undefined
+        },
         ci_metadata: {
             job_name: {
                 type: String,

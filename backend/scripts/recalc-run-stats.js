@@ -46,7 +46,7 @@ async function recalcStats() {
             );
 
             const stats = await calculateStats(testRun._id);
-            console.log(`\nRecalculated stats:`);
+            console.log('\nRecalculated stats:');
             console.log(
                 `  Total: ${stats.total_tests}, Passed: ${stats.passed}, Failed: ${stats.failed}, Errors: ${stats.errors}, Skipped: ${stats.skipped}`
             );

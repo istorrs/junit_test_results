@@ -1,5 +1,31 @@
 const mongoose = require('mongoose');
 
+const attachmentReferenceSchema = new mongoose.Schema(
+    {
+        attachment_id: { type: mongoose.Schema.Types.ObjectId, ref: 'AllureAttachment' },
+        name: String,
+        source: String,
+        type: String,
+        size: Number
+    },
+    { _id: false }
+);
+
+const allureStepSchema = new mongoose.Schema(
+    {
+        name: { type: String, required: true },
+        status: { type: String, enum: ['passed', 'failed', 'error', 'skipped', 'unknown'] },
+        start: Date,
+        stop: Date,
+        time: Number,
+        status_details: mongoose.Schema.Types.Mixed,
+        parameters: [mongoose.Schema.Types.Mixed],
+        attachments: [attachmentReferenceSchema]
+    },
+    { _id: false }
+);
+allureStepSchema.add({ steps: [allureStepSchema] });
+
 const testCaseSchema = new mongoose.Schema({
     suite_id: {
         type: mongoose.Schema.Types.ObjectId,
@@ -22,7 +48,7 @@ const testCaseSchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        enum: ['passed', 'failed', 'error', 'skipped'],
+        enum: ['passed', 'failed', 'error', 'skipped', 'unknown'],
         required: true
     },
     error_message: String,
@@ -33,6 +59,30 @@ const testCaseSchema = new mongoose.Schema({
     line: Number,
     system_out: String,
     system_err: String,
+    result_format: {
+        type: String,
+        enum: ['junit', 'allure'],
+        default: 'junit',
+        index: true
+    },
+    external_id: String,
+    history_id: String,
+    test_case_id: String,
+    full_name: String,
+    description: String,
+    description_html: String,
+    start: Date,
+    stop: Date,
+    status_details: mongoose.Schema.Types.Mixed,
+    labels: [mongoose.Schema.Types.Mixed],
+    parameters: [mongoose.Schema.Types.Mixed],
+    links: [mongoose.Schema.Types.Mixed],
+    steps: [allureStepSchema],
+    attachments: [attachmentReferenceSchema],
+    fixtures: {
+        befores: [allureStepSchema],
+        afters: [allureStepSchema]
+    },
     is_flaky: {
         type: Boolean,
         default: false
@@ -53,5 +103,7 @@ const testCaseSchema = new mongoose.Schema({
         }
     }
 });
+
+testCaseSchema.index({ run_id: 1, 'labels.name': 1, 'labels.value': 1 });
 
 module.exports = mongoose.model('TestCase', testCaseSchema);

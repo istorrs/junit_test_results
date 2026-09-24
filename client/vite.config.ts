@@ -58,23 +58,12 @@ export default defineConfig({
         ],
       },
       workbox: {
-        // Cache API responses for offline access
-        runtimeCaching: [
-          {
-            urlPattern: /^https:\/\/.*\/api\/.*/i,
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'api-cache',
-              expiration: {
-                maxEntries: 100,
-                maxAgeSeconds: 60 * 60, // 1 hour
-              },
-              cacheableResponse: {
-                statuses: [0, 200],
-              },
-            },
-          },
-        ],
+        // API navigations (for example, opening an attachment) must reach the
+        // backend instead of falling back to the SPA shell.
+        navigateFallbackDenylist: [/^\/api\//, /^\/health$/],
+        cleanupOutdatedCaches: true,
+        clientsClaim: true,
+        skipWaiting: true,
       },
     }),
   ],

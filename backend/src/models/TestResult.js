@@ -16,9 +16,13 @@ const testResultSchema = new mongoose.Schema({
         ref: 'TestRun',
         required: true
     },
+    file_upload_id: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'FileUpload'
+    },
     status: {
         type: String,
-        enum: ['passed', 'failed', 'error', 'skipped'],
+        enum: ['passed', 'failed', 'error', 'skipped', 'unknown'],
         required: true
     },
     time: Number,

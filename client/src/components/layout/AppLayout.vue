@@ -79,6 +79,9 @@ const handleProjectChange = () => {
 
 onMounted(() => {
   initTheme()
+  store.fetchProjects().catch((error) => {
+    console.error('Failed to load projects:', error)
+  })
 })
 </script>
 
@@ -258,6 +261,25 @@ onMounted(() => {
 }
 
 /* Mobile Responsive Styles */
+@media (max-width: 1200px) {
+  .navbar-content {
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .nav-links {
+    order: 3;
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .nav-links::-webkit-scrollbar {
+    display: none;
+  }
+}
+
 @media (max-width: 1024px) {
   .navbar-content {
     padding: 1rem;
@@ -283,7 +305,7 @@ onMounted(() => {
   }
 
   .project-filter {
-    order: 3;
+    order: 2;
     width: 100%;
   }
 
@@ -297,6 +319,7 @@ onMounted(() => {
   }
 
   .nav-links {
+    order: 3;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none; /* Firefox */

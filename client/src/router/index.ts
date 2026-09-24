@@ -20,6 +20,12 @@ const routes: RouteRecordRaw[] = [
     meta: { title: 'Test Cases' },
   },
   {
+    path: '/attachments/:id',
+    name: 'attachment-viewer',
+    component: () => import('../views/AttachmentViewer.vue'),
+    meta: { title: 'Attachment' },
+  },
+  {
     path: '/upload',
     name: 'upload',
     component: () => import('../views/Upload.vue'),

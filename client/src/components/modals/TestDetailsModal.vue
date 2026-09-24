@@ -21,11 +21,13 @@
     </template>
 
     <div class="tabs-container">
-      <div class="tabs-nav">
+      <div class="tabs-nav" role="tablist" aria-label="Test details sections">
         <button
           v-for="tab in tabs"
           :key="tab.id"
           :class="['tab-button', { active: activeTab === tab.id }]"
+          role="tab"
+          :aria-selected="activeTab === tab.id"
           @click="activeTab = tab.id"
         >
           {{ tab.label }}
@@ -92,6 +94,10 @@
                 </div>
               </div>
             </div>
+          </div>
+
+          <div v-show="activeTab === 'allure'" class="tab-panel">
+            <AllureDetails v-if="testCaseDetails" :test="testCaseDetails" />
           </div>
 
           <!-- Failure Details Tab -->
@@ -249,7 +255,6 @@
     <template #footer>
       <div class="modal-footer">
         <Button variant="secondary" @click="handleClose">Close</Button>
-        <Button v-if="errorMessage" @click="copyErrorToClipboard"> Copy Error </Button>
       </div>
     </template>
   </Modal>
@@ -257,30 +262,15 @@
 
 <script setup lang="ts">
 import { ref, watch, computed, nextTick } from 'vue'
-import AnsiToHtml from 'ansi-to-html'
 import Modal from '../shared/Modal.vue'
 import Button from '../shared/Button.vue'
 import FlakinessIndicator from '../shared/FlakinessIndicator.vue'
 import ErrorStackTrace from '../shared/ErrorStackTrace.vue'
 import HistoryChart from '../charts/HistoryChart.vue'
+import AllureDetails from '../allure/AllureDetails.vue'
 import { formatDate, formatDuration } from '../../utils/formatters'
+import { renderAnsi } from '../../utils/ansi'
 import { apiClient } from '../../api/client'
-
-// Configure ANSI to HTML converter
-const ansiConverter = new AnsiToHtml({
-  fg: '#d4d4d4',
-  bg: '#1e1e1e',
-  colors: {
-    0: '#2e3436', // black
-    1: '#cc0000', // red
-    2: '#4e9a06', // green
-    3: '#c4a000', // yellow
-    4: '#3465a4', // blue
-    5: '#75507b', // magenta
-    6: '#06989a', // cyan
-    7: '#d3d7cf', // white
-  },
-})
 
 interface Props {
   open: boolean
@@ -318,11 +308,13 @@ const tabs = computed(() => {
   const systemErr = testCaseDetails.value?.system_err
 
   console.log('Computing tabs - systemOut:', !!systemOut, 'systemErr:', !!systemErr)
-  const baseTabs = [
-    { id: 'overview', label: 'Overview' },
-    { id: 'failure', label: 'Failure Details' },
-    { id: 'history', label: 'History' },
-  ]
+  const baseTabs = [{ id: 'overview', label: 'Overview' }]
+
+  if (testCaseDetails.value?.result_format === 'allure') {
+    baseTabs.push({ id: 'allure', label: 'Steps & Attachments' })
+  }
+
+  baseTabs.push({ id: 'failure', label: 'Failure Details' }, { id: 'history', label: 'History' })
 
   // Add System Output tab if data exists
   if (systemOut) {
@@ -358,17 +350,13 @@ const statusClass = computed(() => {
 const systemOutHtml = computed(() => {
   const systemOut = testCaseDetails.value?.system_out
   if (!systemOut) return ''
-  // Replace literal #x1B with actual ESC character (\x1B)
-  const withRealEscapes = systemOut.replace(/#x1B/g, '\x1B')
-  return ansiConverter.toHtml(withRealEscapes)
+  return renderAnsi(systemOut)
 })
 
 const systemErrHtml = computed(() => {
   const systemErr = testCaseDetails.value?.system_err
   if (!systemErr) return ''
-  // Replace literal #x1B with actual ESC character (\x1B)
-  const withRealEscapes = systemErr.replace(/#x1B/g, '\x1B')
-  return ansiConverter.toHtml(withRealEscapes)
+  return renderAnsi(systemErr)
 })
 
 // Parse test steps from System Error output
@@ -448,16 +436,6 @@ const testSteps = computed(() => {
   return steps
 })
 
-// Fetch additional data when modal opens
-watch(
-  () => props.open,
-  async (isOpen) => {
-    if (isOpen && props.testId) {
-      await loadTestDetails()
-    }
-  }
-)
-
 // Resize chart when History tab becomes active
 watch(activeTab, async (newTab) => {
   if (newTab === 'history') {
@@ -505,6 +483,17 @@ const loadTestDetails = async () => {
     loading.value = false
   }
 }
+
+// Fetch additional data when modal opens, including when mounted in an open state.
+watch(
+  () => props.open,
+  async (isOpen) => {
+    if (isOpen && props.testId) {
+      await loadTestDetails()
+    }
+  },
+  { immediate: true }
+)
 
 const handleClose = () => {
   emit('close')
@@ -604,26 +593,6 @@ const fallbackCopyToClipboard = (text: string, label: string) => {
   } finally {
     document.body.removeChild(textArea)
   }
-}
-
-const copyErrorToClipboard = () => {
-  console.log('[TestDetailsModal] copyErrorToClipboard called')
-  const text = [
-    `Test: ${props.testName}`,
-    `Status: ${props.status}`,
-    props.errorType && `Error Type: ${props.errorType}`,
-    props.errorMessage && `\nError Message:\n${props.errorMessage}`,
-    props.stackTrace && `\nStack Trace:\n${props.stackTrace}`,
-    testCaseDetails.value?.system_out && `\nSystem Output:\n${testCaseDetails.value.system_out}`,
-    testCaseDetails.value?.system_err && `\nSystem Error:\n${testCaseDetails.value.system_err}`,
-  ]
-    .filter(Boolean)
-    .join('\n')
-
-  console.log('[TestDetailsModal] Error text length:', text.length)
-
-  // Use the same copyToClipboard function with fallback
-  copyToClipboard(text, 'Error details')
 }
 </script>
 

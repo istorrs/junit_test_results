@@ -1,0 +1,32 @@
+{
+  "uuid": "codex-allure-pass",
+  "historyId": "v4l2-device-identity",
+  "testCaseId": "V4L-002",
+  "name": "test_v4l2_device_identity",
+  "fullName": "tests.video.test_v4l2_device_identity",
+  "status": "passed",
+  "description": "Verifies that the V4L2 device reports a readable identity.",
+  "labels": [
+    { "name": "parentSuite", "value": "Hardware" },
+    { "name": "suite", "value": "V4L2" },
+    { "name": "tag", "value": "smoke" },
+    { "name": "framework", "value": "pytest" },
+    { "name": "host", "value": "test-rig-01" }
+  ],
+  "steps": [
+    {
+      "name": "V4L2 device identity readable [V4L-002]",
+      "status": "passed",
+      "start": 1790189701256,
+      "stop": 1790189701503,
+      "attachments": [
+        { "name": "Identity note", "source": "note-attachment.txt", "type": "text/plain" }
+      ]
+    }
+  ],
+  "attachments": [
+    { "name": "log", "source": "log-attachment.txt", "type": "text/plain" }
+  ],
+  "start": 1790189701256,
+  "stop": 1790189701503
+}

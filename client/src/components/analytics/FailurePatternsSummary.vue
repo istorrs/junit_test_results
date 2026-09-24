@@ -40,7 +40,11 @@
             v-for="(test, index) in pattern.affected_tests.slice(0, 3)"
             :key="test.test_id"
             class="test-link"
+            role="button"
+            tabindex="0"
             @click="viewTest(test.test_id, test.test_name)"
+            @keydown.enter="viewTest(test.test_id, test.test_name)"
+            @keydown.space.prevent="viewTest(test.test_id, test.test_name)"
           >
             {{ test.test_name
             }}{{ index < Math.min(2, pattern.affected_tests.length - 1) ? ',' : '' }}

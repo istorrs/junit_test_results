@@ -24,9 +24,10 @@ describe('API Client', () => {
               id: '1',
               name: 'Test Run 1',
               total_tests: 100,
-              total_failures: 5,
-              total_errors: 2,
-              total_skipped: 3,
+              passed: 90,
+              failed: 5,
+              errors: 2,
+              skipped: 3,
             },
           ],
           pagination: { page: 1, limit: 50, total: 1 },
@@ -41,26 +42,7 @@ describe('API Client', () => {
       const result = await apiClient.getRuns()
 
       expect(mockFetch).toHaveBeenCalledWith('/api/v1/runs?page=1&limit=50', undefined)
-      expect(result).toEqual({
-        runs: [
-          {
-            id: '1',
-            name: 'Test Run 1',
-            total_tests: 100,
-            total_failures: 5,
-            total_errors: 2,
-            total_skipped: 3,
-            summary: {
-              total: 100,
-              passed: 90,
-              failed: 5,
-              errors: 2,
-              skipped: 3,
-            },
-          },
-        ],
-        pagination: { page: 1, limit: 50, total: 1 },
-      })
+      expect(result).toEqual(mockData.data)
     })
 
     it('should fetch test runs with custom pagination', async () => {
@@ -107,6 +89,23 @@ describe('API Client', () => {
       )
     })
 
+    it('should send server-side sorting parameters', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          success: true,
+          data: { runs: [], pagination: { page: 1, limit: 50, total: 0 } },
+        }),
+      })
+
+      await apiClient.getRuns({ sort_by: 'pass_rate', sort_order: 'asc' })
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        '/api/v1/runs?page=1&limit=50&sort_by=pass_rate&sort_order=asc',
+        undefined
+      )
+    })
+
     it('should throw error when API returns error', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: false,
@@ -115,6 +114,40 @@ describe('API Client', () => {
       })
 
       await expect(apiClient.getRuns()).rejects.toThrow('Failed to GET /runs')
+    })
+
+    it('should preserve an API error message', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 400,
+        json: async () => ({ error: 'Invalid date range' }),
+      })
+
+      await expect(apiClient.getRuns()).rejects.toThrow('Invalid date range')
+    })
+  })
+
+  describe('batchUpdateRuns', () => {
+    it('assigns selected runs to a project', async () => {
+      const mockData = {
+        success: true,
+        data: { matched_count: 1, modified_count: 1 },
+      }
+      mockFetch.mockResolvedValueOnce({ ok: true, json: async () => mockData })
+
+      const result = await apiClient.batchUpdateRuns(['run-1'], {
+        job_name: 'xtg-pdw-gcs-hub-test',
+      })
+
+      expect(mockFetch).toHaveBeenCalledWith('/api/v1/runs/batch', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          run_ids: ['run-1'],
+          job_name: 'xtg-pdw-gcs-hub-test',
+        }),
+      })
+      expect(result).toEqual(mockData.data)
     })
   })
 
@@ -136,6 +169,28 @@ describe('API Client', () => {
 
       expect(mockFetch).toHaveBeenCalledWith('/api/v1/runs/projects', undefined)
       expect(result).toEqual(mockData.data.projects)
+    })
+  })
+
+  describe('getReleases', () => {
+    it('sends search and page parameters', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          success: true,
+          data: {
+            releases: [],
+            pagination: { page: 2, limit: 25, total: 0, pages: 0 },
+          },
+        }),
+      })
+
+      await apiClient.getReleases({ page: 2, limit: 25, search: '1.0', job_name: 'gateway' })
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        '/api/v1/releases?page=2&limit=25&search=1.0&job_name=gateway',
+        undefined
+      )
     })
   })
 
@@ -227,10 +282,85 @@ describe('API Client', () => {
       await apiClient.getTestCases({
         run_id: '123',
         status: 'failed',
+        tag: 'hardware',
+        sort_by: 'name',
+        sort_order: 'desc',
       })
 
       expect(mockFetch).toHaveBeenCalledWith(
-        '/api/v1/cases?page=1&limit=50&run_id=123&status=failed',
+        '/api/v1/cases?page=1&limit=50&run_id=123&status=failed&tag=hardware&sort_by=name&sort_order=desc',
+        undefined
+      )
+    })
+  })
+
+  describe('getTestCaseSuites', () => {
+    it('fetches all suite names for the selected project', async () => {
+      const mockData = {
+        success: true,
+        data: { suites: ['suite.alpha', 'suite.beta'] },
+      }
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockData,
+      })
+
+      const result = await apiClient.getTestCaseSuites({ job_name: 'Gateway Tests' })
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        '/api/v1/cases/suites?job_name=Gateway+Tests',
+        undefined
+      )
+      expect(result).toEqual(mockData.data.suites)
+    })
+  })
+
+  describe('getTestCaseLabels', () => {
+    it('fetches sorted label values within the selected run', async () => {
+      const mockData = {
+        success: true,
+        data: { name: 'tag', values: ['hardware', 'smoke'] },
+      }
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockData,
+      })
+
+      const result = await apiClient.getTestCaseLabels('tag', { run_id: 'run-123' })
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        '/api/v1/cases/labels?name=tag&run_id=run-123',
+        undefined
+      )
+      expect(result).toEqual(mockData.data.values)
+    })
+  })
+
+  describe('performance project filters', () => {
+    it('includes the selected project in performance requests', async () => {
+      mockFetch
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({ success: true, data: { slowest_tests: [] } }),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({ success: true, data: { trends: [] } }),
+        })
+
+      await apiClient.getSlowestTests({ days: 30, job_name: 'Gateway Tests' })
+      await apiClient.getPerformanceTrends({ days: 30, job_name: 'Gateway Tests' })
+
+      expect(mockFetch).toHaveBeenNthCalledWith(
+        1,
+        '/api/v1/performance/slowest?days=30&job_name=Gateway+Tests',
+        undefined
+      )
+      expect(mockFetch).toHaveBeenNthCalledWith(
+        2,
+        '/api/v1/performance/trends?days=30&job_name=Gateway+Tests',
         undefined
       )
     })
