@@ -18,9 +18,13 @@
       :data="store.cases"
       :loading="store.loading"
       :paginate="false"
+      :manual-sort="true"
+      :sort-key="sortBy"
+      :sort-order="sortOrder"
       :row-clickable="true"
       :row-aria-label="getTestCaseRowLabel"
       @row-click="handleRowClick"
+      @sort-change="handleSortChange"
     >
       <template #filters>
         <div class="filters-grid">
@@ -171,10 +175,13 @@ let tagsRequestId = 0
 const modalOpen = ref(false)
 const selectedTest = ref<any>(null)
 
+const sortBy = ref<NonNullable<TestCaseFilters['sort_by']>>('name')
+const sortOrder = ref<NonNullable<TestCaseFilters['sort_order']>>('asc')
+
 const columns = [
-  { key: 'status', label: 'Status', sortable: false },
-  { key: 'name', label: 'Test Name', sortable: false },
-  { key: 'time', label: 'Duration', sortable: false },
+  { key: 'status', label: 'Status', sortable: true },
+  { key: 'name', label: 'Test Name', sortable: true },
+  { key: 'time', label: 'Duration', sortable: true },
 ]
 
 const getTestCaseRowLabel = (row: Record<string, unknown>) =>
@@ -243,6 +250,8 @@ const loadData = async (page = pagination.value.page) => {
     const filters: TestCaseFilters = {
       page,
       limit: pagination.value.limit,
+      sort_by: sortBy.value,
+      sort_order: sortOrder.value,
     }
 
     if (typeof route.query.run_id === 'string') filters.run_id = route.query.run_id
@@ -268,6 +277,12 @@ const handlePageChange = (page: number) => loadData(page)
 
 const handleLimitChange = (limit: number) => {
   pagination.value.limit = limit
+  loadData(1)
+}
+
+const handleSortChange = (sort: { key: string; order: 'asc' | 'desc' }) => {
+  sortBy.value = sort.key as NonNullable<TestCaseFilters['sort_by']>
+  sortOrder.value = sort.order
   loadData(1)
 }
 

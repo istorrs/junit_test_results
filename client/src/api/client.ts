@@ -46,6 +46,8 @@ export interface TestCaseFilters extends PaginationParams {
   sub_suite?: string
   label_name?: string
   label_value?: string
+  sort_by?: 'name' | 'status' | 'time' | 'class_name'
+  sort_order?: 'asc' | 'desc'
 }
 
 export interface TestRun {

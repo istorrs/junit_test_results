@@ -196,7 +196,7 @@ onUnmounted(() => {
   align-items: center;
   justify-content: space-between;
   padding: 1rem 1.5rem;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .modal-title {
@@ -229,7 +229,7 @@ onUnmounted(() => {
 }
 
 .modal-close:hover {
-  background-color: #f3f4f6;
+  background-color: var(--bg-hover);
   color: var(--text-primary);
 }
 
@@ -241,8 +241,8 @@ onUnmounted(() => {
 
 .modal-footer {
   padding: 1rem 1.5rem;
-  border-top: 1px solid #e5e7eb;
-  background: #f9fafb;
+  border-top: 1px solid var(--border-color);
+  background: var(--bg-tertiary);
   display: flex;
   gap: 0.5rem;
   justify-content: flex-end;

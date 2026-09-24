@@ -255,7 +255,6 @@
     <template #footer>
       <div class="modal-footer">
         <Button variant="secondary" @click="handleClose">Close</Button>
-        <Button v-if="errorMessage" @click="copyErrorToClipboard"> Copy Error </Button>
       </div>
     </template>
   </Modal>
@@ -615,26 +614,6 @@ const fallbackCopyToClipboard = (text: string, label: string) => {
   } finally {
     document.body.removeChild(textArea)
   }
-}
-
-const copyErrorToClipboard = () => {
-  console.log('[TestDetailsModal] copyErrorToClipboard called')
-  const text = [
-    `Test: ${props.testName}`,
-    `Status: ${props.status}`,
-    props.errorType && `Error Type: ${props.errorType}`,
-    props.errorMessage && `\nError Message:\n${props.errorMessage}`,
-    props.stackTrace && `\nStack Trace:\n${props.stackTrace}`,
-    testCaseDetails.value?.system_out && `\nSystem Output:\n${testCaseDetails.value.system_out}`,
-    testCaseDetails.value?.system_err && `\nSystem Error:\n${testCaseDetails.value.system_err}`,
-  ]
-    .filter(Boolean)
-    .join('\n')
-
-  console.log('[TestDetailsModal] Error text length:', text.length)
-
-  // Use the same copyToClipboard function with fallback
-  copyToClipboard(text, 'Error details')
 }
 </script>
 

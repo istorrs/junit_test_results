@@ -108,6 +108,70 @@ try {
     await command('Page.navigate', { url: `${baseUrl}${path}` })
     await waitFor("document.readyState === 'complete' && document.querySelector('h1')", path)
   }
+  const inspectOpenedTarget = async (expectedUrl) => {
+    let openedTarget
+    for (let attempt = 0; attempt < 20; attempt += 1) {
+      const targets = await requestJson(`http://127.0.0.1:${debugPort}/json/list`)
+      openedTarget = targets.find((item) => item.id !== target.id && item.url === expectedUrl)
+      if (openedTarget) break
+      await delay(100)
+    }
+    if (!openedTarget) {
+      const created = await command('Target.createTarget', { url: expectedUrl })
+      for (let attempt = 0; attempt < 50; attempt += 1) {
+        const targets = await requestJson(`http://127.0.0.1:${debugPort}/json/list`)
+        openedTarget = targets.find((item) => item.id === created.targetId)
+        if (openedTarget) break
+        await delay(100)
+      }
+    }
+    if (!openedTarget) throw new Error(`No browser target available for ${expectedUrl}`)
+
+    const openedSocket = new WebSocket(openedTarget.webSocketDebuggerUrl)
+    await new Promise((resolve, reject) => {
+      openedSocket.addEventListener('open', resolve, { once: true })
+      openedSocket.addEventListener('error', reject, { once: true })
+    })
+    let openedCommandId = 0
+    const openedPending = new Map()
+    openedSocket.addEventListener('message', (event) => {
+      const message = JSON.parse(event.data)
+      if (!message.id || !openedPending.has(message.id)) return
+      const operation = openedPending.get(message.id)
+      openedPending.delete(message.id)
+      if (message.error) operation.reject(new Error(message.error.message))
+      else operation.resolve(message.result)
+    })
+    const openedCommand = (method, params = {}) =>
+      new Promise((resolve, reject) => {
+        const id = ++openedCommandId
+        openedPending.set(id, { resolve, reject })
+        openedSocket.send(JSON.stringify({ id, method, params }))
+      })
+    await openedCommand('Runtime.enable')
+
+    let result
+    for (let attempt = 0; attempt < 100; attempt += 1) {
+      const evaluation = await openedCommand('Runtime.evaluate', {
+        expression: `({
+          ready: document.readyState === 'complete',
+          contentType: document.contentType,
+          text: document.body?.innerText?.slice(0, 200) || '',
+          hasApp: Boolean(document.querySelector('#app')),
+        })`,
+        returnByValue: true,
+      })
+      if (evaluation.result.value?.ready) {
+        result = evaluation.result.value
+        break
+      }
+      await delay(100)
+    }
+    openedSocket.close()
+    await command('Target.closeTarget', { targetId: openedTarget.id })
+    if (!result) throw new Error(`Timed out inspecting ${expectedUrl}`)
+    return result
+  }
 
   await command('Runtime.enable')
   await command('Network.enable')
@@ -214,14 +278,116 @@ try {
   }
 
   let allureVerified = false
+  let caseSearchVerified = false
+  let caseSortVerified = false
+  let caseFiltersVerified = false
+  let darkModalVerified = false
+  let attachmentNavigationVerified = false
+  let modalTabsAudited = []
   if (allureRunId) {
     const query = new URLSearchParams({ run_id: allureRunId })
-    if (allureSearch) query.set('search', allureSearch)
     await navigate(`/cases?${query}`)
     await waitFor(
       "document.querySelector('#cases-tag')?.options.length > 1 && document.querySelector('tbody tr') && !document.querySelector('.loading-cell')",
       'Allure cases and labels'
     )
+
+    await waitFor(
+      "document.querySelector('th[aria-sort=\"ascending\"]')?.textContent.includes('Test Name')",
+      'default test-name sorting'
+    )
+    await evaluate(
+      "[...document.querySelectorAll('th button')].find((button) => button.textContent.includes('Duration')).click()"
+    )
+    await waitFor(
+      "document.querySelector('th[aria-sort=\"ascending\"]')?.textContent.includes('Duration') && !document.querySelector('.loading-cell')",
+      'case duration sorting'
+    )
+    caseSortVerified = await evaluate(`(async () => {
+      const shown = [...document.querySelectorAll('tbody .duration')].map((node) => node.textContent.trim())
+      const response = await fetch('/api/v1/cases?page=1&limit=50&run_id=${allureRunId}&sort_by=time&sort_order=asc')
+      const body = await response.json()
+      const expected = body.data.cases.map((item) => {
+        const milliseconds = (item.time || 0) * 1000
+        if (milliseconds <= 0) return '0ms'
+        if (milliseconds < 1000) return milliseconds.toFixed(0) + 'ms'
+        if (milliseconds < 60000) return (milliseconds / 1000).toFixed(2) + 's'
+        const hours = Math.floor(milliseconds / 3600000)
+        const minutes = Math.floor((milliseconds % 3600000) / 60000)
+        const seconds = Math.floor((milliseconds % 60000) / 1000)
+        return [hours && hours + 'h', minutes && minutes + 'm', seconds && seconds + 's']
+          .filter(Boolean)
+          .join(' ')
+      })
+      return shown.join('\\n') === expected.join('\\n')
+    })()`)
+    if (!caseSortVerified) throw new Error('Case table does not match server-side duration sorting')
+
+    await evaluate(`(() => {
+      const select = document.querySelector('#cases-status')
+      select.value = 'failed'
+      select.dispatchEvent(new Event('change', { bubbles: true }))
+    })()`)
+    await waitFor(
+      "document.querySelectorAll('tbody .status-badge').length > 0 && [...document.querySelectorAll('tbody .status-badge')].every((badge) => badge.textContent.includes('failed')) && !document.querySelector('.loading-cell')",
+      'failed status filter'
+    )
+    await evaluate(`(() => {
+      const status = document.querySelector('#cases-status')
+      status.value = ''
+      status.dispatchEvent(new Event('change', { bubbles: true }))
+      const tag = document.querySelector('#cases-tag')
+      tag.value = 'video'
+      tag.dispatchEvent(new Event('change', { bubbles: true }))
+    })()`)
+    await waitFor(
+      "document.querySelectorAll('tbody tr').length > 0 && !document.querySelector('.loading-cell')",
+      'Allure tag filter'
+    )
+    await delay(400)
+    if (
+      !requests.some(
+        (url) =>
+          url.includes('/api/v1/cases?') &&
+          url.includes('status=failed') &&
+          url.includes(`run_id=${allureRunId}`)
+      ) ||
+      !requests.some(
+        (url) =>
+          url.includes('/api/v1/cases?') &&
+          url.includes('tag=video') &&
+          url.includes(`run_id=${allureRunId}`)
+      )
+    ) {
+      throw new Error('Case status or tag filter request was not observed')
+    }
+    await evaluate(`(() => {
+      const tag = document.querySelector('#cases-tag')
+      tag.value = ''
+      tag.dispatchEvent(new Event('change', { bubbles: true }))
+    })()`)
+    caseFiltersVerified = true
+
+    if (allureSearch) {
+      await evaluate(`(() => {
+        const input = document.querySelector('#cases-search')
+        input.value = ${JSON.stringify(allureSearch)}
+        input.dispatchEvent(new Event('input', { bubbles: true }))
+      })()`)
+      await waitFor(
+        `document.querySelectorAll('tbody tr').length === 1 && document.querySelector('tbody tr')?.textContent.includes(${JSON.stringify(allureSearch)}) && !document.querySelector('.loading-cell')`,
+        'literal case search'
+      )
+      caseSearchVerified = true
+    }
+
+    if ((await evaluate("document.documentElement.getAttribute('data-theme')")) !== 'dark') {
+      await evaluate("document.querySelector('.theme-toggle').click()")
+      await waitFor(
+        "document.documentElement.getAttribute('data-theme') === 'dark'",
+        'dark theme activation'
+      )
+    }
     await evaluate("document.querySelector('tbody tr').click()")
     await waitFor(
       "[...document.querySelectorAll('[role=tab]')].some((tab) => tab.textContent.includes('Steps & Attachments'))",
@@ -234,6 +400,70 @@ try {
       "document.querySelector('.allure-details a[href^=\"/api/v1/attachments/\"]') && document.querySelector('.allure-step')",
       'Allure steps and attachments'
     )
+    modalTabsAudited = await evaluate(
+      "[...document.querySelectorAll('[role=tab]')].map((tab) => tab.textContent.trim())"
+    )
+    for (const tabLabel of modalTabsAudited) {
+      await evaluate(
+        `([...document.querySelectorAll('[role=tab]')].find((tab) => tab.textContent.trim() === ${JSON.stringify(tabLabel)})).click()`
+      )
+      await waitFor(
+        `[...document.querySelectorAll('[role=tab]')].some((tab) => tab.textContent.trim() === ${JSON.stringify(tabLabel)} && tab.getAttribute('aria-selected') === 'true')`,
+        `${tabLabel} tab`
+      )
+      const tabAudit = await evaluate(`(() => {
+        const probe = document.createElement('div')
+        probe.style.background = 'var(--bg-tertiary)'
+        document.body.appendChild(probe)
+        const expectedFooter = getComputedStyle(probe).backgroundColor
+        probe.remove()
+        const modal = document.querySelector('.modal-content')
+        const footer = modal.querySelector(':scope > .modal-footer')
+        const lightColors = new Set(['rgb(255, 255, 255)', 'rgb(249, 250, 251)', 'rgb(243, 244, 246)'])
+        const visibleLightSurfaces = [...modal.querySelectorAll('*')]
+          .filter((element) => element.offsetParent !== null)
+          .filter((element) => lightColors.has(getComputedStyle(element).backgroundColor))
+          .map((element) => element.className || element.tagName)
+        return {
+          footer: getComputedStyle(footer).backgroundColor,
+          expectedFooter,
+          footerButtons: [...footer.querySelectorAll('button')].map((button) => button.textContent.trim()),
+          hasCopyError: document.body.innerText.includes('Copy Error'),
+          visibleLightSurfaces,
+        }
+      })()`)
+      if (tabAudit.footer !== tabAudit.expectedFooter) {
+        throw new Error(`${tabLabel} footer theme mismatch: ${tabAudit.footer}`)
+      }
+      if (tabAudit.footerButtons.join(',') !== 'Close' || tabAudit.hasCopyError) {
+        throw new Error(`${tabLabel} has unexpected global actions`)
+      }
+      if (tabAudit.visibleLightSurfaces.length) {
+        throw new Error(
+          `${tabLabel} has light surfaces in dark mode: ${tabAudit.visibleLightSurfaces}`
+        )
+      }
+    }
+    await evaluate(
+      "[...document.querySelectorAll('[role=tab]')].find((tab) => tab.textContent.includes('Steps & Attachments')).click()"
+    )
+    darkModalVerified = true
+
+    const attachmentPath = await evaluate(
+      "document.querySelector('.allure-details a[href^=\"/api/v1/attachments/\"]').getAttribute('href')"
+    )
+    await evaluate(
+      'document.querySelector(\'.allure-details a[href^="/api/v1/attachments/"]\').click()'
+    )
+    const attachmentPage = await inspectOpenedTarget(`${baseUrl}${attachmentPath}`)
+    if (
+      attachmentPage.contentType !== 'text/plain' ||
+      attachmentPage.hasApp ||
+      !attachmentPage.text
+    ) {
+      throw new Error(`Attachment opened as ${attachmentPage.contentType} instead of text/plain`)
+    }
+    attachmentNavigationVerified = true
     allureVerified = true
   }
 
@@ -304,6 +534,12 @@ try {
         projectAssigned,
         caseRows,
         allureVerified,
+        caseSearchVerified,
+        caseSortVerified,
+        caseFiltersVerified,
+        darkModalVerified,
+        modalTabsAudited,
+        attachmentNavigationVerified,
         runOptionCounts,
         routeHeadings,
         browserErrors: 0,

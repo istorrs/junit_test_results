@@ -4,6 +4,7 @@ const mongoose = require('mongoose');
 const TestCase = require('../models/TestCase');
 const TestRun = require('../models/TestRun');
 const { MAX_QUERY_LIMIT, DEFAULT_QUERY_LIMIT } = require('../config/constants');
+const { buildCaseSearch, getCaseSort } = require('../services/caseQuery');
 
 // GET /api/v1/cases/suites - Get suite names independently of result pagination
 router.get('/suites', async (req, res, next) => {
@@ -80,6 +81,12 @@ router.get('/', async (req, res, next) => {
         const page = parseInt(req.query.page) || 1;
         const limit = Math.min(parseInt(req.query.limit) || DEFAULT_QUERY_LIMIT, MAX_QUERY_LIMIT);
         const skip = (page - 1) * limit;
+        let sort;
+        try {
+            sort = getCaseSort(req.query.sort_by, req.query.sort_order);
+        } catch (error) {
+            return res.status(400).json({ success: false, error: error.message });
+        }
 
         console.log('[Cases API] Query params:', { page, limit, skip, run_id: req.query.run_id });
 
@@ -143,9 +150,15 @@ router.get('/', async (req, res, next) => {
             matchQuery.run_id = { $in: runIds };
         }
 
-        // Text search
+        // Literal substring search keeps identifiers such as TC-VID-010 intact.
         if (req.query.search) {
-            matchQuery.$text = { $search: req.query.search };
+            if (req.query.search.length > 200) {
+                return res.status(400).json({ success: false, error: 'search is too long' });
+            }
+            const searchQuery = buildCaseSearch(req.query.search);
+            if (searchQuery) {
+                matchQuery.$and = [...(matchQuery.$and || []), searchQuery];
+            }
         }
 
         // Build aggregation pipeline
@@ -200,7 +213,7 @@ router.get('/', async (req, res, next) => {
             },
             // Use _id as a deterministic tie-breaker so cases with the same run
             // timestamp cannot move between pages.
-            { $sort: { timestamp: -1, _id: -1 } },
+            { $sort: { [sort.field]: sort.direction, _id: 1 } },
             { $skip: skip },
             { $limit: limit }
         );

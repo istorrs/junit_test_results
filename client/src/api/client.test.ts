@@ -283,10 +283,12 @@ describe('API Client', () => {
         run_id: '123',
         status: 'failed',
         tag: 'hardware',
+        sort_by: 'name',
+        sort_order: 'desc',
       })
 
       expect(mockFetch).toHaveBeenCalledWith(
-        '/api/v1/cases?page=1&limit=50&run_id=123&status=failed&tag=hardware',
+        '/api/v1/cases?page=1&limit=50&run_id=123&status=failed&tag=hardware&sort_by=name&sort_order=desc',
         undefined
       )
     })
