@@ -8,7 +8,9 @@ const _ = require('lodash');
 const applyProjectFilter = async (matchCondition, jobName) => {
     if (!jobName) return matchCondition;
 
-    const runIds = await TestRun.distinct('_id', { 'ci_metadata.job_name': jobName });
+    const runIds = await TestRun.distinct('_id', {
+        'ci_metadata.job_name': { $eq: jobName }
+    });
     return { ...matchCondition, run_id: { $in: runIds } };
 };
 

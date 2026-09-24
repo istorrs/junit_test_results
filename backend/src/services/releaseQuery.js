@@ -2,7 +2,7 @@ const escapeRegex = value => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 const buildReleaseMatch = ({ job_name: jobName, search } = {}) => {
     const match = { release_tag: { $exists: true, $ne: null } };
-    if (jobName) match['ci_metadata.job_name'] = jobName;
+    if (jobName) match['ci_metadata.job_name'] = { $eq: jobName };
     if (search) {
         const pattern = new RegExp(escapeRegex(search), 'i');
         match.$or = [{ release_tag: pattern }, { release_version: pattern }];

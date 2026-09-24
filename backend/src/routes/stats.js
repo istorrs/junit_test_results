@@ -27,7 +27,7 @@ router.get('/overview', apiRateLimiter, async (req, res, next) => {
 
         // Filter by job_name (project)
         if (req.query.job_name) {
-            runQuery['ci_metadata.job_name'] = req.query.job_name;
+            runQuery['ci_metadata.job_name'] = { $eq: req.query.job_name };
         }
 
         const caseQuery = {};

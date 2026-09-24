@@ -41,10 +41,10 @@ router.get('/', async (req, res, next) => {
 
         // Filters
         if (req.query.job_name) {
-            query['ci_metadata.job_name'] = req.query.job_name;
+            query['ci_metadata.job_name'] = { $eq: req.query.job_name };
         }
         if (req.query.branch) {
-            query['ci_metadata.branch'] = req.query.branch;
+            query['ci_metadata.branch'] = { $eq: req.query.branch };
         }
         if (req.query.from_date) {
             query.timestamp = { $gte: new Date(req.query.from_date) };

@@ -8,7 +8,7 @@ const {
 
 test('buildReleaseMatch applies project and escaped release search', () => {
     const match = buildReleaseMatch({ job_name: 'project', search: '1.0+' });
-    assert.equal(match['ci_metadata.job_name'], 'project');
+    assert.deepEqual(match['ci_metadata.job_name'], { $eq: 'project' });
     assert.equal(match.$or[0].release_tag.source, '1\\.0\\+');
     assert.equal(match.$or[1].release_version.flags, 'i');
 });

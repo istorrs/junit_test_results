@@ -108,12 +108,12 @@ router.get('/compare', async (req, res) => {
         }
 
         // Get all test runs for both releases
-        const projectFilter = jobName ? { 'ci_metadata.job_name': jobName } : {};
+        const projectFilter = jobName ? { 'ci_metadata.job_name': { $eq: jobName } } : {};
         const [runs1, runs2] = await Promise.all([
-            TestRun.find({ release_tag: release1, ...projectFilter })
+            TestRun.find({ release_tag: { $eq: release1 }, ...projectFilter })
                 .sort({ timestamp: -1 })
                 .lean(),
-            TestRun.find({ release_tag: release2, ...projectFilter })
+            TestRun.find({ release_tag: { $eq: release2 }, ...projectFilter })
                 .sort({ timestamp: -1 })
                 .lean()
         ]);

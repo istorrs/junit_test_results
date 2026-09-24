@@ -22,7 +22,7 @@ router.get('/suites', apiRateLimiter, async (req, res, next) => {
         }
 
         if (req.query.job_name) {
-            const runQuery = { 'ci_metadata.job_name': req.query.job_name };
+            const runQuery = { 'ci_metadata.job_name': { $eq: req.query.job_name } };
             if (matchQuery.run_id) runQuery._id = matchQuery.run_id;
 
             const runIds = await TestRun.distinct('_id', runQuery);
@@ -57,7 +57,7 @@ router.get('/labels', apiRateLimiter, async (req, res, next) => {
             match.run_id = new mongoose.Types.ObjectId(req.query.run_id);
         }
         if (req.query.job_name) {
-            const runQuery = { 'ci_metadata.job_name': req.query.job_name };
+            const runQuery = { 'ci_metadata.job_name': { $eq: req.query.job_name } };
             if (match.run_id) runQuery._id = match.run_id;
             match.run_id = { $in: await TestRun.distinct('_id', runQuery) };
         }
@@ -101,13 +101,13 @@ router.get('/', apiRateLimiter, async (req, res, next) => {
             matchQuery.suite_id = new mongoose.Types.ObjectId(req.query.suite_id);
         }
         if (req.query.class_name) {
-            matchQuery.class_name = req.query.class_name;
+            matchQuery.class_name = { $eq: req.query.class_name };
         }
         if (req.query.name) {
-            matchQuery.name = req.query.name;
+            matchQuery.name = { $eq: req.query.name };
         }
         if (req.query.status) {
-            matchQuery.status = req.query.status;
+            matchQuery.status = { $eq: req.query.status };
         }
         if (req.query.is_flaky) {
             matchQuery.is_flaky = req.query.is_flaky === 'true';
@@ -121,7 +121,12 @@ router.get('/', apiRateLimiter, async (req, res, next) => {
         const labelFilters = [];
         if (req.query.label_name) {
             labelFilters.push({
-                labels: { $elemMatch: { name: req.query.label_name, value: req.query.label_value } }
+                labels: {
+                    $elemMatch: {
+                        name: { $eq: req.query.label_name },
+                        value: { $eq: req.query.label_value }
+                    }
+                }
             });
         }
         const namedLabelFilters = {
@@ -136,7 +141,9 @@ router.get('/', apiRateLimiter, async (req, res, next) => {
         for (const [parameter, labelName] of Object.entries(namedLabelFilters)) {
             if (req.query[parameter]) {
                 labelFilters.push({
-                    labels: { $elemMatch: { name: labelName, value: req.query[parameter] } }
+                    labels: {
+                        $elemMatch: { name: labelName, value: { $eq: req.query[parameter] } }
+                    }
                 });
             }
         }
@@ -145,7 +152,7 @@ router.get('/', apiRateLimiter, async (req, res, next) => {
         // Resolve the global project filter to run IDs before aggregation. This
         // keeps both the list query and its count on indexed testcase fields.
         if (req.query.job_name) {
-            const runQuery = { 'ci_metadata.job_name': req.query.job_name };
+            const runQuery = { 'ci_metadata.job_name': { $eq: req.query.job_name } };
             if (matchQuery.run_id) runQuery._id = matchQuery.run_id;
             const runIds = await TestRun.distinct('_id', runQuery);
             matchQuery.run_id = { $in: runIds };
