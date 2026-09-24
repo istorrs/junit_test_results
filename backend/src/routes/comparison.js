@@ -5,6 +5,7 @@ const TestRun = require('../models/TestRun');
 const TestCase = require('../models/TestCase');
 const TestDefinition = require('../models/TestDefinition');
 const mongoose = require('mongoose');
+const { apiRateLimiter } = require('../middleware/rateLimiter');
 
 /**
  * GET /api/v1/comparison/runs
@@ -229,7 +230,7 @@ router.get('/runs', async (req, res) => {
  * Get comparison history for a specific test across multiple runs
  * Query params: limit, days
  */
-router.get('/test/:testId', async (req, res) => {
+router.get('/test/:testId', apiRateLimiter, async (req, res) => {
     try {
         const { testId } = req.params;
         const { limit = DEFAULT_QUERY_LIMIT, days = 30 } = req.query;
@@ -238,7 +239,8 @@ router.get('/test/:testId', async (req, res) => {
         cutoffDate.setDate(cutoffDate.getDate() - parseInt(days));
 
         const selectedCase = mongoose.isValidObjectId(testId)
-            ? await TestCase.findById(testId).select('definition_id')
+            ? await TestCase.findOne({ _id: { $eq: new mongoose.Types.ObjectId(testId) } })
+                .select('definition_id')
             : null;
         const matchingDefinitions = selectedCase ? [] : await TestDefinition.find({ name: { $eq: testId } })
             .limit(2).select('_id').lean();

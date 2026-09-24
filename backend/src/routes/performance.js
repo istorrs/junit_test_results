@@ -5,6 +5,7 @@ const TestCase = require('../models/TestCase');
 const TestRun = require('../models/TestRun');
 const TestDefinition = require('../models/TestDefinition');
 const mongoose = require('mongoose');
+const { apiRateLimiter } = require('../middleware/rateLimiter');
 const _ = require('lodash');
 
 const applyProjectFilter = async (matchCondition, jobName) => {
@@ -21,7 +22,7 @@ const applyProjectFilter = async (matchCondition, jobName) => {
  * Get performance trends for tests or test suites
  * Query params: testId, classNamecontains, days, granularity
  */
-router.get('/trends', async (req, res) => {
+router.get('/trends', apiRateLimiter, async (req, res) => {
     try {
         const { testId, className, days = 30, granularity = 'daily', job_name } = req.query;
 
@@ -37,7 +38,9 @@ router.get('/trends', async (req, res) => {
             if (!mongoose.isValidObjectId(testId)) {
                 return res.status(400).json({ error: 'testId must be a case ID' });
             }
-            const selected = await TestCase.findById(testId).select('definition_id');
+            const selected = await TestCase.findOne({
+                _id: { $eq: new mongoose.Types.ObjectId(testId) }
+            }).select('definition_id');
             if (!selected?.definition_id) return res.status(404).json({ error: 'Test not found' });
             matchCondition.definition_id = selected.definition_id;
         }
@@ -304,7 +307,7 @@ router.get('/regressions', async (req, res) => {
  * GET /api/v1/performance/test/:testId
  * Get detailed performance history for a specific test
  */
-router.get('/test/:testId', async (req, res) => {
+router.get('/test/:testId', apiRateLimiter, async (req, res) => {
     try {
         const { testId } = req.params;
         const { days = 90 } = req.query;
@@ -313,7 +316,8 @@ router.get('/test/:testId', async (req, res) => {
         cutoffDate.setDate(cutoffDate.getDate() - parseInt(days));
 
         const selectedCase = mongoose.isValidObjectId(testId)
-            ? await TestCase.findById(testId).select('definition_id')
+            ? await TestCase.findOne({ _id: { $eq: new mongoose.Types.ObjectId(testId) } })
+                .select('definition_id')
             : null;
         const matchingDefinitions = selectedCase ? [] : await TestDefinition.find({ name: { $eq: testId } })
             .limit(2).select('_id').lean();
