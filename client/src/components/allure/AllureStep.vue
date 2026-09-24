@@ -14,9 +14,10 @@
         :href="attachmentUrl(attachment.attachment_id)"
         :aria-disabled="!attachment.attachment_id"
         :class="{ unavailable: !attachment.attachment_id }"
-        download
+        target="_blank"
+        rel="noopener noreferrer"
       >
-        {{ attachment.name
+        View {{ attachment.name
         }}<span v-if="attachment.size"> ({{ formatFileSize(attachment.size) }})</span>
       </a>
     </div>

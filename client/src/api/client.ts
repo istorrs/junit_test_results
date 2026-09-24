@@ -37,6 +37,15 @@ export interface TestCaseFilters extends PaginationParams {
   job_name?: string
   search?: string
   is_flaky?: boolean
+  tag?: string
+  package?: string
+  framework?: string
+  host?: string
+  parent_suite?: string
+  allure_suite?: string
+  sub_suite?: string
+  label_name?: string
+  label_value?: string
 }
 
 export interface TestRun {
@@ -110,6 +119,18 @@ export interface TestCase {
     job_name?: string
     branch?: string
     build_number?: string
+  }
+  run_allure_metadata?: {
+    executor?: {
+      name?: string
+      type?: string
+      url?: string
+      buildName?: string
+      buildUrl?: string
+      reportName?: string
+    } | null
+    environment?: Record<string, string>
+    categories?: Array<Record<string, unknown>>
   }
   suite_properties?: Record<string, any>
   created_at?: string
@@ -577,6 +598,17 @@ class ApiClient {
     const queryString = this.buildQueryString(filters)
     const response = await this.request<{ suites: string[] }>(`/cases/suites${queryString}`)
     return response.suites
+  }
+
+  async getTestCaseLabels(
+    name: string,
+    filters: Pick<TestCaseFilters, 'run_id' | 'job_name'> = {}
+  ): Promise<string[]> {
+    const queryString = this.buildQueryString({ name, ...filters })
+    const response = await this.request<{ name: string; values: string[] }>(
+      `/cases/labels${queryString}`
+    )
+    return response.values
   }
 
   async getTestCase(testId: string): Promise<TestCase> {

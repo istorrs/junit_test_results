@@ -39,6 +39,41 @@ router.get('/suites', async (req, res, next) => {
     }
 });
 
+// GET /api/v1/cases/labels - Get values for an Allure label within the active scope
+router.get('/labels', async (req, res, next) => {
+    try {
+        const name = req.query.name || 'tag';
+        if (!/^[A-Za-z][A-Za-z0-9_.-]{0,63}$/.test(name)) {
+            return res.status(400).json({ success: false, error: 'Invalid label name' });
+        }
+
+        const match = { 'labels.name': name };
+        if (req.query.run_id && req.query.run_id !== 'undefined') {
+            if (!mongoose.isValidObjectId(req.query.run_id)) {
+                return res.status(400).json({ success: false, error: 'Invalid run ID' });
+            }
+            match.run_id = new mongoose.Types.ObjectId(req.query.run_id);
+        }
+        if (req.query.job_name) {
+            const runQuery = { 'ci_metadata.job_name': req.query.job_name };
+            if (match.run_id) runQuery._id = match.run_id;
+            match.run_id = { $in: await TestRun.distinct('_id', runQuery) };
+        }
+
+        const values = await TestCase.aggregate([
+            { $match: match },
+            { $unwind: '$labels' },
+            { $match: { 'labels.name': name } },
+            { $group: { _id: '$labels.value' } },
+            { $match: { _id: { $nin: [null, ''] } } },
+            { $sort: { _id: 1 } }
+        ]);
+        res.json({ success: true, data: { name, values: values.map(item => item._id) } });
+    } catch (error) {
+        next(error);
+    }
+});
+
 // GET /api/v1/cases - Get test cases with filtering
 router.get('/', async (req, res, next) => {
     try {
@@ -69,6 +104,35 @@ router.get('/', async (req, res, next) => {
         if (req.query.is_flaky) {
             matchQuery.is_flaky = req.query.is_flaky === 'true';
         }
+        if ((req.query.label_name && !req.query.label_value) || (!req.query.label_name && req.query.label_value)) {
+            return res.status(400).json({
+                success: false,
+                error: 'label_name and label_value must be provided together'
+            });
+        }
+        const labelFilters = [];
+        if (req.query.label_name) {
+            labelFilters.push({
+                labels: { $elemMatch: { name: req.query.label_name, value: req.query.label_value } }
+            });
+        }
+        const namedLabelFilters = {
+            tag: 'tag',
+            package: 'package',
+            framework: 'framework',
+            host: 'host',
+            parent_suite: 'parentSuite',
+            allure_suite: 'suite',
+            sub_suite: 'subSuite'
+        };
+        for (const [parameter, labelName] of Object.entries(namedLabelFilters)) {
+            if (req.query[parameter]) {
+                labelFilters.push({
+                    labels: { $elemMatch: { name: labelName, value: req.query[parameter] } }
+                });
+            }
+        }
+        if (labelFilters.length) matchQuery.$and = labelFilters;
 
         // Resolve the global project filter to run IDs before aggregation. This
         // keeps both the list query and its count on indexed testcase fields.
@@ -229,6 +293,7 @@ router.get('/:id', async (req, res, next) => {
                     run_name: '$run.name',
                     run_source: '$run.source',
                     run_ci_metadata: '$run.ci_metadata',
+                    run_allure_metadata: '$run.allure_metadata',
                     suite_properties: '$suite.properties' // Get properties from TestSuite, not TestRun
                 }
             },

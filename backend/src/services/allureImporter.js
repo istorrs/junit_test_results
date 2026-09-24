@@ -41,7 +41,10 @@ const importAllureArchive = async (
         const existingUpload = await FileUpload.findOne({ content_hash: contentHash, status: 'completed' });
         if (existingUpload) {
             const existingRun = await TestRun.findById(existingUpload.run_id);
-            if (existingRun && (releaseMetadata.release_tag || releaseMetadata.release_version)) {
+            if (existingRun) {
+                // Parsing can become richer over time. Keep run-level metadata current
+                // even when the archive body is correctly skipped as a duplicate.
+                existingRun.allure_metadata = parsed.metadata;
                 if (releaseMetadata.release_tag) existingRun.release_tag = releaseMetadata.release_tag;
                 if (releaseMetadata.release_version) {
                     existingRun.release_version = releaseMetadata.release_version;
@@ -99,11 +102,15 @@ const importAllureArchive = async (
                 file_upload_id: fileUpload._id,
                 release_tag: releaseMetadata.release_tag || null,
                 release_version: releaseMetadata.release_version || null,
-                result_formats: ['allure']
+                result_formats: ['allure'],
+                allure_metadata: parsed.metadata
             });
             createdRun = true;
         } else {
-            await TestRun.findByIdAndUpdate(testRun._id, { $addToSet: { result_formats: 'allure' } });
+            await TestRun.findByIdAndUpdate(testRun._id, {
+                $addToSet: { result_formats: 'allure' },
+                $set: { allure_metadata: parsed.metadata }
+            });
         }
 
         await FileUpload.findByIdAndUpdate(fileUpload._id, {

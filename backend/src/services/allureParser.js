@@ -76,19 +76,60 @@ const parseJson = (name, content) => {
     }
 };
 
+const unescapeProperty = value =>
+    value.replace(/\\u([0-9a-fA-F]{4})|\\(.)/g, (match, unicode, escaped) => {
+        if (unicode) return String.fromCharCode(parseInt(unicode, 16));
+        return { t: '\t', n: '\n', r: '\r', f: '\f' }[escaped] ?? escaped;
+    });
+
+const propertySeparator = line => {
+    let escaped = false;
+    for (let index = 0; index < line.length; index += 1) {
+        const character = line[index];
+        if (!escaped && (character === '=' || character === ':')) return index;
+        if (!escaped && /\s/.test(character)) return index;
+        escaped = character === '\\' && !escaped;
+        if (character !== '\\') escaped = false;
+    }
+    return -1;
+};
+
+const parseEnvironmentProperties = content => {
+    const properties = {};
+    for (const rawLine of content.toString('utf8').split(/\r?\n/)) {
+        const line = rawLine.trim();
+        if (!line || line.startsWith('#') || line.startsWith('!')) continue;
+        const separator = propertySeparator(line);
+        if (separator === -1) {
+            properties[unescapeProperty(line)] = '';
+            continue;
+        }
+        const key = unescapeProperty(line.slice(0, separator).trim());
+        const value = line.slice(separator + 1).replace(/^\s*[=:]?\s*/, '');
+        properties[key] = unescapeProperty(value);
+    }
+    return properties;
+};
+
 const parseAllureFiles = files => {
     const results = [];
     const containers = [];
     const attachments = new Map();
+    const metadata = { executor: null, environment: {}, categories: [] };
 
     for (const [name, content] of files) {
         if (name.endsWith('-result.json')) results.push(normalizeAllureResult(parseJson(name, content)));
         else if (name.endsWith('-container.json')) containers.push(parseJson(name, content));
         else if (name.includes('-attachment.')) attachments.set(name, content);
+        else if (name === 'executor.json') metadata.executor = parseJson(name, content);
+        else if (name === 'categories.json') metadata.categories = parseJson(name, content);
+        else if (name === 'environment.properties') {
+            metadata.environment = parseEnvironmentProperties(content);
+        }
     }
     if (results.length === 0) throw new Error('Allure archive contains no result JSON files');
 
-    return { results, containers, attachments };
+    return { results, containers, attachments, metadata };
 };
 
 const parseAllureArchive = async (archiveBuffer, limits) =>
@@ -98,6 +139,7 @@ module.exports = {
     mapStatus,
     normalizeAllureStep,
     normalizeAllureResult,
+    parseEnvironmentProperties,
     parseAllureFiles,
     parseAllureArchive
 };

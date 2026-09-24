@@ -57,6 +57,10 @@ const testRunSchema = new mongoose.Schema(
                 enum: ['junit', 'allure']
             }
         ],
+        allure_metadata: {
+            type: mongoose.Schema.Types.Mixed,
+            default: undefined
+        },
         ci_metadata: {
             job_name: {
                 type: String,

@@ -258,10 +258,11 @@ describe('API Client', () => {
       await apiClient.getTestCases({
         run_id: '123',
         status: 'failed',
+        tag: 'hardware',
       })
 
       expect(mockFetch).toHaveBeenCalledWith(
-        '/api/v1/cases?page=1&limit=50&run_id=123&status=failed',
+        '/api/v1/cases?page=1&limit=50&run_id=123&status=failed&tag=hardware',
         undefined
       )
     })
@@ -286,6 +287,28 @@ describe('API Client', () => {
         undefined
       )
       expect(result).toEqual(mockData.data.suites)
+    })
+  })
+
+  describe('getTestCaseLabels', () => {
+    it('fetches sorted label values within the selected run', async () => {
+      const mockData = {
+        success: true,
+        data: { name: 'tag', values: ['hardware', 'smoke'] },
+      }
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockData,
+      })
+
+      const result = await apiClient.getTestCaseLabels('tag', { run_id: 'run-123' })
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        '/api/v1/cases/labels?name=tag&run_id=run-123',
+        undefined
+      )
+      expect(result).toEqual(mockData.data.values)
     })
   })
 

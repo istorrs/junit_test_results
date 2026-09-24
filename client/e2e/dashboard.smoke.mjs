@@ -1,4 +1,4 @@
-/* global process, setTimeout, fetch, WebSocket, console */
+/* global process, setTimeout, fetch, WebSocket, URLSearchParams, console */
 import { mkdtemp, rm } from 'node:fs/promises'
 import { once } from 'node:events'
 import { tmpdir } from 'node:os'
@@ -6,6 +6,8 @@ import { join } from 'node:path'
 import { spawn } from 'node:child_process'
 
 const baseUrl = process.env.E2E_BASE_URL || 'http://127.0.0.1:8080'
+const allureRunId = process.env.E2E_ALLURE_RUN_ID
+const allureSearch = process.env.E2E_ALLURE_SEARCH || ''
 const chromeBinary = process.env.CHROME_BIN || '/usr/bin/google-chrome'
 const debugPort = Number(process.env.CHROME_DEBUG_PORT || 9336)
 const profileDirectory = await mkdtemp(join(tmpdir(), 'junit-dashboard-e2e-'))
@@ -136,6 +138,30 @@ try {
   const caseRows = await evaluate("document.querySelectorAll('tbody tr').length")
   if (caseRows < 1 || caseRows > 50) throw new Error(`Unexpected case row count: ${caseRows}`)
 
+  let allureVerified = false
+  if (allureRunId) {
+    const query = new URLSearchParams({ run_id: allureRunId })
+    if (allureSearch) query.set('search', allureSearch)
+    await navigate(`/cases?${query}`)
+    await waitFor(
+      "document.querySelector('#cases-tag')?.options.length > 1 && document.querySelector('tbody tr') && !document.querySelector('.loading-cell')",
+      'Allure cases and labels'
+    )
+    await evaluate("document.querySelector('tbody tr').click()")
+    await waitFor(
+      "[...document.querySelectorAll('[role=tab]')].some((tab) => tab.textContent.includes('Steps & Attachments'))",
+      'Allure details tab'
+    )
+    await evaluate(
+      "[...document.querySelectorAll('[role=tab]')].find((tab) => tab.textContent.includes('Steps & Attachments')).click()"
+    )
+    await waitFor(
+      "document.querySelector('.allure-details a[href^=\"/api/v1/attachments/\"]') && document.querySelector('.allure-step')",
+      'Allure steps and attachments'
+    )
+    allureVerified = true
+  }
+
   await navigate('/compare')
   await waitFor(
     "document.querySelectorAll('.async-entity-select select').length === 2 && !document.body.innerText.includes('Loading options')",
@@ -201,6 +227,7 @@ try {
       {
         sortedRunsMatch,
         caseRows,
+        allureVerified,
         runOptionCounts,
         routeHeadings,
         browserErrors: 0,

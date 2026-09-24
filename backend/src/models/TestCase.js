@@ -104,4 +104,6 @@ const testCaseSchema = new mongoose.Schema({
     }
 });
 
+testCaseSchema.index({ run_id: 1, 'labels.name': 1, 'labels.value': 1 });
+
 module.exports = mongoose.model('TestCase', testCaseSchema);

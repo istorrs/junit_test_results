@@ -40,9 +40,10 @@
           :href="attachment.attachment_id ? `/api/v1/attachments/${attachment.attachment_id}` : '#'"
           :aria-disabled="!attachment.attachment_id"
           :class="{ unavailable: !attachment.attachment_id }"
-          download
+          target="_blank"
+          rel="noopener noreferrer"
         >
-          {{ attachment.name
+          View {{ attachment.name
           }}<span v-if="attachment.size"> ({{ formatFileSize(attachment.size) }})</span>
         </a>
       </div>
@@ -78,6 +79,29 @@
           {{ link.name || link.url }}
         </a>
       </div>
+    </section>
+    <section v-if="test.run_allure_metadata?.executor">
+      <h3>Executor</h3>
+      <dl class="metadata">
+        <template v-for="(value, key) in test.run_allure_metadata.executor" :key="String(key)">
+          <dt>{{ key }}</dt>
+          <dd>{{ value }}</dd>
+        </template>
+      </dl>
+    </section>
+    <section
+      v-if="
+        test.run_allure_metadata?.environment &&
+        Object.keys(test.run_allure_metadata.environment).length
+      "
+    >
+      <h3>Environment</h3>
+      <dl class="metadata">
+        <template v-for="(value, key) in test.run_allure_metadata.environment" :key="String(key)">
+          <dt>{{ key }}</dt>
+          <dd>{{ value }}</dd>
+        </template>
+      </dl>
     </section>
   </div>
 </template>

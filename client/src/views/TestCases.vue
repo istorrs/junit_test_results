@@ -60,6 +60,19 @@
             </select>
           </div>
 
+          <div class="filter-group">
+            <label for="cases-tag">Allure tag</label>
+            <select
+              id="cases-tag"
+              v-model="selectedTag"
+              class="filter-select"
+              :disabled="tagsLoading"
+            >
+              <option value="">{{ tagsLoading ? 'Loading tags…' : 'Any tag' }}</option>
+              <option v-for="tag in tags" :key="tag" :value="tag">{{ tag }}</option>
+            </select>
+          </div>
+
           <label class="flaky-filter">
             <input v-model="flakyOnly" type="checkbox" />
             Flaky tests only
@@ -142,13 +155,17 @@ const store = useTestDataStore()
 const searchQuery = ref(typeof route.query.search === 'string' ? route.query.search : '')
 const selectedStatus = ref('')
 const selectedSuite = ref('')
+const selectedTag = ref('')
 const flakyOnly = ref(route.query.flaky === 'true')
 const suites = ref<string[]>([])
 const suitesLoading = ref(false)
+const tags = ref<string[]>([])
+const tagsLoading = ref(false)
 const pagination = ref<Pagination>({ page: 1, limit: 50, total: 0, pages: 1 })
 const loadError = ref('')
 let filterTimer: ReturnType<typeof setTimeout> | undefined
 let suitesRequestId = 0
+let tagsRequestId = 0
 
 // Modal state
 const modalOpen = ref(false)
@@ -164,18 +181,42 @@ const getTestCaseRowLabel = (row: Record<string, unknown>) =>
   `Open test case ${String(row.name || 'Unnamed Test')}`
 
 const hasActiveFilters = computed(() => {
-  return !!(searchQuery.value || selectedStatus.value || selectedSuite.value || flakyOnly.value)
+  return !!(
+    searchQuery.value ||
+    selectedStatus.value ||
+    selectedSuite.value ||
+    selectedTag.value ||
+    flakyOnly.value
+  )
 })
 
 const clearFilters = () => {
   searchQuery.value = ''
   selectedStatus.value = ''
   selectedSuite.value = ''
+  selectedTag.value = ''
   flakyOnly.value = false
   if (route.query.search || route.query.flaky) {
     router.replace({
       query: { ...route.query, search: undefined, flaky: undefined },
     })
+  }
+}
+
+const loadTags = async () => {
+  const requestId = ++tagsRequestId
+  tagsLoading.value = true
+  tags.value = []
+  try {
+    const filters: Pick<TestCaseFilters, 'run_id' | 'job_name'> = {}
+    if (typeof route.query.run_id === 'string') filters.run_id = route.query.run_id
+    if (store.globalProjectFilter) filters.job_name = store.globalProjectFilter
+    const availableTags = await apiClient.getTestCaseLabels('tag', filters)
+    if (requestId === tagsRequestId) tags.value = availableTags
+  } catch (error) {
+    console.error('Failed to load Allure tags:', error)
+  } finally {
+    if (requestId === tagsRequestId) tagsLoading.value = false
   }
 }
 
@@ -208,6 +249,7 @@ const loadData = async (page = pagination.value.page) => {
     if (searchQuery.value.trim()) filters.search = searchQuery.value.trim()
     if (selectedStatus.value) filters.status = selectedStatus.value
     if (selectedSuite.value) filters.class_name = selectedSuite.value
+    if (selectedTag.value) filters.tag = selectedTag.value
     if (flakyOnly.value) filters.is_flaky = true
 
     if (store.globalProjectFilter) {
@@ -229,7 +271,7 @@ const handleLimitChange = (limit: number) => {
   loadData(1)
 }
 
-watch([searchQuery, selectedStatus, selectedSuite, flakyOnly], () => {
+watch([searchQuery, selectedStatus, selectedSuite, selectedTag, flakyOnly], () => {
   clearTimeout(filterTimer)
   filterTimer = setTimeout(() => loadData(1), 300)
 })
@@ -239,7 +281,9 @@ watch(
   () => store.globalProjectFilter,
   () => {
     selectedSuite.value = ''
+    selectedTag.value = ''
     loadSuites()
+    loadTags()
     loadData(1)
   }
 )
@@ -265,6 +309,7 @@ const closeModal = () => {
 
 onMounted(() => {
   loadSuites()
+  loadTags()
   loadData(1)
 })
 
