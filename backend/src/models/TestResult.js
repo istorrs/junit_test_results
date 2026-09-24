@@ -1,5 +1,7 @@
 const mongoose = require('mongoose');
 
+// Legacy compatibility model. New imports store execution data exclusively on
+// TestCase; retain this model only for migration and cleanup of existing rows.
 const testResultSchema = new mongoose.Schema({
     case_id: {
         type: mongoose.Schema.Types.ObjectId,

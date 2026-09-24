@@ -178,6 +178,7 @@ router.delete('/:id', apiRateLimiter, async (req, res, next) => {
 
         // Delete all related data (no transaction needed for standalone MongoDB)
         const runObjectId = new mongoose.Types.ObjectId(req.params.id);
+        // Remove any pre-consolidation execution rows along with the authoritative cases.
         await TestResult.deleteMany({ run_id: runObjectId });
         await AllureAttachment.deleteMany({ run_id: runObjectId });
         await TestCase.deleteMany({ run_id: runObjectId });

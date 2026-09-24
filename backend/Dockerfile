@@ -14,6 +14,7 @@ RUN npm install --omit=dev
 
 # Copy application files
 COPY src/ ./src/
+COPY scripts/ ./scripts/
 
 # Create necessary directories
 RUN mkdir -p uploads logs

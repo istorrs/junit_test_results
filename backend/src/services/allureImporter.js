@@ -1,7 +1,6 @@
 const TestRun = require('../models/TestRun');
 const TestSuite = require('../models/TestSuite');
 const TestCase = require('../models/TestCase');
-const TestResult = require('../models/TestResult');
 const FileUpload = require('../models/FileUpload');
 const AllureAttachment = require('../models/AllureAttachment');
 const { parseAllureArchive, normalizeAllureStep } = require('./allureParser');
@@ -196,6 +195,7 @@ const importAllureArchive = async (
                     description_html: result.description_html,
                     start: result.start,
                     stop: result.stop,
+                    timestamp: result.start || timestamp,
                     status_details: details,
                     labels: result.labels,
                     parameters: result.parameters,
@@ -204,17 +204,6 @@ const importAllureArchive = async (
                 testCase.attachments = await persistReferences(result.attachments, testCase._id);
                 testCase.steps = await persistSteps(result.steps, testCase._id);
                 await testCase.save();
-                await TestResult.create({
-                    case_id: testCase._id,
-                    suite_id: suite._id,
-                    run_id: testRun._id,
-                    file_upload_id: fileUpload._id,
-                    status: result.status,
-                    time: result.time,
-                    error_message: details.message,
-                    stack_trace: details.trace,
-                    timestamp: result.start || timestamp
-                });
                 if (result.uuid) casesByUuid.set(result.uuid, testCase._id);
             }
         }

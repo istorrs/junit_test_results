@@ -2,7 +2,6 @@ const xml2js = require('xml2js');
 const TestRun = require('../models/TestRun');
 const TestSuite = require('../models/TestSuite');
 const TestCase = require('../models/TestCase');
-const TestResult = require('../models/TestResult');
 const FileUpload = require('../models/FileUpload');
 const {
     buildCiRunQuery,
@@ -538,7 +537,7 @@ const processTestCase = async (caseData, suiteId, runId, fileUploadId, testStart
     }
 
     // Create test case
-    const testCase = await TestCase.create({
+    await TestCase.create({
         suite_id: suiteId,
         run_id: runId,
         name: caseData.name || 'Unnamed Test',
@@ -547,30 +546,15 @@ const processTestCase = async (caseData, suiteId, runId, fileUploadId, testStart
         status,
         error_message: errorMessage,
         error_type: errorType,
+        skipped_message: skippedMessage,
         stack_trace: stackTrace,
         assertions: parseInt(caseData.assertions || 0),
         file: caseData.file || '',
         line: parseInt(caseData.line || 0),
         system_out: normalizeToString(caseData['system-out']),
         system_err: normalizeToString(caseData['system-err']),
+        timestamp: testStartTime,
         file_upload_id: fileUploadId
-    });
-
-    // Create test result
-    await TestResult.create({
-        case_id: testCase._id,
-        suite_id: suiteId,
-        run_id: runId,
-        file_upload_id: fileUploadId,
-        status,
-        time: testCase.time,
-        error_message: errorMessage,
-        error_type: errorType,
-        skipped_message: skippedMessage,
-        system_out: testCase.system_out,
-        system_err: testCase.system_err,
-        stack_trace: stackTrace,
-        timestamp: testStartTime
     });
 };
 

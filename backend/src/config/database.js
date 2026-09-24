@@ -41,6 +41,7 @@ const createIndexes = async () => {
         await db.collection('testcases').createIndex({ run_id: 1 });
         await db.collection('testcases').createIndex({ suite_id: 1 });
         await db.collection('testcases').createIndex({ status: 1 });
+        await db.collection('testcases').createIndex({ timestamp: -1 });
         await db.collection('testcases').createIndex({ name: 1, class_name: 1 });
         await db.collection('testcases').createIndex({ is_flaky: 1 });
         await db.collection('testcases').createIndex({ run_id: 1, is_flaky: 1 });
@@ -57,7 +58,8 @@ const createIndexes = async () => {
         }
         await db.collection('testcases').createIndex({ name: 'text', class_name: 'text' });
 
-        // test_results indexes
+        // Legacy test_results indexes remain until the consolidation migration
+        // has been verified and the collection is retired.
         await db.collection('testresults').createIndex({ case_id: 1 });
         await db.collection('testresults').createIndex({ run_id: 1 });
         await db.collection('testresults').createIndex({ file_upload_id: 1 });

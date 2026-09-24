@@ -53,6 +53,7 @@ const testCaseSchema = new mongoose.Schema({
     },
     error_message: String,
     error_type: String,
+    skipped_message: String,
     stack_trace: String,
     assertions: Number,
     file: String,
@@ -73,6 +74,11 @@ const testCaseSchema = new mongoose.Schema({
     description_html: String,
     start: Date,
     stop: Date,
+    timestamp: {
+        type: Date,
+        default: Date.now,
+        index: true
+    },
     status_details: mongoose.Schema.Types.Mixed,
     labels: [mongoose.Schema.Types.Mixed],
     parameters: [mongoose.Schema.Types.Mixed],

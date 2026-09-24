@@ -8,7 +8,8 @@
     "dev": "nodemon src/server.js",
     "test": "node --test",
     "lint": "eslint .",
-    "lint:fix": "eslint . --fix"
+    "lint:fix": "eslint . --fix",
+    "migrate:test-results": "node scripts/migrate-test-results.js"
   },
   "keywords": [
     "junit",
