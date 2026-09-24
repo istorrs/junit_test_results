@@ -109,7 +109,7 @@ router.post('/', upload.single('file'), validateUpload, async (req, res, next) =
     }
 });
 
-// POST /api/v1/upload/batch - Upload multiple JUnit XML files
+// POST /api/v1/upload/batch - Upload multiple JUnit XML or Allure ZIP files
 router.post(
     '/batch',
     upload.array('files', parseInt(process.env.MAX_FILES) || 20),

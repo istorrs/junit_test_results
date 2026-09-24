@@ -105,12 +105,12 @@ If the exact same XML or ZIP content is uploaded again in the same CI/release sc
 
 **Endpoint:** `POST /api/v1/upload/batch`
 
-Use this endpoint for batches of JUnit XML files. The file field is `files` (repeated, up to `MAX_FILES`, default 20), and `ci_metadata`/`release_tag`/`release_version` apply to every file in the batch. Upload each Allure ZIP through the single-file endpoint.
+The file field is `files` (repeated, up to `MAX_FILES`, default 20). A batch may contain JUnit `.xml` files, Allure `.zip` archives, or both; the format is inferred per file from its extension. `ci_metadata`/`release_tag`/`release_version` apply to every file in the batch.
 
 ```bash
 curl -X POST http://your-server:5000/api/v1/upload/batch \
   -F "files=@target/surefire-reports/TEST-suite1.xml" \
-  -F "files=@target/surefire-reports/TEST-suite2.xml" \
+  -F "files=@allure-results.zip" \
   -F 'ci_metadata={"provider":"jenkins","job_name":"my-app","build_number":"42"}'
 ```
 

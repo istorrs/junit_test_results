@@ -225,7 +225,7 @@ JUNIT_API_URL=http://your-server:5000 ./ci-cd-examples/upload-test-results.sh ./
 
 ```
 POST   /api/v1/upload              - Upload JUnit XML or an Allure results ZIP
-POST   /api/v1/upload/batch        - Upload multiple JUnit XML files
+POST   /api/v1/upload/batch        - Upload multiple JUnit XML or Allure ZIP files
 GET    /api/v1/runs                - Get test runs (paginated)
 GET    /api/v1/runs/:id            - Get specific test run
 DELETE /api/v1/runs/:id            - Delete test run

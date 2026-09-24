@@ -42,7 +42,7 @@ pm2 start ecosystem.config.js
 ### Upload
 
 - `POST /api/v1/upload` - Upload one JUnit XML file or Allure results ZIP
-- `POST /api/v1/upload/batch` - Upload multiple JUnit XML files
+- `POST /api/v1/upload/batch` - Upload multiple JUnit XML or Allure ZIP files
 
 ### Test Runs
 
