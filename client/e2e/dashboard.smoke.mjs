@@ -726,6 +726,16 @@ try {
     })`)
     if (!layout.heading) throw new Error(`Missing heading on ${path}`)
     if (layout.overflow) throw new Error(`Horizontal page overflow on ${path}`)
+    if (path === '/') {
+      const chartFits = await evaluate(`(() => {
+        const card = document.querySelector('.charts-grid .chart-card')
+        const chart = card?.querySelector('[role="img"]')
+        return !!card && !!chart &&
+          card.getBoundingClientRect().right <= window.innerWidth + 1 &&
+          chart.getBoundingClientRect().right <= card.getBoundingClientRect().right + 1
+      })()`)
+      if (!chartFits) throw new Error('Test distribution chart does not fit its mobile card')
+    }
     routeHeadings[path] = layout.heading
   }
 

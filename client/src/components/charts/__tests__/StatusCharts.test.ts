@@ -36,6 +36,11 @@ describe('status charts', () => {
       'color-for-skipped',
       'color-for-unknown',
     ])
+    expect(option.legend.orient).toBe('horizontal')
+    expect(option.legend.bottom).toBe(0)
+    expect(option.series[0].center[1]).toBe('40%')
+    expect(option.series[0].label.show).toBe(false)
+    expect(option.series[0].labelLine.show).toBe(false)
     wrapper.unmount()
   })
 
