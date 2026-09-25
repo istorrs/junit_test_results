@@ -10,10 +10,11 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, watch, computed, nextTick } from 'vue'
 import * as echarts from 'echarts'
+import { normalizeResultStatus, resolvedStatusColor } from '../../utils/statusColors'
 
 interface HistoryRun {
   run_id: string
-  status: 'passed' | 'failed' | 'error' | 'skipped'
+  status: 'passed' | 'failed' | 'error' | 'skipped' | 'unknown'
   time: number
   timestamp: string | Date
   error_message?: string
@@ -27,10 +28,18 @@ const props = defineProps<Props>()
 
 const chartRef = ref<HTMLElement>()
 let chartInstance: echarts.ECharts | null = null
+let themeObserver: MutationObserver | null = null
 let retryCount = 0
 let lastLoggedRetry = 0
 
 const hasData = computed(() => props.data && props.data.length > 0)
+const statusForValue = (value: number) => {
+  if (value === 1) return 'passed'
+  if (value === -1) return 'failed'
+  if (value === -2) return 'error'
+  if (value === -3) return 'unknown'
+  return 'skipped'
+}
 
 // Prepare chart data
 const chartData = computed(() => {
@@ -43,10 +52,12 @@ const chartData = computed(() => {
   return {
     dates: sortedData.map((d) => new Date(d.timestamp).toLocaleDateString()),
     statuses: sortedData.map((d) => {
-      if (d.status === 'passed') return 1
-      if (d.status === 'failed') return -1
-      if (d.status === 'error') return -2
-      return 0 // skipped
+      const status = normalizeResultStatus(d.status)
+      if (status === 'passed') return 1
+      if (status === 'failed') return -1
+      if (status === 'error') return -2
+      if (status === 'unknown') return -3
+      return 0
     }),
     times: sortedData.map((d) => d.time),
     runs: sortedData,
@@ -94,9 +105,6 @@ const initChart = () => {
   const getColors = () => {
     const style = getComputedStyle(document.documentElement)
     return {
-      success: style.getPropertyValue('--success-color').trim() || '#10b981',
-      error: style.getPropertyValue('--error-color').trim() || '#ef4444',
-      warning: style.getPropertyValue('--warning-color').trim() || '#f59e0b',
       text: style.getPropertyValue('--text-primary').trim() || '#111827',
       textSecondary: style.getPropertyValue('--text-secondary').trim() || '#6b7280',
       border: style.getPropertyValue('--border-color').trim() || '#e5e7eb',
@@ -133,10 +141,10 @@ const initChart = () => {
         const status = run.status
         const time = (run.time * 1000).toFixed(0) + 'ms'
 
-        let html = `<div style="padding: 0.5rem;">
+        const html = `<div style="padding: 0.5rem;">
           <div style="font-weight: 600; margin-bottom: 0.5rem;">${params[0].name}</div>
           <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
-            <span style="color: ${status === 'passed' ? colors.success : colors.error};">●</span>
+            <span style="color: ${resolvedStatusColor(status)};">●</span>
             <span>Status: ${status}</span>
           </div>
           <div>Duration: ${time}</div>
@@ -172,7 +180,7 @@ const initChart = () => {
         type: 'value',
         name: 'Status',
         position: 'left',
-        min: -2.5,
+        min: -3.5,
         max: 1.5,
         interval: 1,
         axisLine: {
@@ -188,6 +196,7 @@ const initChart = () => {
             if (value === 0) return 'Skip'
             if (value === -1) return 'Fail'
             if (value === -2) return 'Error'
+            if (value === -3) return 'Unknown'
             return ''
           },
         },
@@ -227,24 +236,13 @@ const initChart = () => {
         symbolSize: 8,
         itemStyle: {
           color: (params: any) => {
-            const value = params.value
-            if (value === 1) return colors.success
-            if (value === -1) return colors.error
-            if (value === -2) return colors.warning
-            return colors.textSecondary
+            return resolvedStatusColor(statusForValue(params.value))
           },
         },
         lineStyle: {
           width: 2,
           color: colors.text,
           opacity: 0.3,
-        },
-        areaStyle: {
-          color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-            { offset: 0, color: 'rgba(16, 185, 129, 0.2)' },
-            { offset: 0.5, color: 'rgba(156, 163, 175, 0.1)' },
-            { offset: 1, color: 'rgba(239, 68, 68, 0.2)' },
-          ]),
         },
       },
       {
@@ -268,7 +266,8 @@ const initChart = () => {
   chartInstance.setOption(option)
 
   // Listen for theme changes
-  const observer = new MutationObserver(() => {
+  themeObserver?.disconnect()
+  themeObserver = new MutationObserver(() => {
     if (chartInstance) {
       const newColors = getColors()
       chartInstance.setOption({
@@ -294,11 +293,18 @@ const initChart = () => {
             axisLabel: { color: newColors.textSecondary },
           },
         ],
+        series: [
+          {
+            itemStyle: {
+              color: (params: any) => resolvedStatusColor(statusForValue(params.value)),
+            },
+          },
+        ],
       })
     }
   })
 
-  observer.observe(document.documentElement, {
+  themeObserver.observe(document.documentElement, {
     attributes: true,
     attributeFilter: ['data-theme'],
   })
@@ -340,6 +346,7 @@ onMounted(async () => {
 
 onUnmounted(() => {
   chartInstance?.dispose()
+  themeObserver?.disconnect()
   window.removeEventListener('resize', handleResize)
 })
 </script>

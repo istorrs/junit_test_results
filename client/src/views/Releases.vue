@@ -338,11 +338,11 @@ const getDiffClass = (value: number) => {
 }
 
 .metric-value.success {
-  color: var(--success-color);
+  color: var(--status-passed);
 }
 
 .metric-value.error {
-  color: var(--error-color);
+  color: var(--status-failed);
 }
 
 .diff-metrics {

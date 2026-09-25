@@ -1,7 +1,11 @@
 <template>
   <li class="allure-step">
     <div class="step-summary">
-      <span :class="['step-status', displayStatus]">{{ displayStatus }}</span>
+      <span
+        :class="['step-status', displayStatus]"
+        :data-test-status="normalizeResultStatus(displayStatus)"
+        >{{ displayStatus }}</span
+      >
       <strong>{{ step.name }}</strong>
       <span v-if="step.time !== undefined" class="step-time">{{
         formatDuration(step.time * 1000)
@@ -35,6 +39,7 @@
 import { computed } from 'vue'
 import type { AllureStep } from '../../api/client'
 import { formatDuration, formatFileSize } from '../../utils/formatters'
+import { normalizeResultStatus } from '../../utils/statusColors'
 
 const props = defineProps<{ step: AllureStep }>()
 const displayStatus = computed(() => {
@@ -69,19 +74,6 @@ const attachmentUrl = (id?: string) => (id ? `/attachments/${id}` : '#')
   font-size: 0.7rem;
   font-weight: 700;
   text-transform: uppercase;
-}
-.step-status.passed {
-  color: var(--success-color);
-}
-.step-status.failed,
-.step-status.error {
-  color: var(--error-color);
-}
-.step-status.skipped {
-  color: var(--warning-color);
-}
-.step-status.unknown {
-  color: var(--text-secondary);
 }
 .step-time {
   margin-left: auto;

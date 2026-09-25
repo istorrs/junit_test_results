@@ -10,6 +10,7 @@
 <script setup lang="ts">
 import { ref, onMounted, watch, onUnmounted, computed } from 'vue'
 import * as echarts from 'echarts'
+import { resolvedStatusColor } from '../../utils/statusColors'
 
 interface DataSeries {
   name: string
@@ -140,6 +141,8 @@ const updateChartTheme = () => {
       type: 'line',
       data: s.data,
       smooth: true,
+      itemStyle: { color: resolvedStatusColor(s.name) },
+      lineStyle: { color: resolvedStatusColor(s.name) },
     })),
   }
 

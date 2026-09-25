@@ -10,6 +10,7 @@
 <script setup lang="ts">
 import { ref, onMounted, watch, onUnmounted, computed } from 'vue'
 import * as echarts from 'echarts'
+import { resolvedStatusColor } from '../../utils/statusColors'
 
 interface Props {
   data: Array<{ name: string; value: number }>
@@ -97,7 +98,10 @@ const updateChartTheme = () => {
         type: 'pie',
         radius: '60%',
         center: ['50%', '55%'],
-        data: props.data,
+        data: props.data.map((item) => ({
+          ...item,
+          itemStyle: { color: resolvedStatusColor(item.name) },
+        })),
         emphasis: {
           itemStyle: {
             shadowBlur: 10,

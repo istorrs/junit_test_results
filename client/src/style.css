@@ -56,6 +56,18 @@
   --info-bg: #dbeafe;
   --info-light: #eff6ff;
 
+  /* Allure test outcomes: passed / failed / broken / skipped / unknown. */
+  --status-passed: #047857;
+  --status-passed-bg: #d1fae5;
+  --status-failed: #b91c1c;
+  --status-failed-bg: #fee2e2;
+  --status-error: #92400e;
+  --status-error-bg: #fef3c7;
+  --status-skipped: #4b5563;
+  --status-skipped-bg: #e5e7eb;
+  --status-unknown: #6d28d9;
+  --status-unknown-bg: #ede9fe;
+
   /* Shadow */
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
@@ -103,12 +115,51 @@
   --info-bg: #1c2d41; /* Dark blue background */
   --info-light: #2d3f5f; /* Medium blue background */
 
+  --status-passed: #3fb950;
+  --status-passed-bg: #0d2818;
+  --status-failed: #f85149;
+  --status-failed-bg: #2b1a1a;
+  --status-error: #d29922;
+  --status-error-bg: #2b2418;
+  --status-skipped: #a1a1aa;
+  --status-skipped-bg: #27272a;
+  --status-unknown: #c4b5fd;
+  --status-unknown-bg: #2e2151;
+
   /* Shadow - More pronounced in dark mode */
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.5);
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.6);
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.7), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
 
   color-scheme: dark;
+}
+
+/* Shared result styling. Components opt into the background with status-fill. */
+[data-test-status='passed'] {
+  --test-status-color: var(--status-passed);
+  --test-status-bg: var(--status-passed-bg);
+}
+[data-test-status='failed'] {
+  --test-status-color: var(--status-failed);
+  --test-status-bg: var(--status-failed-bg);
+}
+[data-test-status='error'] {
+  --test-status-color: var(--status-error);
+  --test-status-bg: var(--status-error-bg);
+}
+[data-test-status='skipped'] {
+  --test-status-color: var(--status-skipped);
+  --test-status-bg: var(--status-skipped-bg);
+}
+[data-test-status='unknown'] {
+  --test-status-color: var(--status-unknown);
+  --test-status-bg: var(--status-unknown-bg);
+}
+[data-test-status] {
+  color: var(--test-status-color);
+}
+:root .status-fill[data-test-status] {
+  background-color: var(--test-status-bg);
 }
 
 /* Global Resets */
