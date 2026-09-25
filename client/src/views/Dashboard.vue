@@ -44,17 +44,19 @@
 
         <Card class="stat-card success">
           <div class="stat-content">
-            <div class="stat-icon">✓</div>
+            <div class="stat-icon status-fill" data-test-status="passed">✓</div>
             <div class="stat-details">
               <div class="stat-label">Success Rate</div>
-              <div class="stat-value success-rate">{{ store.stats.success_rate }}%</div>
+              <div class="stat-value success-rate" data-test-status="passed">
+                {{ store.stats.success_rate }}%
+              </div>
             </div>
           </div>
         </Card>
 
         <Card class="stat-card passed">
           <div class="stat-content">
-            <div class="stat-icon">✓</div>
+            <div class="stat-icon status-fill" data-test-status="passed">✓</div>
             <div class="stat-details">
               <div class="stat-label">Passed</div>
               <div class="stat-value">{{ formatNumber(store.stats.total_passed) }}</div>
@@ -64,7 +66,7 @@
 
         <Card class="stat-card failed">
           <div class="stat-content">
-            <div class="stat-icon">✗</div>
+            <div class="stat-icon status-fill" data-test-status="failed">✗</div>
             <div class="stat-details">
               <div class="stat-label">Failed</div>
               <div class="stat-value">{{ formatNumber(store.stats.total_failed) }}</div>
@@ -74,7 +76,7 @@
 
         <Card class="stat-card error">
           <div class="stat-content">
-            <div class="stat-icon">⚠</div>
+            <div class="stat-icon status-fill" data-test-status="error">⚠</div>
             <div class="stat-details">
               <div class="stat-label">Errors</div>
               <div class="stat-value">{{ formatNumber(store.stats.total_errors) }}</div>
@@ -84,10 +86,20 @@
 
         <Card class="stat-card skipped">
           <div class="stat-content">
-            <div class="stat-icon">⊘</div>
+            <div class="stat-icon status-fill" data-test-status="skipped">⊘</div>
             <div class="stat-details">
               <div class="stat-label">Skipped</div>
               <div class="stat-value">{{ formatNumber(store.stats.total_skipped) }}</div>
+            </div>
+          </div>
+        </Card>
+
+        <Card v-if="unknownTestCount > 0" class="stat-card unknown">
+          <div class="stat-content">
+            <div class="stat-icon status-fill" data-test-status="unknown">?</div>
+            <div class="stat-details">
+              <div class="stat-label">Unknown</div>
+              <div class="stat-value">{{ formatNumber(unknownTestCount) }}</div>
             </div>
           </div>
         </Card>
@@ -175,6 +187,18 @@ import FailurePatternsSummary from '../components/analytics/FailurePatternsSumma
 
 const store = useTestDataStore()
 
+const unknownTestCount = computed(() => {
+  if (!store.stats) return 0
+  return Math.max(
+    0,
+    store.stats.total_tests -
+      store.stats.total_passed -
+      store.stats.total_failed -
+      store.stats.total_errors -
+      store.stats.total_skipped
+  )
+})
+
 const testResultsChartData = computed(() => {
   if (!store.stats) return []
 
@@ -183,6 +207,7 @@ const testResultsChartData = computed(() => {
     { name: 'Failed', value: store.stats.total_failed },
     { name: 'Errors', value: store.stats.total_errors },
     { name: 'Skipped', value: store.stats.total_skipped },
+    { name: 'Unknown', value: unknownTestCount.value },
   ].filter((item) => item.value > 0)
 })
 
@@ -200,6 +225,22 @@ const recentRunsData = computed(() => {
         name: 'Failed',
         data: runs.map((run) => run.failed),
       },
+      ...(runs.some((run) => run.errors > 0)
+        ? [{ name: 'Errors', data: runs.map((run) => run.errors) }]
+        : []),
+      ...(runs.some((run) => run.skipped > 0)
+        ? [{ name: 'Skipped', data: runs.map((run) => run.skipped) }]
+        : []),
+      ...(runs.some((run) => run.total_tests > run.passed + run.failed + run.errors + run.skipped)
+        ? [
+            {
+              name: 'Unknown',
+              data: runs.map((run) =>
+                Math.max(0, run.total_tests - run.passed - run.failed - run.errors - run.skipped)
+              ),
+            },
+          ]
+        : []),
     ],
   }
 })
@@ -338,25 +379,6 @@ h1 {
   background: var(--bg-hover);
 }
 
-.stat-card.success .stat-icon {
-  background: var(--success-bg);
-}
-.stat-card.passed .stat-icon {
-  background: var(--success-bg);
-  color: var(--success-color);
-}
-.stat-card.failed .stat-icon {
-  background: var(--error-bg);
-  color: var(--error-color);
-}
-.stat-card.error .stat-icon {
-  background: var(--warning-bg);
-  color: var(--warning-color);
-}
-.stat-card.skipped .stat-icon {
-  background: var(--bg-hover);
-  color: var(--text-secondary);
-}
 .stat-card.duration .stat-icon {
   background: var(--info-bg);
 }
@@ -377,13 +399,13 @@ h1 {
   color: var(--text-primary);
 }
 
-.success-rate {
-  color: var(--success-color);
+.stat-value[data-test-status] {
+  color: var(--test-status-color);
 }
 
 .charts-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 350px), 1fr));
   gap: 2rem;
 }
 

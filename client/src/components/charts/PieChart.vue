@@ -10,6 +10,7 @@
 <script setup lang="ts">
 import { ref, onMounted, watch, onUnmounted, computed } from 'vue'
 import * as echarts from 'echarts'
+import { resolvedStatusColor } from '../../utils/statusColors'
 
 interface Props {
   data: Array<{ name: string; value: number }>
@@ -84,9 +85,13 @@ const updateChartTheme = () => {
       },
     },
     legend: {
-      orient: 'vertical',
-      left: 'left',
-      top: 'middle',
+      orient: 'horizontal',
+      left: 'center',
+      bottom: 0,
+      width: '95%',
+      itemGap: 12,
+      itemWidth: 12,
+      itemHeight: 12,
       textStyle: {
         color: colors.textColor,
         fontFamily: 'system-ui, -apple-system, sans-serif',
@@ -95,9 +100,12 @@ const updateChartTheme = () => {
     series: [
       {
         type: 'pie',
-        radius: '60%',
-        center: ['50%', '55%'],
-        data: props.data,
+        radius: ['38%', '62%'],
+        center: ['50%', '40%'],
+        data: props.data.map((item) => ({
+          ...item,
+          itemStyle: { color: resolvedStatusColor(item.name) },
+        })),
         emphasis: {
           itemStyle: {
             shadowBlur: 10,
@@ -106,10 +114,9 @@ const updateChartTheme = () => {
           },
         },
         label: {
-          formatter: '{b}: {d}%',
-          color: colors.textColor,
-          fontFamily: 'system-ui, -apple-system, sans-serif',
+          show: false,
         },
+        labelLine: { show: false },
       },
     ],
   }

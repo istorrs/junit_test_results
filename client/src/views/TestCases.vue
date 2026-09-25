@@ -92,7 +92,10 @@
       </template>
 
       <template #cell-status="{ row }">
-        <span :class="['status-badge', (row as any).status]">
+        <span
+          :class="['status-badge', 'status-fill', (row as any).status]"
+          :data-test-status="normalizeResultStatus((row as any).status || 'unknown')"
+        >
           {{ getStatusIcon((row as any).status || '') }} {{ (row as any).status }}
         </span>
       </template>
@@ -154,6 +157,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useTestDataStore } from '../stores/testData'
 import { apiClient, type Pagination, type TestCaseFilters } from '../api/client'
 import { formatDate, formatDuration, getStatusIcon, truncateText } from '../utils/formatters'
+import { normalizeResultStatus } from '../utils/statusColors'
 import Button from '../components/shared/Button.vue'
 import DataTable from '../components/shared/DataTable.vue'
 import SearchInput from '../components/shared/SearchInput.vue'
@@ -434,31 +438,6 @@ h1 {
   font-size: 0.875rem;
   font-weight: 600;
   text-transform: capitalize;
-}
-
-.status-badge.passed {
-  background: var(--success-bg);
-  color: var(--success-color);
-}
-
-.status-badge.failed {
-  background: var(--error-bg);
-  color: var(--error-color);
-}
-
-.status-badge.error {
-  background: var(--warning-bg);
-  color: #f59e0b;
-}
-
-.status-badge.skipped {
-  background: var(--bg-hover);
-  color: var(--text-secondary);
-}
-
-.status-badge.unknown {
-  background: var(--bg-hover);
-  color: var(--text-secondary);
 }
 
 @media (max-width: 600px) {

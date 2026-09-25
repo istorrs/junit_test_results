@@ -121,10 +121,19 @@
 
       <template #cell-summary="{ row }">
         <div class="summary-badges">
-          <span class="badge passed">✓ {{ (row as any).passed }}</span>
-          <span class="badge failed">✗ {{ (row as any).failed }}</span>
-          <span v-if="(row as any).errors" class="badge error">⚠ {{ (row as any).errors }}</span>
-          <span v-if="(row as any).skipped" class="badge skipped"
+          <span class="badge passed status-fill" data-test-status="passed"
+            >✓ {{ (row as any).passed }}</span
+          >
+          <span class="badge failed status-fill" data-test-status="failed"
+            >✗ {{ (row as any).failed }}</span
+          >
+          <span v-if="(row as any).errors" class="badge error status-fill" data-test-status="error"
+            >⚠ {{ (row as any).errors }}</span
+          >
+          <span
+            v-if="(row as any).skipped"
+            class="badge skipped status-fill"
+            data-test-status="skipped"
             >⊘ {{ (row as any).skipped }}</span
           >
         </div>
@@ -541,26 +550,6 @@ h1 {
   border-radius: 0.375rem;
   font-size: 0.875rem;
   font-weight: 600;
-}
-
-.badge.passed {
-  background: var(--success-bg);
-  color: var(--success-color);
-}
-
-.badge.failed {
-  background: var(--error-bg);
-  color: var(--error-color);
-}
-
-.badge.error {
-  background: var(--warning-bg);
-  color: #f59e0b;
-}
-
-.badge.skipped {
-  background: var(--bg-hover);
-  color: var(--text-secondary);
 }
 
 .success-rate {

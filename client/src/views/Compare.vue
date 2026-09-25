@@ -179,7 +179,11 @@
             >
               <div class="test-header">
                 <span class="test-name">{{ test.test_name }}</span>
-                <span class="badge badge-error">{{ test.status_after }}</span>
+                <span
+                  class="badge status-fill"
+                  :data-test-status="normalizeResultStatus(test.status_after || 'unknown')"
+                  >{{ test.status_after }}</span
+                >
               </div>
               <div class="test-details">
                 <span class="class-name">{{ test.class_name }}</span>
@@ -237,7 +241,11 @@
             >
               <div class="test-header">
                 <span class="test-name">{{ test.test_name }}</span>
-                <span class="badge badge-error">{{ test.status_after }}</span>
+                <span
+                  class="badge status-fill"
+                  :data-test-status="normalizeResultStatus(test.status_after || 'unknown')"
+                  >{{ test.status_after }}</span
+                >
               </div>
               <div class="test-details">
                 <span class="class-name">{{ test.class_name }}</span>
@@ -371,6 +379,7 @@ import AsyncEntitySelect, {
 } from '../components/shared/AsyncEntitySelect.vue'
 import { apiClient, type RunComparisonResponse, type RunFilters } from '../api/client'
 import { useTestDataStore } from '../stores/testData'
+import { normalizeResultStatus } from '../utils/statusColors'
 
 const store = useTestDataStore()
 const selectedRun1 = ref<string>('')
@@ -623,7 +632,7 @@ watch(
 }
 
 .summary-item .failures {
-  color: var(--error-color);
+  color: var(--status-failed);
   font-weight: 500;
 }
 
@@ -731,11 +740,6 @@ watch(
   font-size: 0.75rem;
   font-weight: 600;
   text-transform: uppercase;
-}
-
-.badge-error {
-  background-color: rgba(239, 68, 68, 0.2);
-  color: var(--error-color);
 }
 
 .badge-success {

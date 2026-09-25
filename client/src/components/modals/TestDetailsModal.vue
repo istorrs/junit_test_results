@@ -7,7 +7,10 @@
           <p class="text-sm text-secondary mt-1">{{ className || 'Unknown suite' }}</p>
         </div>
         <div class="flex items-center gap-2 ml-4">
-          <span :class="['badge', statusClass]">
+          <span
+            :class="['badge', 'status-fill', statusClass]"
+            :data-test-status="normalizeResultStatus(status)"
+          >
             {{ status }}
           </span>
           <FlakinessIndicator
@@ -50,7 +53,11 @@
             <div class="info-grid">
               <div class="info-item">
                 <label>Status</label>
-                <span :class="['value', statusClass]">{{ status }}</span>
+                <span
+                  :class="['value', statusClass]"
+                  :data-test-status="normalizeResultStatus(status)"
+                  >{{ status }}</span
+                >
               </div>
               <div class="info-item">
                 <label>Duration</label>
@@ -145,7 +152,15 @@
                     <tr v-for="run in historyData.slice(0, 10)" :key="run.run_id">
                       <td>{{ formatDate(run.timestamp) }}</td>
                       <td>
-                        <span :class="['status-badge', run.status]">{{ run.status }}</span>
+                        <span
+                          :class="[
+                            'status-badge',
+                            'status-fill',
+                            `status-${normalizeResultStatus(run.status)}`,
+                          ]"
+                          :data-test-status="normalizeResultStatus(run.status)"
+                          >{{ run.status }}</span
+                        >
                       </td>
                       <td>{{ formatDuration(run.time * 1000) }}</td>
                       <td class="run-id">{{ run.run_id.slice(0, 8) }}</td>
@@ -270,6 +285,7 @@ import HistoryChart from '../charts/HistoryChart.vue'
 import AllureDetails from '../allure/AllureDetails.vue'
 import { formatDate, formatDuration } from '../../utils/formatters'
 import { renderAnsi } from '../../utils/ansi'
+import { normalizeResultStatus } from '../../utils/statusColors'
 import { apiClient } from '../../api/client'
 
 interface Props {
@@ -339,11 +355,7 @@ const tabs = computed(() => {
 })
 
 const statusClass = computed(() => {
-  const status = props.status?.toLowerCase()
-  if (status === 'passed') return 'status-passed'
-  if (status === 'failed') return 'status-failed'
-  if (status === 'error') return 'status-error'
-  return 'status-skipped'
+  return `status-${normalizeResultStatus(props.status || 'unknown')}`
 })
 
 // Convert ANSI codes to HTML for colored output
@@ -714,32 +726,16 @@ const fallbackCopyToClipboard = (text: string, label: string) => {
   color: var(--text-primary);
 }
 
+.info-item .value[data-test-status] {
+  color: var(--test-status-color);
+}
+
 .badge {
   padding: 0.25rem 0.75rem;
   border-radius: 9999px;
   font-size: 0.75rem;
   font-weight: 600;
   text-transform: uppercase;
-}
-
-.status-passed {
-  background: var(--success-bg);
-  color: var(--success-color);
-}
-
-.status-failed {
-  background: var(--error-bg);
-  color: var(--error-color);
-}
-
-.status-error {
-  background: var(--warning-bg);
-  color: var(--warning-color);
-}
-
-.status-skipped {
-  background: var(--bg-tertiary);
-  color: var(--text-secondary);
 }
 
 .flakiness-summary {

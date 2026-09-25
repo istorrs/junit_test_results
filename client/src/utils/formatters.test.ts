@@ -95,24 +95,25 @@ describe('Number Formatting', () => {
 })
 
 describe('Status Color', () => {
-  it('should return green for passed status', () => {
-    expect(getStatusColor('passed')).toBe('green')
+  it('uses the shared passed token', () => {
+    expect(getStatusColor('passed')).toBe('var(--status-passed)')
   })
 
-  it('should return red for failed status', () => {
-    expect(getStatusColor('failed')).toBe('red')
+  it('uses the shared failed token', () => {
+    expect(getStatusColor('failed')).toBe('var(--status-failed)')
   })
 
-  it('should return orange for error status', () => {
-    expect(getStatusColor('error')).toBe('orange')
+  it('uses the shared broken/error token', () => {
+    expect(getStatusColor('error')).toBe('var(--status-error)')
+    expect(getStatusColor('broken')).toBe('var(--status-error)')
   })
 
-  it('should return gray for skipped status', () => {
-    expect(getStatusColor('skipped')).toBe('gray')
+  it('uses the shared skipped token', () => {
+    expect(getStatusColor('skipped')).toBe('var(--status-skipped)')
   })
 
-  it('should return gray for unknown status', () => {
-    expect(getStatusColor('unknown')).toBe('gray')
+  it('uses the shared unknown token', () => {
+    expect(getStatusColor('unknown')).toBe('var(--status-unknown)')
   })
 })
 

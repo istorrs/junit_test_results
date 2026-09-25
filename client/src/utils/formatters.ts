@@ -1,3 +1,5 @@
+import { normalizeResultStatus, statusColorVariable } from './statusColors'
+
 export type TestStatus = 'passed' | 'failed' | 'error' | 'skipped' | string
 
 export function formatDate(date: Date | string): string {
@@ -51,22 +53,11 @@ export function formatNumber(value: number): string {
 }
 
 export function getStatusColor(status: TestStatus): string {
-  switch (status.toLowerCase()) {
-    case 'passed':
-      return 'green'
-    case 'failed':
-      return 'red'
-    case 'error':
-      return 'orange'
-    case 'skipped':
-      return 'gray'
-    default:
-      return 'gray'
-  }
+  return `var(${statusColorVariable(status)})`
 }
 
 export function getStatusIcon(status: TestStatus): string {
-  switch (status.toLowerCase()) {
+  switch (normalizeResultStatus(status)) {
     case 'passed':
       return '✓'
     case 'failed':

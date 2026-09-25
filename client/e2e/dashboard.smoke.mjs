@@ -313,6 +313,19 @@ try {
   )
   const caseRows = await evaluate("document.querySelectorAll('tbody tr').length")
   if (caseRows < 1 || caseRows > 50) throw new Error(`Unexpected case row count: ${caseRows}`)
+  const caseBadgeAudit = await evaluate(`(() => {
+    return [...document.querySelectorAll('tbody .status-badge')].every((badge) => {
+      const status = badge.getAttribute('data-test-status')
+      if (!status) return false
+      const expected = document.createElement('span')
+      expected.style.color = 'var(--status-' + status + ')'
+      document.body.appendChild(expected)
+      const matches = getComputedStyle(badge).color === getComputedStyle(expected).color
+      expected.remove()
+      return matches
+    })
+  })()`)
+  if (!caseBadgeAudit) throw new Error('Case status badges do not use the shared palette')
   if (
     assignProject &&
     !requests.some(
@@ -334,6 +347,7 @@ try {
   let attachmentNavigationVerified = false
   let htmlAttachmentPreviewVerified = false
   let modalTabsAudited = []
+  let allureStepPaletteAudit = false
   if (allureRunId) {
     const query = new URLSearchParams({ run_id: allureRunId })
     await navigate(`/cases?${query}`)
@@ -493,6 +507,19 @@ try {
       "document.querySelector('.allure-details a[href^=\"/attachments/\"]') && document.querySelector('.allure-step')",
       'Allure steps and attachments'
     )
+    allureStepPaletteAudit = await evaluate(`(() => {
+      return [...document.querySelectorAll('.allure-step .step-status')].every((step) => {
+        const status = step.getAttribute('data-test-status')
+        if (!status) return false
+        const expected = document.createElement('span')
+        expected.style.color = 'var(--status-' + status + ')'
+        document.body.appendChild(expected)
+        const matches = getComputedStyle(step).color === getComputedStyle(expected).color
+        expected.remove()
+        return matches
+      })
+    })()`)
+    if (!allureStepPaletteAudit) throw new Error('Allure steps do not use the shared palette')
     modalTabsAudited = await evaluate(
       "[...document.querySelectorAll('[role=tab]')].map((tab) => tab.textContent.trim())"
     )
@@ -637,6 +664,53 @@ try {
     throw new Error('Release selector search request was not observed')
   }
 
+  await navigate('/')
+  await waitFor("document.querySelector('.stat-card.passed .stat-icon')", 'dashboard status cards')
+  const statusPaletteAudit = await evaluate(`(async () => {
+    const root = document.documentElement
+    const originalTheme = root.getAttribute('data-theme')
+    const mismatches = []
+    const noTransition = document.createElement('style')
+    noTransition.textContent = '* { transition-duration: 0s !important; }'
+    document.head.appendChild(noTransition)
+    for (const theme of ['light', 'dark']) {
+      root.setAttribute('data-theme', theme)
+      await new Promise((resolve) => requestAnimationFrame(resolve))
+      for (const status of ['passed', 'failed', 'error', 'skipped', 'unknown']) {
+        const target = document.querySelector('.stat-card.' + status + ' .stat-icon') ||
+          Object.assign(document.createElement('span'), { className: 'status-fill' })
+        if (!target.isConnected) document.body.appendChild(target)
+        target.setAttribute('data-test-status', status)
+        const expected = document.createElement('span')
+        expected.style.color = 'var(--status-' + status + ')'
+        expected.style.backgroundColor = 'var(--status-' + status + '-bg)'
+        document.body.appendChild(expected)
+        const actualStyle = getComputedStyle(target)
+        const expectedStyle = getComputedStyle(expected)
+        if (actualStyle.color !== expectedStyle.color ||
+            actualStyle.backgroundColor !== expectedStyle.backgroundColor) {
+          mismatches.push({
+            theme,
+            status,
+            color: actualStyle.color,
+            expectedColor: expectedStyle.color,
+            background: actualStyle.backgroundColor,
+            expectedBackground: expectedStyle.backgroundColor,
+          })
+        }
+        expected.remove()
+        if (!target.closest('.stat-card')) target.remove()
+      }
+    }
+    if (originalTheme) root.setAttribute('data-theme', originalTheme)
+    else root.removeAttribute('data-theme')
+    noTransition.remove()
+    return mismatches
+  })()`)
+  if (statusPaletteAudit.length) {
+    throw new Error(`Dashboard status palette mismatch: ${JSON.stringify(statusPaletteAudit)}`)
+  }
+
   await command('Emulation.setDeviceMetricsOverride', {
     width: 375,
     height: 812,
@@ -652,6 +726,16 @@ try {
     })`)
     if (!layout.heading) throw new Error(`Missing heading on ${path}`)
     if (layout.overflow) throw new Error(`Horizontal page overflow on ${path}`)
+    if (path === '/') {
+      const chartFits = await evaluate(`(() => {
+        const card = document.querySelector('.charts-grid .chart-card')
+        const chart = card?.querySelector('[role="img"]')
+        return !!card && !!chart &&
+          card.getBoundingClientRect().right <= window.innerWidth + 1 &&
+          chart.getBoundingClientRect().right <= card.getBoundingClientRect().right + 1
+      })()`)
+      if (!chartFits) throw new Error('Test distribution chart does not fit its mobile card')
+    }
     routeHeadings[path] = layout.heading
   }
 
@@ -663,6 +747,7 @@ try {
         sortedRunsMatch,
         projectAssigned,
         caseRows,
+        caseBadgeAudit,
         allureVerified,
         caseSearchVerified,
         caseSortVerified,
@@ -671,9 +756,11 @@ try {
         caseFiltersVerified,
         darkModalVerified,
         modalTabsAudited,
+        allureStepPaletteAudit,
         attachmentNavigationVerified,
         htmlAttachmentPreviewVerified,
         runOptionCounts,
+        statusPaletteAudit,
         routeHeadings,
         browserErrors: 0,
         apiErrors: 0,
